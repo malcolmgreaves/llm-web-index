@@ -7,7 +7,10 @@
       "Bash(just front:*)",
       "Bash(cargo build:*)",
       "Bash(wasm-bindgen:*)",
-      "Bash(just release:*)"
+      "Bash(just release:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo fmt:*)"
     ]
   }
 }
