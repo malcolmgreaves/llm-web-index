@@ -1,0 +1,9 @@
+[package]
+name = "cron-ltx"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "Cron worker service to perodically update websites' llms.txt."
+
+[dependencies]

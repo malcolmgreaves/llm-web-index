@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = [
+    "src/core_ltx",    # Functional core: all llms.txt generation logic + CLI program for one-offs (generation + update).
+    "src/api_ltx",     # API webserver + DB setup.
+    "src/cli_ltx",     # CLI client for users: interfaces with API.
+    "src/front_ltx",   # Webapp frontend for users: interfaces with API.
+    "src/worker_ltx",  # Backend worker executing logic (generation + update) from API sever into database.
+    "src/cron_ltx",    # Cron worker service to perodically update websites' llms.txt.
+    "src/common_ltx"   # Catch-all for utilities common to all crates.
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Malcolm Greaves <75upbeats_hybrids@icloud.com>"]
+license = "Mozilla Public License 2.0"
+readme = "README.md"
+
+[workspace.dependencies]

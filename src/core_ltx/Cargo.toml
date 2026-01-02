@@ -1,0 +1,9 @@
+[package]
+name = "core-ltx"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "Functional core: all llms.txt generation logic + CLI program for one-offs (generation + update)."
+
+[dependencies]

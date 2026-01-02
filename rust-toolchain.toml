@@ -1,0 +1,19 @@
+[toolchain]
+# Specify the Rust toolchain version
+# Options: "stable", "beta", "nightly", or specific version like "1.92.0"
+channel = "stable"
+
+# Components to install with the toolchain
+# Common components: rustfmt, clippy, rust-src, rust-analyzer
+components = ["rustfmt", "clippy"]
+
+# Profile determines how many components are installed by default
+# Options: "minimal", "default", "complete"
+# - minimal: just rustc, cargo, and rust-std
+# - default: adds rustfmt, clippy (recommended for most projects)
+# - complete: all components (very large, usually unnecessary)
+profile = "default"
+
+# Targets for cross-compilation (optional)
+# Uncomment and add targets if you need cross-compilation support
+# targets = ["wasm32-unknown-unknown", "x86_64-unknown-linux-musl"]

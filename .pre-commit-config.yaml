@@ -1,0 +1,17 @@
+repos:
+- repo: local
+  hooks:
+   # rust: type checking
+   - id: cargo check
+     name: rust type check
+     entry: bash -c 'cargo check --all-targets --workspace'
+     language: system
+     types: [rust]
+     pass_filenames: false
+   # rust: format
+   - id: cargo fmt
+     name: rust format
+     entry: bash -c 'cargo fmt'
+     language: system
+     types: [rust]
+     pass_filenames: false

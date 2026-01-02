@@ -1,0 +1,9 @@
+[package]
+name = "front-ltx"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = "Webapp frontend for users: interfaces with API."
+
+[dependencies]
