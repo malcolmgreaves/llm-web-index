@@ -31,28 +31,36 @@ RUN mkdir ./bin
 
 COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
 
-# NOTICE: Keep up to date!
-#  - For every crate that is used!
-#    - Include the `src/$crate/Cargo.toml` file
-#      + These provide the crate structure & all dependencies.
-#    - Create an empty file in the crate's `src/`
-#
-# This provides the crate structure, with the absolute minimum of
-# unchanging code, and all dependencies of the entire project.
-#
-# Doing this allows us to reuse the build cache for dependencies
-# without invalidating it on code changes.
+# NOTICE: Keep up to date! Include **ALL** crates referenced in the top-level Cargo.toml!
+#         All crates **MUST** have:
+#           - a Cargo.toml file
+#           - either a lib.rs or a main.rs file (depending on what its Cargo says)
+
 COPY src/common_ltx/Cargo.toml ./src/common_ltx/
 COPY src/core_ltx/Cargo.toml ./src/core_ltx/
+COPY src/front_ltx/Cargo.toml ./src/front_ltx/
 COPY src/api_ltx/Cargo.toml ./src/api_ltx/
+COPY src/cli_ltx/Cargo.toml ./src/cli_ltx/
+COPY src/cron_ltx/Cargo.toml ./src/cron_ltx/
+COPY src/worker_ltx/Cargo.toml ./src/worker_ltx/
 
-RUN mkdir -p src/api_ltx/src && \
-    echo "fn main() {}" > src/api_ltx/src/main.rs
-
+# NOTE: Keep up to date! Library crates with lib.rs
 RUN mkdir -p src/common_ltx/src && \
     echo "" > src/common_ltx/src/lib.rs && \
     mkdir -p src/core_ltx/src && \
-    echo "" > src/core_ltx/src/lib.rs
+    echo "" > src/core_ltx/src/lib.rs && \
+    mkdir -p src/front_ltx/src && \
+    echo "" > src/front_ltx/src/lib.rs
+
+# NOTE: Keep up to date! Binary crates with main.rs
+RUN mkdir -p src/api_ltx/src && \
+    echo "fn main() {}" > src/api_ltx/src/main.rs && \
+    mkdir -p src/cli_ltx/src && \
+    echo "fn main() {}" > src/cli_ltx/src/main.rs && \
+    mkdir -p src/cron_ltx/src && \
+    echo "fn main() {}" > src/cron_ltx/src/main.rs && \
+    mkdir -p src/worker_ltx/src && \
+    echo "fn main() {}" > src/worker_ltx/src/main.rs
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
