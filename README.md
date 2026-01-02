@@ -19,8 +19,9 @@ A system for generating llms.txt files from websites and keeping them up-to-date
 - [`cargo` & `rustc`](https://rustup.rs)
 - [`just`](https://github.com/casey/just)
 - [`pre-commit`](https://pre-commit.com)
+- [`binaryen`](https://github.com/WebAssembly/binaryen) (required for `just release` to optimize WASM frontend)
 
-Install [`just`](https://github.com/casey/just) to run project-specific commands.
+Install [`just`](https://github.com/casey/just) to run project-specific commands. Install [`binaryen`](https://github.com/WebAssembly/binaryen) for WASM optimization (`brew install binaryen` on macOS).
 
 Ensure all new code has tests and appropriate documentation.
 
