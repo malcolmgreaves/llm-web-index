@@ -1,7 +1,7 @@
 ###
 ### Supporting tools
 ###
-FROM rust:1.92-slim as tools
+FROM rust:1.92-slim-bookworm as tools
 
 RUN apt-get update && apt-get install -y \
     libpq-dev \
@@ -16,7 +16,7 @@ RUN --mount=type=cache,target=/root/.cargo/registry \
 ###
 ### Project build: all dependencies
 ###
-FROM rust:1.92-slim as builder
+FROM rust:1.92-slim-bookworm as builder
 
 RUN apt-get update && apt-get install -y \
     libpq-dev \
