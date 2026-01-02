@@ -6,4 +6,9 @@ authors = { workspace = true }
 license = { workspace = true }
 description = "Webapp frontend for users: interfaces with API."
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["console", "Document", "Element", "HtmlElement", "Node", "Window"] }
