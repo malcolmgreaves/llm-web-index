@@ -1,79 +1,96 @@
-# Build stage
-FROM rust:1.84-slim as builder
+###
+### Supporting tools
+###
+FROM rust:1.92-slim as tools
 
-# Install PostgreSQL development libraries
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a new empty project
+# Need diesel to run migrations in runtime image build.
+WORKDIR /tools
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
+    cargo install diesel_cli --no-default-features --features postgres --root /tools
+
+###
+### Project build
+###
+FROM rust:1.92-slim as builder
+
+## system dependencies
+##
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+## project dependencies
+##
 WORKDIR /app
+RUN mkdir ./bin
 
-# Copy manifests
 COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
-COPY src/api_ltx/Cargo.toml ./src/api_ltx/
+
+# NOTICE: Keep up to date!
+#  - For every crate that is used!
+#    - Include the `src/$crate/Cargo.toml` file
+#      + These provide the crate structure & all dependencies.
+#    - Create an empty file in the crate's `src/`
+#
+# This provides the crate structure, with the absolute minimum of
+# unchanging code, and all dependencies of the entire project.
+#
+# Doing this allows us to reuse the build cache for dependencies
+# without invalidating it on code changes.
 COPY src/common_ltx/Cargo.toml ./src/common_ltx/
+COPY src/core_ltx/Cargo.toml ./src/core_ltx/
+COPY src/api_ltx/Cargo.toml ./src/api_ltx/
 
-# Create dummy source files to cache dependencies
-RUN mkdir -p src/api_ltx/src && \
-    echo "fn main() {}" > src/api_ltx/src/main.rs && \
-    mkdir -p src/common_ltx/src && \
-    echo "" > src/common_ltx/src/lib.rs
+RUN mkdir -p src/common_ltx/src && \
+    echo "" > src/common_ltx/src/lib.rs && \
+    mkdir -p src/core_ltx/src && \
+    echo "" > src/common_ltx/src/lib.rs && \
+    mkdir -p src/api_ltx/src && \
+    echo "fn main() {}" > src/api_ltx/src/main.rs
 
-# Build dependencies (this layer will be cached)
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/target \
     cargo build --release -p api-ltx
 
-# Remove dummy files
-RUN rm -rf src/api_ltx/src src/common_ltx/src
+# only removes dummy files
+RUN rm -rf src/common_ltx/src \
+           src/core_ltx/src \
+           src/api_ltx/src
 
-# Copy actual source code
-COPY src/api_ltx/src ./src/api_ltx/src
+## project code & configuration
+##
 COPY src/common_ltx/src ./src/common_ltx/src
+COPY src/core_ltx/src ./src/core_ltx/src
+COPY src/api_ltx/src ./src/api_ltx/src
 
-# Build the application
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/target \
     cargo build --release -p api-ltx && \
-    cp /app/target/release/api-ltx /app/api-ltx
+    cp /app/target/release/api-ltx /app/bin/api-ltx
 
-# Runtime stage
+###
+### Runtime
+###
 FROM debian:bookworm-slim
 
+COPY --from=tools /tools/bin/diesel /usr/local/bin/diesel
+
 # Install runtime dependencies
+# NOTE: Keep these in-sync with the system dependencies from the builder image.
 RUN apt-get update && apt-get install -y \
     libpq5 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install diesel_cli for running migrations
-RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Rust (minimal) and diesel_cli
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-ENV PATH="/root/.cargo/bin:${PATH}"
-RUN --mount=type=cache,target=/root/.cargo/registry \
-    --mount=type=cache,target=/root/.cargo/git \
-    cargo install diesel_cli --no-default-features --features postgres
-
-# Clean up build tools to reduce image size
-RUN apt-get remove -y curl build-essential && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
-
-# Copy the built binary
-COPY --from=builder /app/api-ltx /usr/local/bin/api-ltx
-
+COPY --from=builder /app/bin/api-ltx /usr/local/bin/api-ltx
 # Copy migrations and diesel config
 COPY src/api_ltx/migrations ./migrations
 COPY src/api_ltx/diesel.toml ./diesel.toml
