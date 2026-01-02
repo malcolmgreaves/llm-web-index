@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Enable BuildKit for cache mount support
 x-build-defaults: &build-defaults
   cache_from:
