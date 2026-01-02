@@ -87,39 +87,22 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 ###
 FROM debian:bookworm-slim
 
-COPY --from=tools /tools/bin/diesel /usr/local/bin/diesel
-
-# Install runtime dependencies
-# NOTE: Keep these in-sync with the system dependencies from the builder image.
+# NOTE: Keep these runtime dependencies in-sync with the system dependencies from the builder image.
 RUN apt-get update && apt-get install -y \
     libpq5 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+COPY --from=tools /tools/bin/diesel /usr/local/bin/diesel
+
 WORKDIR /app
+
 COPY --from=api /app/bin/api-ltx /usr/local/bin/api-ltx
-# Copy migrations and diesel config
+
 COPY src/api_ltx/migrations ./migrations
 COPY src/api_ltx/diesel.toml ./diesel.toml
 
-# Create entrypoint script
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-# Wait for database to be ready\n\
-echo "Waiting for database to be ready..."\n\
-until diesel database setup --locked-schema 2>/dev/null || diesel migration run 2>/dev/null; do\n\
-  echo "Database is unavailable - sleeping"\n\
-  sleep 1\n\
-done\n\
-\n\
-echo "Database is ready - running migrations"\n\
-diesel migration run\n\
-\n\
-echo "Starting API server"\n\
-exec api-ltx\n\
-' > /usr/local/bin/docker-entrypoint.sh && \
-    chmod +x /usr/local/bin/docker-entrypoint.sh
+COPY src/api_ltx/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3000
 
