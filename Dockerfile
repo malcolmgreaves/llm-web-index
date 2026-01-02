@@ -46,12 +46,13 @@ COPY src/common_ltx/Cargo.toml ./src/common_ltx/
 COPY src/core_ltx/Cargo.toml ./src/core_ltx/
 COPY src/api_ltx/Cargo.toml ./src/api_ltx/
 
+RUN mkdir -p src/api_ltx/src && \
+    echo "fn main() {}" > src/api_ltx/src/main.rs
+
 RUN mkdir -p src/common_ltx/src && \
     echo "" > src/common_ltx/src/lib.rs && \
     mkdir -p src/core_ltx/src && \
-    echo "" > src/common_ltx/src/lib.rs && \
-    mkdir -p src/api_ltx/src && \
-    echo "fn main() {}" > src/api_ltx/src/main.rs
+    echo "" > src/core_ltx/src/lib.rs
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
@@ -59,9 +60,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo build --release -p api-ltx
 
 # only removes dummy files
-RUN rm -rf src/common_ltx/src \
-           src/core_ltx/src \
-           src/api_ltx/src
+RUN rm -rf src/common_ltx/src src/core_ltx/src src/api_ltx/src
 
 ## project code & configuration
 ##
