@@ -90,6 +90,8 @@ FROM debian:bookworm-slim
 # NOTE: Keep these runtime dependencies in-sync with the system dependencies from the builder image.
 RUN apt-get update && apt-get install -y \
     libpq5 \
+    postgresql-client \
+    libc6 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
