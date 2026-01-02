@@ -1,0 +1,57 @@
+# Enable BuildKit for cache mount support
+x-build-defaults: &build-defaults
+  cache_from:
+    - type=registry,ref=ltx-api:buildcache
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ltx_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ltx_user
+      POSTGRES_PASSWORD: ltx_password
+      POSTGRES_DB: ltx_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ltx_user -d ltx_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ltx_network
+
+  # API Server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Enable BuildKit cache mounts
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    container_name: ltx_api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
+      HOST: 0.0.0.0
+      PORT: 3000
+      RUST_LOG: api_ltx=debug,tower_http=debug
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ltx_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  ltx_network:
+    driver: bridge

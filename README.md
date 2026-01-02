@@ -13,6 +13,27 @@ A system for generating llms.txt files from websites and keeping them up-to-date
 - [`common-ltx`](src/common_ltx): Catch-all for utilities common to all crates.
 
 
+## Quick Start
+
+### Running with Docker Compose (Recommended)
+
+The fastest way to get started is using Docker Compose:
+
+```bash
+# Enable BuildKit for faster builds (recommended)
+export DOCKER_BUILDKIT=1
+
+# Start the API server and PostgreSQL database
+docker compose up
+
+# Or run in detached mode (background)
+docker compose up -d
+```
+
+The API server will be available at `http://localhost:3000`. BuildKit enables cache mounts that significantly speed up Rust compilation.
+
+See [src/api_ltx/SETUP.md](src/api_ltx/SETUP.md) for detailed setup instructions and API testing examples.
+
 ## Development
 
 #### Pre-reqs
@@ -20,14 +41,26 @@ A system for generating llms.txt files from websites and keeping them up-to-date
 - [`just`](https://github.com/casey/just)
 - [`pre-commit`](https://pre-commit.com)
 - [`binaryen`](https://github.com/WebAssembly/binaryen) (required for `just release` to optimize WASM frontend)
+- [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/)
 
-Install [`just`](https://github.com/casey/just) to run project-specific commands. Install [`binaryen`](https://github.com/WebAssembly/binaryen) for WASM optimization (`brew install binaryen` on macOS).
+Setup the `pre-commit` hooks before submitting PRs for review or using CI.
 
-Ensure all new code has tests and appropriate documentation.
+Use `just` to run project-specific commands (run `just -l` to see them).
 
-Always run the [`pre-commit`](https://pre-commit.com) hooks before submitting PRs for review or using CI.
+### Design Ethos
 
-Use `just test` to run tests, `just check` to format & lint code, and `just bench` to run benchmarks.
+**Ensure all new code has tests and appropriate documentation.**
 
-Build release binaries (servers, frontend, CLI programs) with `just release`.
+Follow the "functional core, effectful shell" code pattern. Implement logic as functions and push state 
+and all user interaction into components that use the functional core.
+
+Strive to have all logic implemented by pure functions. Minimize the use of mutable state (only use 
+it _if_ it is necessary for performance) in interfaces and designs.
+
+Use `Result` types and use clear `Error` enum variants whenever an operation could fail.
+Only use `Option` if `None` naturally maps to the domain.
+
+**Never use `.unwrap()` nor `.expect()`** except in tests.
+
+
 
