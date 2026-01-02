@@ -14,27 +14,28 @@ RUN --mount=type=cache,target=/root/.cargo/registry \
     cargo install diesel_cli --no-default-features --features postgres --root /tools
 
 ###
-### Project build
+### Project build: all dependencies
 ###
 FROM rust:1.92-slim as builder
 
-## system dependencies
-##
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-## project dependencies
-##
 WORKDIR /app
 RUN mkdir ./bin
 
 COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
 
-# NOTICE: Keep up to date! Include **ALL** crates referenced in the top-level Cargo.toml!
-#         All crates **MUST** have:
-#           - a Cargo.toml file
-#           - either a lib.rs or a main.rs file (depending on what its Cargo says)
+# Ensure that the first layers of builder image contain all of the Rust
+# dependencies for the project. By keeping dependencies first, then
+# project code, we can reuse layers when making code changes.
+#
+# NOTE: Keep up to date! Include **ALL** crates referenced in the top-level Cargo.toml!
+#       All crates **MUST** have:
+#         - a Cargo.toml file
+#         - either a lib.rs or a main.rs file (depending on what its Cargo says)
+#           + a "dummy" file ("" or "fn main(){}", respectively) works
 
 COPY src/common_ltx/Cargo.toml ./src/common_ltx/
 COPY src/core_ltx/Cargo.toml ./src/core_ltx/
@@ -44,34 +45,33 @@ COPY src/cli_ltx/Cargo.toml ./src/cli_ltx/
 COPY src/cron_ltx/Cargo.toml ./src/cron_ltx/
 COPY src/worker_ltx/Cargo.toml ./src/worker_ltx/
 
-# NOTE: Keep up to date! Library crates with lib.rs
-RUN mkdir -p src/common_ltx/src && \
-    echo "" > src/common_ltx/src/lib.rs && \
-    mkdir -p src/core_ltx/src && \
-    echo "" > src/core_ltx/src/lib.rs && \
-    mkdir -p src/front_ltx/src && \
-    echo "" > src/front_ltx/src/lib.rs
+# NOTE: Keep up to date! Library crates
+RUN for crate in common_ltx core_ltx front_ltx; do \
+        mkdir -p src/${crate}/src && \
+        echo "" > src/${crate}/src/lib.rs; \
+    done
 
-# NOTE: Keep up to date! Binary crates with main.rs
-RUN mkdir -p src/api_ltx/src && \
-    echo "fn main() {}" > src/api_ltx/src/main.rs && \
-    mkdir -p src/cli_ltx/src && \
-    echo "fn main() {}" > src/cli_ltx/src/main.rs && \
-    mkdir -p src/cron_ltx/src && \
-    echo "fn main() {}" > src/cron_ltx/src/main.rs && \
-    mkdir -p src/worker_ltx/src && \
-    echo "fn main() {}" > src/worker_ltx/src/main.rs
+# NOTE: Keep up to date! Binary crates
+RUN for crate in api_ltx cli_ltx cron_ltx worker_ltx; do \
+        mkdir -p src/${crate}/src && \
+        echo "fn main() {}" > src/${crate}/src/main.rs; \
+    done
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/target \
-    cargo build --release -p api-ltx
+    cargo build --release
 
-# only removes dummy files
-RUN rm -rf src/common_ltx/src src/core_ltx/src src/api_ltx/src
+###
+### API server
+###
+FROM builder as api
 
-## project code & configuration
-##
+# NOTE: Keep up to date! Remove dummy files from crates that **ARE NOT** used.
+RUN for crate in common_ltx core_ltx api_ltx; do \
+        rm -rf src/${crate}/src; \
+    done
+
 COPY src/common_ltx/src ./src/common_ltx/src
 COPY src/core_ltx/src ./src/core_ltx/src
 COPY src/api_ltx/src ./src/api_ltx/src
@@ -97,7 +97,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY --from=builder /app/bin/api-ltx /usr/local/bin/api-ltx
+COPY --from=api /app/bin/api-ltx /usr/local/bin/api-ltx
 # Copy migrations and diesel config
 COPY src/api_ltx/migrations ./migrations
 COPY src/api_ltx/diesel.toml ./diesel.toml
