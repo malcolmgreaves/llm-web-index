@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(cat:*)",
-      "Bash(brew list:*)"
+      "Bash(brew list:*)",
+      "Bash(just clean:*)",
+      "Bash(just front:*)",
+      "Bash(cargo build:*)",
+      "Bash(wasm-bindgen:*)",
+      "Bash(just release:*)"
     ]
   }
 }
