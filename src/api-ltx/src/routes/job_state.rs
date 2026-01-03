@@ -52,3 +52,36 @@ pub async fn get_status(
         }),
     ))
 }
+
+// GET /api/job - Get full job details by job_id
+pub async fn get_job(
+    State(pool): State<DbPool>,
+    Json(payload): Json<JobIdPayload>,
+) -> Result<impl IntoResponse, StatusError> {
+    let mut conn = pool.get()?;
+
+    let job = job_state::table
+        .filter(job_state::job_id.eq(&payload.job_id))
+        .select(JobState::as_select())
+        .first::<JobState>(&mut conn)?;
+
+    Ok((StatusCode::OK, Json(job)))
+}
+
+// GET /api/jobs/in_progress - List all in-progress jobs
+pub async fn get_in_progress_jobs(
+    State(pool): State<DbPool>,
+) -> Result<impl IntoResponse, StatusError> {
+    let mut conn = pool.get()?;
+
+    let jobs = job_state::table
+        .filter(job_state::status.eq_any(&[
+            JobStatus::Queued,
+            JobStatus::Started,
+            JobStatus::Running,
+        ]))
+        .select(JobState::as_select())
+        .load::<JobState>(&mut conn)?;
+
+    Ok((StatusCode::OK, Json(jobs)))
+}
