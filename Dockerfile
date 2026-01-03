@@ -43,22 +43,22 @@ COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
 #         - either a lib.rs or a main.rs file (depending on what its Cargo says)
 #           + a "dummy" file ("" or "fn main(){}", respectively) works
 
-COPY src/common_ltx/Cargo.toml ./src/common_ltx/
-COPY src/core_ltx/Cargo.toml ./src/core_ltx/
-COPY src/front_ltx/Cargo.toml ./src/front_ltx/
-COPY src/api_ltx/Cargo.toml ./src/api_ltx/
-COPY src/cli_ltx/Cargo.toml ./src/cli_ltx/
-COPY src/cron_ltx/Cargo.toml ./src/cron_ltx/
-COPY src/worker_ltx/Cargo.toml ./src/worker_ltx/
+COPY src/common-ltx/Cargo.toml ./src/common-ltx/
+COPY src/core-ltx/Cargo.toml ./src/core-ltx/
+COPY src/front-ltx/Cargo.toml ./src/front-ltx/
+COPY src/api-ltx/Cargo.toml ./src/api-ltx/
+COPY src/cli-ltx/Cargo.toml ./src/cli-ltx/
+COPY src/cron-ltx/Cargo.toml ./src/cron-ltx/
+COPY src/worker-ltx/Cargo.toml ./src/worker-ltx/
 
 # NOTE: Keep up to date! Library crates
-RUN for crate in common_ltx core_ltx front_ltx; do \
+RUN for crate in common-ltx core-ltx front-ltx; do \
         mkdir -p src/${crate}/src && \
         echo "" > src/${crate}/src/lib.rs; \
     done
 
 # NOTE: Keep up to date! Binary crates
-RUN for crate in api_ltx cli_ltx cron_ltx worker_ltx; do \
+RUN for crate in api-ltx cli-ltx cron-ltx worker-ltx; do \
         mkdir -p src/${crate}/src && \
         echo "fn main() {}" > src/${crate}/src/main.rs; \
     done
@@ -76,11 +76,11 @@ FROM builder as frontend
 COPY --from=tools /tools/bin/wasm-pack /usr/local/bin/wasm-pack
 
 # remove dummy files
-RUN rm -rf src/front_ltx/src
+RUN rm -rf src/front-ltx/src
 
-COPY src/front_ltx/src ./src/front_ltx/src
-COPY src/front_ltx/www ./src/front_ltx/www
-RUN cd src/front_ltx && \
+COPY src/front-ltx/src ./src/front-ltx/src
+COPY src/front-ltx/www ./src/front-ltx/www
+RUN cd src/front-ltx && \
     wasm-pack build --target web --out-dir www/pkg --release
 
 ###
@@ -89,13 +89,13 @@ RUN cd src/front_ltx && \
 FROM builder as api
 
 # NOTE: Keep up to date! Remove dummy files from crates that **ARE NOT** used.
-RUN for crate in common_ltx core_ltx api_ltx; do \
+RUN for crate in common-ltx core-ltx api-ltx; do \
         rm -rf src/${crate}/src; \
     done
 
-COPY src/common_ltx/src ./src/common_ltx/src
-COPY src/core_ltx/src ./src/core_ltx/src
-COPY src/api_ltx/src ./src/api_ltx/src
+COPY src/common-ltx/src ./src/common-ltx/src
+COPY src/core-ltx/src ./src/core-ltx/src
+COPY src/api-ltx/src ./src/api-ltx/src
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
@@ -123,12 +123,12 @@ WORKDIR /app
 # API server
 COPY --from=api /app/bin/api-ltx /usr/local/bin/api-ltx
 # DB migrations
-COPY src/api_ltx/migrations ./migrations
-COPY src/api_ltx/diesel.toml ./diesel.toml
+COPY src/api-ltx/migrations ./migrations
+COPY src/api-ltx/diesel.toml ./diesel.toml
 # WASM frontend
-COPY --from=frontend /app/src/front_ltx/www/index.html ./src/front_ltx/www/index.html
-COPY --from=frontend /app/src/front_ltx/www/pkg ./src/front_ltx/www/pkg
+COPY --from=frontend /app/src/front-ltx/www/index.html ./src/front-ltx/www/index.html
+COPY --from=frontend /app/src/front-ltx/www/pkg ./src/front-ltx/www/pkg
 
 EXPOSE 3000
-COPY src/api_ltx/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY src/api-ltx/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

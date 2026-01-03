@@ -4,13 +4,13 @@ A system for generating llms.txt files from websites and keeping them up-to-date
 
 ## Organization
 
-- [`core-ltx`](src/core_ltx): Functional core: all llms.txt generation logic + CLI program for one-offs (generation + update).
-- [`api-ltx`](src/api_ltx): API webserver + DB setup.
-- [`cli-ltx`](src/cli_ltx): CLI client for users: interfaces with API.
-- [`front-ltx`](src/front_ltx): Webapp frontend for users: interfaces with API.
-- [`worker-ltx`](src/worker_ltx): Backend worker executing logic (generation + update) from API server into database.
-- [`cron-ltx`](src/cron_ltx): Cron worker service to periodically update websites' llms.txt.
-- [`common-ltx`](src/common_ltx): Catch-all for utilities common to all crates.
+- [`core-ltx`](src/core-ltx): Functional core: all llms.txt generation logic + CLI program for one-offs (generation + update).
+- [`api-ltx`](src/api-ltx): API webserver + DB setup.
+- [`cli-ltx`](src/cli-ltx): CLI client for users: interfaces with API.
+- [`front-ltx`](src/front-ltx): Webapp frontend for users: interfaces with API.
+- [`worker-ltx`](src/worker-ltx): Backend worker executing logic (generation + update) from API server into database.
+- [`cron-ltx`](src/cron-ltx): Cron worker service to periodically update websites' llms.txt.
+- [`common-ltx`](src/common-ltx): Catch-all for utilities common to all crates.
 
 
 ## Quick Start
@@ -32,7 +32,7 @@ docker compose up -d
 
 The API server will be available at `http://localhost:3000`. BuildKit enables cache mounts that significantly speed up Rust compilation.
 
-See [src/api_ltx/SETUP.md](src/api_ltx/SETUP.md) for detailed setup instructions and API testing examples.
+See [src/api-ltx/SETUP.md](src/api-ltx/SETUP.md) for detailed setup instructions and API testing examples.
 
 ## Development
 

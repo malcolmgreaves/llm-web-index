@@ -28,7 +28,7 @@ cargo install miniserve
 Build the WebAssembly module using `wasm-pack`:
 
 ```bash
-# From the src/front_ltx directory
+# From the src/front-ltx directory
 wasm-pack build --target web --out-dir www/pkg
 ```
 
@@ -58,7 +58,7 @@ After building, you need to serve the files over HTTP (not `file://`) because of
 ### Option 1: Using Python (Simple)
 
 ```bash
-# From the src/front_ltx/www directory
+# From the src/front-ltx/www directory
 cd www
 python3 -m http.server 8080
 ```
@@ -68,7 +68,7 @@ Then open your browser to: http://localhost:8080
 ### Option 2: Using miniserve (Recommended)
 
 ```bash
-# From the src/front_ltx/www directory
+# From the src/front-ltx/www directory
 cd www
 miniserve . --port 8080
 ```
@@ -78,7 +78,7 @@ Then open your browser to: http://localhost:8080
 ### Option 3: Using Node.js http-server
 
 ```bash
-# From the src/front_ltx/www directory
+# From the src/front-ltx/www directory
 cd www
 http-server -p 8080
 ```
@@ -114,7 +114,7 @@ cd www && miniserve . --port 8080
 ## Project Structure
 
 ```
-src/front_ltx/
+src/front-ltx/
 ├── Cargo.toml          # Rust package configuration
 ├── README.md           # This file
 ├── src/
@@ -172,6 +172,6 @@ To extend this frontend:
 
 1. Add more Rust functions and export them with `#[wasm_bindgen]`
 2. Create more complex UI components
-3. Integrate with the API backend (api_ltx)
+3. Integrate with the API backend (api-ltx)
 4. Add a bundler (webpack, vite, etc.) for more sophisticated builds
 5. Consider using a framework like Yew, Leptos, or Dioxus for larger applications
