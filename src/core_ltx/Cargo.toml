@@ -5,10 +5,14 @@ edition = { workspace = true }
 authors = { workspace = true }
 license = { workspace = true }
 description = "Functional core: all llms.txt generation logic + CLI program for one-offs (generation + update)."
+build = "build.rs"
 
 [dependencies]
 async-openai = "0.28"
 tokio = { version = "1.42", features = ["rt", "macros"] }
+common-ltx = { path = "../common_ltx" }
 
 [dev-dependencies]
 tokio = { version = "1.42", features = ["rt", "macros", "rt-multi-thread"] }
+test-with = { version = "*", features = ["runtime"] }
+libtest-with = "0.8.1-12"

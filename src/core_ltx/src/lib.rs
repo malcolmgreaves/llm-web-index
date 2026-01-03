@@ -73,22 +73,27 @@ pub async fn send_simple_prompt() -> Result<String, ChatGptError> {
 mod tests {
     use super::*;
 
+    use crate::common_ltx::is_env_set;
+
     #[tokio::test]
     async fn test_send_simple_prompt() {
-        let result = send_simple_prompt().await;
+        if is_env_set("OPENAI_API_KEY") {
+            let result = send_simple_prompt().await;
 
-        match result {
-            Ok(response) => {
-                println!("ChatGPT response: {}", response);
-                assert!(!response.is_empty(), "Response should not be empty");
+            match result {
+                Ok(response) => {
+                    println!("ChatGPT response: {}", response);
+                    assert!(!response.is_empty(), "Response should not be empty");
+                }
+                Err(ChatGptError::ApiError(e)) => {
+                    panic!("API error: {}", e);
+                }
+                Err(ChatGptError::NoResponse) => {
+                    panic!("Unexpected NoResponse error");
+                }
             }
-            Err(ChatGptError::ApiError(e)) => {
-                // If OPENAI_API_KEY is not set or invalid, we expect an API error
-                println!("API error (expected if OPENAI_API_KEY not set): {}", e);
-            }
-            Err(ChatGptError::NoResponse) => {
-                panic!("Unexpected NoResponse error");
-            }
+        } else {
+            println!("[SKIP] OPENAI_API_KEY is not set");
         }
     }
 }
