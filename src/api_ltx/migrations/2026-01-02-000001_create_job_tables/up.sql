@@ -30,7 +30,8 @@ CREATE TABLE llms_txt (
     job_id UUID PRIMARY KEY,
     url TEXT NOT NULL,
     result_data TEXT NOT NULL,
-    result_status result_status NOT NULL
+    result_status result_status NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC')
 );
 
 -- Create GIN index for full-text search on url column

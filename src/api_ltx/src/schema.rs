@@ -21,14 +21,8 @@ diesel::table! {
         url -> Text,
         result_data -> Text,
         result_status -> Result_status,
+        created_at -> Timestamptz,
     }
 }
 
-diesel::table! {
-    names (id) {
-        id -> Int4,
-        name -> Varchar,
-    }
-}
-
-diesel::allow_tables_to_appear_in_same_query!(job_state, llms_txt, names,);
+diesel::allow_tables_to_appear_in_same_query!(job_state, llms_txt,);
