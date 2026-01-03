@@ -87,8 +87,10 @@ async fn get_llm_txt(
 ) -> Result<impl IntoResponse, GetLlmTxtError> {
     let mut conn = pool.get().map_err(|_| GetLlmTxtError::Unknown)?;
 
+    // Get the most recent record for this URL (ordered by created_at DESC)
     let result = llms_txt::table
         .filter(llms_txt::url.eq(&payload.url))
+        .order(llms_txt::created_at.desc())
         .select(LlmsTxt::as_select())
         .first::<LlmsTxt>(&mut conn)
         .optional()
