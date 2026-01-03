@@ -10,7 +10,10 @@
       "Bash(just release:*)",
       "Bash(cargo tree:*)",
       "Bash(file:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(cargo check:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo fmt:*)"
     ]
   }
 }

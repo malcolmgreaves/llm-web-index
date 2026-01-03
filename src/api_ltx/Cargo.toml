@@ -7,7 +7,7 @@ license = { workspace = true }
 description = "API webserver + DB setup."
 
 [dependencies]
-axum = "0.7"
+axum = "0.8.8"
 tokio = { version = "1", features = ["full"] }
 diesel = { version = "2.2", features = ["postgres", "r2d2"] }
 dotenvy = "0.15"
