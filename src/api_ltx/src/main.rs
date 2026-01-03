@@ -7,7 +7,7 @@ use axum::{
     extract::{Json, State},
     http::StatusCode,
     response::IntoResponse,
-    routing::{get, post},
+    routing::{get, post, put},
 };
 use diesel::prelude::*;
 use serde_json::json;
@@ -17,8 +17,12 @@ use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use db::{DbPool, establish_connection_pool};
-use models::{Name, NewName};
-use schema::names;
+use models::{
+    GetLlmTxtError, JobIdPayload, JobIdResponse, JobKind, JobState, JobStatus as JobStatusEnum,
+    JobStatusResponse, LlmTxtResponse, LlmsTxt, LlmsTxtListItem, LlmsTxtListResponse,
+    PostLlmTxtError, PutLlmTxtError, ResultStatus, StatusError, UpdateLlmTxtError, UrlPayload,
+};
+use schema::{job_state, llms_txt};
 
 #[tokio::main]
 async fn main() {
@@ -43,10 +47,13 @@ async fn main() {
 
     // Build the router
     let app = Router::new()
-        // API routes with /api prefix
-        .route("/api/hello", get(hello))
-        .route("/api/add", post(add_name))
-        .route("/api/fetch", get(fetch_names))
+        // API routes for llms.txt management
+        .route("/api/llm_txt", get(get_llm_txt))
+        .route("/api/llm_txt", post(post_llm_txt))
+        .route("/api/llm_txt", put(put_llm_txt))
+        .route("/api/status", get(get_status))
+        .route("/api/update", post(post_update))
+        .route("/api/list", get(get_list))
         // Serve static assets from frontend pkg directory
         .nest_service("/pkg", ServeDir::new("src/front_ltx/www/pkg"))
         // Fallback to index.html for all other routes (enables client-side routing)
@@ -73,42 +80,184 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-// GET /hello - Returns "Hello world!"
-async fn hello() -> &'static str {
-    "Hello world!"
-}
-
-// POST /add - Adds a name to the database
-async fn add_name(
+// GET /api/llm_txt - Retrieve llms.txt content for a URL
+async fn get_llm_txt(
     State(pool): State<DbPool>,
-    Json(payload): Json<NewName>,
-) -> Result<impl IntoResponse, AppError> {
-    let mut conn = pool.get()?;
+    Json(payload): Json<UrlPayload>,
+) -> Result<impl IntoResponse, GetLlmTxtError> {
+    let mut conn = pool.get().map_err(|_| GetLlmTxtError::Unknown)?;
 
-    let new_name = diesel::insert_into(names::table)
-        .values(&payload)
-        .get_result::<Name>(&mut conn)?;
+    // Get the most recent record for this URL (ordered by created_at DESC)
+    let result = llms_txt::table
+        .filter(llms_txt::url.eq(&payload.url))
+        .order(llms_txt::created_at.desc())
+        .select(LlmsTxt::as_select())
+        .first::<LlmsTxt>(&mut conn)
+        .optional()
+        .map_err(|_| GetLlmTxtError::Unknown)?;
 
-    Ok((
-        StatusCode::CREATED,
-        Json(json!({
-            "id": new_name.id,
-            "name": new_name.name,
-            "message": "Name added successfully"
-        })),
-    ))
+    match result {
+        Some(llms_txt_record) => match llms_txt_record.result_status {
+            models::ResultStatus::Ok => Ok((
+                StatusCode::OK,
+                Json(LlmTxtResponse {
+                    content: llms_txt_record.result_data,
+                }),
+            )),
+            models::ResultStatus::Error => Err(GetLlmTxtError::NotGenerated),
+        },
+        None => Err(GetLlmTxtError::NotGenerated),
+    }
 }
 
-// GET /fetch - Retrieves all names from the database
-async fn fetch_names(State(pool): State<DbPool>) -> Result<impl IntoResponse, AppError> {
+// POST /api/llm_txt - Create a new job to generate llms.txt
+async fn post_llm_txt(
+    State(pool): State<DbPool>,
+    Json(payload): Json<UrlPayload>,
+) -> Result<impl IntoResponse, PostLlmTxtError> {
+    let mut conn = pool.get().map_err(|_| PostLlmTxtError::Unknown)?;
+
+    // Check if llms.txt already exists for this URL
+    let existing = llms_txt::table
+        .filter(llms_txt::url.eq(&payload.url))
+        .select(LlmsTxt::as_select())
+        .first::<LlmsTxt>(&mut conn)
+        .optional()
+        .map_err(|_| PostLlmTxtError::Unknown)?;
+
+    if existing.is_some() {
+        return Err(PostLlmTxtError::AlreadyGenerated);
+    }
+
+    // Create a new job
+    let job_id = uuid::Uuid::new_v4();
+    let new_job = JobState {
+        job_id,
+        url: payload.url,
+        status: JobStatusEnum::Queued,
+        kind: JobKind::New,
+    };
+
+    diesel::insert_into(job_state::table)
+        .values(&new_job)
+        .execute(&mut conn)
+        .map_err(|_| PostLlmTxtError::Unknown)?;
+
+    Ok((StatusCode::CREATED, Json(JobIdResponse { job_id })))
+}
+
+// PUT /api/llm_txt - Create a new job (unconditionally)
+async fn put_llm_txt(
+    State(pool): State<DbPool>,
+    Json(payload): Json<UrlPayload>,
+) -> Result<impl IntoResponse, PutLlmTxtError> {
+    let mut conn = pool.get().map_err(|_| PutLlmTxtError::Unknown)?;
+
+    // Create a new job
+    let job_id = uuid::Uuid::new_v4();
+    let new_job = JobState {
+        job_id,
+        url: payload.url,
+        status: JobStatusEnum::Queued,
+        kind: JobKind::New,
+    };
+
+    diesel::insert_into(job_state::table)
+        .values(&new_job)
+        .execute(&mut conn)
+        .map_err(|_| PutLlmTxtError::Unknown)?;
+
+    Ok((StatusCode::CREATED, Json(JobIdResponse { job_id })))
+}
+
+// GET /api/status - Get the status of a job
+async fn get_status(
+    State(pool): State<DbPool>,
+    Json(payload): Json<JobIdPayload>,
+) -> Result<impl IntoResponse, StatusError> {
+    let mut conn = pool.get().map_err(|_| StatusError::Unknown)?;
+
+    let job = job_state::table
+        .filter(job_state::job_id.eq(&payload.job_id))
+        .select(JobState::as_select())
+        .first::<JobState>(&mut conn)
+        .optional()
+        .map_err(|_| StatusError::Unknown)?;
+
+    match job {
+        Some(job_state) => Ok((
+            StatusCode::OK,
+            Json(JobStatusResponse {
+                status: job_state.status,
+                kind: job_state.kind,
+            }),
+        )),
+        None => Err(StatusError::UnknownId),
+    }
+}
+
+// POST /api/update - Create an update job for existing llms.txt
+async fn post_update(
+    State(pool): State<DbPool>,
+    Json(payload): Json<UrlPayload>,
+) -> Result<impl IntoResponse, UpdateLlmTxtError> {
+    let mut conn = pool.get().map_err(|_| UpdateLlmTxtError::Unknown)?;
+
+    // Check if llms.txt exists for this URL
+    let existing = llms_txt::table
+        .filter(llms_txt::url.eq(&payload.url))
+        .select(LlmsTxt::as_select())
+        .first::<LlmsTxt>(&mut conn)
+        .optional()
+        .map_err(|_| UpdateLlmTxtError::Unknown)?;
+
+    if existing.is_none() {
+        return Err(UpdateLlmTxtError::NotGenerated);
+    }
+
+    // Create an update job
+    let job_id = uuid::Uuid::new_v4();
+    let new_job = JobState {
+        job_id,
+        url: payload.url,
+        status: JobStatusEnum::Queued,
+        kind: JobKind::Update,
+    };
+
+    diesel::insert_into(job_state::table)
+        .values(&new_job)
+        .execute(&mut conn)
+        .map_err(|_| UpdateLlmTxtError::Unknown)?;
+
+    Ok((StatusCode::CREATED, Json(JobIdResponse { job_id })))
+}
+
+// GET /api/list - List all successfully fetched llms.txt files
+async fn get_list(State(pool): State<DbPool>) -> Result<impl IntoResponse, AppError> {
+    use std::collections::HashMap;
+
     let mut conn = pool.get()?;
 
-    let results = names::table.select(Name::as_select()).load(&mut conn)?;
+    // Load all Ok records ordered by url and created_at DESC
+    let all_records = llms_txt::table
+        .filter(llms_txt::result_status.eq(ResultStatus::Ok))
+        .order((llms_txt::url.asc(), llms_txt::created_at.desc()))
+        .select(LlmsTxt::as_select())
+        .load::<LlmsTxt>(&mut conn)?;
 
-    Ok(Json(json!({
-        "names": results,
-        "count": results.len()
-    })))
+    // Deduplicate by URL, keeping only the most recent
+    let mut url_map: HashMap<String, String> = HashMap::new();
+    for record in all_records {
+        url_map.entry(record.url).or_insert(record.result_data);
+    }
+
+    // Convert to list response
+    let items: Vec<LlmsTxtListItem> = url_map
+        .into_iter()
+        .map(|(url, llm_txt)| LlmsTxtListItem { url, llm_txt })
+        .collect();
+
+    Ok((StatusCode::OK, Json(LlmsTxtListResponse { items })))
 }
 
 // Error handling
@@ -132,5 +281,55 @@ where
 {
     fn from(err: E) -> Self {
         Self(err.into())
+    }
+}
+
+// Custom error type IntoResponse implementations
+
+impl IntoResponse for GetLlmTxtError {
+    fn into_response(self) -> axum::response::Response {
+        let status = match self {
+            GetLlmTxtError::NotGenerated => StatusCode::NOT_FOUND,
+            GetLlmTxtError::Unknown => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        (status, Json(self)).into_response()
+    }
+}
+
+impl IntoResponse for PostLlmTxtError {
+    fn into_response(self) -> axum::response::Response {
+        let status = match self {
+            PostLlmTxtError::AlreadyGenerated => StatusCode::CONFLICT,
+            PostLlmTxtError::Unknown => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        (status, Json(self)).into_response()
+    }
+}
+
+impl IntoResponse for PutLlmTxtError {
+    fn into_response(self) -> axum::response::Response {
+        let status = StatusCode::INTERNAL_SERVER_ERROR;
+        (status, Json(self)).into_response()
+    }
+}
+
+impl IntoResponse for StatusError {
+    fn into_response(self) -> axum::response::Response {
+        let status = match self {
+            StatusError::InvalidId => StatusCode::BAD_REQUEST,
+            StatusError::UnknownId => StatusCode::NOT_FOUND,
+            StatusError::Unknown => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        (status, Json(self)).into_response()
+    }
+}
+
+impl IntoResponse for UpdateLlmTxtError {
+    fn into_response(self) -> axum::response::Response {
+        let status = match self {
+            UpdateLlmTxtError::NotGenerated => StatusCode::NOT_FOUND,
+            UpdateLlmTxtError::Unknown => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        (status, Json(self)).into_response()
     }
 }
