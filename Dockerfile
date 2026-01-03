@@ -7,11 +7,17 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Need diesel to run migrations in runtime image build.
 WORKDIR /tools
+
+# Need diesel to run migrations in runtime image build.
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
     cargo install diesel_cli --no-default-features --features postgres --root /tools
+
+# Install wasm-pack for building the WASM frontend
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    cargo install wasm-pack --root /tools
 
 ###
 ### Project build: all dependencies
@@ -63,6 +69,21 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo build --release
 
 ###
+### WASM frontend
+###
+FROM builder as frontend
+
+COPY --from=tools /tools/bin/wasm-pack /usr/local/bin/wasm-pack
+
+# remove dummy files
+RUN rm -rf src/front_ltx/src
+
+COPY src/front_ltx/src ./src/front_ltx/src
+COPY src/front_ltx/www ./src/front_ltx/www
+RUN cd src/front_ltx && \
+    wasm-pack build --target web --out-dir www/pkg --release
+
+###
 ### API server
 ###
 FROM builder as api
@@ -99,13 +120,15 @@ COPY --from=tools /tools/bin/diesel /usr/local/bin/diesel
 
 WORKDIR /app
 
+# API server
 COPY --from=api /app/bin/api-ltx /usr/local/bin/api-ltx
-
+# DB migrations
 COPY src/api_ltx/migrations ./migrations
 COPY src/api_ltx/diesel.toml ./diesel.toml
-
-COPY src/api_ltx/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+# WASM frontend
+COPY --from=frontend /app/src/front_ltx/www/index.html ./src/front_ltx/www/index.html
+COPY --from=frontend /app/src/front_ltx/www/pkg ./src/front_ltx/www/pkg
 
 EXPOSE 3000
-
+COPY src/api_ltx/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

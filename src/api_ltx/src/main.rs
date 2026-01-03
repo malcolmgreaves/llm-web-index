@@ -12,6 +12,7 @@ use axum::{
 use diesel::prelude::*;
 use serde_json::json;
 use std::net::SocketAddr;
+use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -42,9 +43,15 @@ async fn main() {
 
     // Build the router
     let app = Router::new()
-        .route("/hello", get(hello))
-        .route("/add", post(add_name))
-        .route("/fetch", get(fetch_names))
+        // API routes with /api prefix
+        .route("/api/hello", get(hello))
+        .route("/api/add", post(add_name))
+        .route("/api/fetch", get(fetch_names))
+        // Serve static assets from frontend pkg directory
+        .nest_service("/pkg", ServeDir::new("src/front_ltx/www/pkg"))
+        // Fallback to index.html for all other routes (enables client-side routing)
+        .fallback_service(ServeFile::new("src/front_ltx/www/index.html"))
+        // Middleware
         .layer(TraceLayer::new_for_http())
         .with_state(pool);
 

@@ -17,6 +17,9 @@ front:
     --target web
   echo "Frontend built successfully in src/front_ltx/www/pkg/"
 
+serve: front
+  cargo run -p api-ltx
+
 test:
   cargo install cargo-llvm-cov || true
   cargo llvm-cov --all-targets --workspace --html
