@@ -518,6 +518,15 @@ async fn api_request<T: for<'de> Deserialize<'de>>(
     let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
     let resp: Response = resp_value.dyn_into()?;
 
+    // Check if the response status is OK (200-299)
+    if !resp.ok() {
+        let text = JsFuture::from(resp.text()?).await?;
+        let error_text = text
+            .as_string()
+            .unwrap_or_else(|| "Unknown error".to_string());
+        return Err(JsValue::from_str(&error_text));
+    }
+
     let json = JsFuture::from(resp.json()?).await?;
     let data: T = serde_wasm_bindgen::from_value(json)?;
 
