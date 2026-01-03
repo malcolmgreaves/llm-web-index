@@ -81,7 +81,10 @@ RUN rm -rf src/front-ltx/src
 
 COPY src/front-ltx/src ./src/front-ltx/src
 COPY src/front-ltx/www ./src/front-ltx/www
-RUN cd src/front-ltx && \
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/app/target \
+    cd src/front-ltx && \
     wasm-pack build --target web --out-dir www/pkg --release
 
 ###
