@@ -73,7 +73,7 @@ pub async fn send_simple_prompt() -> Result<String, ChatGptError> {
 mod tests {
     use super::*;
 
-    use crate::common_ltx::is_env_set;
+    use common_ltx::is_env_set;
 
     #[tokio::test]
     async fn test_send_simple_prompt() {
