@@ -42,6 +42,17 @@ jobs:
         with:
           tool: cargo-machete
 
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+
+      - name: Install PostgreSQL client libraries
+        run: sudo apt-get update && sudo apt-get install -y libpq-dev
+
+      - name: Install diesel_cli
+        run: cargo install diesel_cli --no-default-features --features postgres
+
       - name: Run CI pipeline
         run: just ci
 
