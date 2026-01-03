@@ -47,6 +47,9 @@ pub fn router() -> Router<DbPool> {
 // Error handling
 //
 
+// Type alias for async pool errors
+type PoolError = deadpool::managed::PoolError<diesel_async::pooled_connection::PoolError>;
+
 pub struct AppError(anyhow::Error);
 
 impl IntoResponse for AppError {
@@ -110,7 +113,7 @@ impl IntoResponse for GetLlmTxtError {
     }
 }
 
-from_error!(r2d2::Error, GetLlmTxtError);
+from_error!(PoolError, GetLlmTxtError);
 from_diesel_not_found_error!(GetLlmTxtError);
 
 // PostLlmTxtError
@@ -127,7 +130,7 @@ impl IntoResponse for PostLlmTxtError {
     }
 }
 
-from_error!(r2d2::Error, PostLlmTxtError);
+from_error!(PoolError, PostLlmTxtError);
 from_error!(diesel::result::Error, PostLlmTxtError);
 
 // PutLlmTxtError
@@ -139,7 +142,7 @@ impl IntoResponse for PutLlmTxtError {
     }
 }
 
-from_error!(r2d2::Error, PutLlmTxtError);
+from_error!(PoolError, PutLlmTxtError);
 from_error!(diesel::result::Error, PutLlmTxtError);
 
 // UpdateLlmTxtError
@@ -154,7 +157,7 @@ impl IntoResponse for UpdateLlmTxtError {
     }
 }
 
-from_error!(r2d2::Error, UpdateLlmTxtError);
+from_error!(PoolError, UpdateLlmTxtError);
 from_diesel_not_found_error!(UpdateLlmTxtError);
 
 // StatusError
@@ -170,7 +173,7 @@ impl IntoResponse for StatusError {
     }
 }
 
-from_error!(r2d2::Error, StatusError);
+from_error!(PoolError, StatusError);
 
 impl From<diesel::result::Error> for StatusError {
     fn from(err: diesel::result::Error) -> Self {

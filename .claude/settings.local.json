@@ -17,7 +17,8 @@
       "Bash(cargo run:*)",
       "Bash(cargo clippy:*)",
       "Bash(git mv:*)",
-      "Bash(wasm-pack build:*)"
+      "Bash(wasm-pack build:*)",
+      "Bash(find:*)"
     ]
   }
 }
