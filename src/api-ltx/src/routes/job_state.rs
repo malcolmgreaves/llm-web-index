@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Query, State},
     http::StatusCode,
     response::IntoResponse,
 };
@@ -56,7 +56,7 @@ pub async fn get_status(
 // GET /api/job - Get full job details by job_id
 pub async fn get_job(
     State(pool): State<DbPool>,
-    Json(payload): Json<JobIdPayload>,
+    Query(payload): Query<JobIdPayload>,
 ) -> Result<impl IntoResponse, StatusError> {
     let mut conn = pool.get()?;
 

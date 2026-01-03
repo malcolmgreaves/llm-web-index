@@ -1,3 +1,4 @@
+use js_sys;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
@@ -29,11 +30,6 @@ struct UrlPayload {
 #[derive(Debug, Deserialize)]
 struct LlmTxtResponse {
     content: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct JobIdPayload {
-    job_id: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -470,12 +466,10 @@ fn create_inspect_job_page(
 // ============================================================================
 
 async fn fetch_llm_txt(url: &str) -> Result<LlmTxtResponse, JsValue> {
-    let payload = UrlPayload {
-        url: url.to_string(),
-    };
-    let payload_json = serde_json::to_string(&payload).unwrap();
+    let encoded_url = js_sys::encode_uri_component(url);
+    let endpoint = format!("/api/llm_txt?url={}", encoded_url);
 
-    api_request("/api/llm_txt", "GET", Some(&payload_json)).await
+    api_request(&endpoint, "GET", None).await
 }
 
 async fn put_llm_txt(url: &str) -> Result<String, JsValue> {
@@ -498,12 +492,9 @@ async fn fetch_in_progress_jobs() -> Result<Vec<JobState>, JsValue> {
 }
 
 async fn fetch_job(job_id: &str) -> Result<JobState, JsValue> {
-    let payload = JobIdPayload {
-        job_id: job_id.to_string(),
-    };
-    let payload_json = serde_json::to_string(&payload).unwrap();
+    let endpoint = format!("/api/job?job_id={}", job_id);
 
-    api_request("/api/job", "GET", Some(&payload_json)).await
+    api_request(&endpoint, "GET", None).await
 }
 
 async fn api_request<T: for<'de> Deserialize<'de>>(

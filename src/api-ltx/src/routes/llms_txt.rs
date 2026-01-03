@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Query, State},
     http::StatusCode,
     response::IntoResponse,
 };
@@ -38,7 +38,7 @@ pub fn fetch_llms_txt(conn: &mut Conn, url: &str) -> Result<LlmsTxt, diesel::res
 /// GET /api/llm_txt - Retrieve llms.txt content for a URL
 pub async fn get_llm_txt(
     State(pool): State<DbPool>,
-    Json(payload): Json<UrlPayload>,
+    Query(payload): Query<UrlPayload>,
 ) -> Result<impl IntoResponse, GetLlmTxtError> {
     let mut conn = pool.get()?;
 
