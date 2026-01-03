@@ -1,7 +1,7 @@
 ###
 ### Supporting tools
 ###
-FROM rust:1.92-slim-bookworm as tools
+FROM rust:1.92-slim-bookworm AS tools
 
 RUN apt-get update && apt-get install -y \
     libpq-dev \
@@ -22,7 +22,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 ###
 ### Project build: all dependencies
 ###
-FROM rust:1.92-slim-bookworm as builder
+FROM rust:1.92-slim-bookworm AS builder
 
 RUN apt-get update && apt-get install -y \
     libpq-dev \
@@ -45,6 +45,7 @@ COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
 
 COPY src/common-ltx/Cargo.toml ./src/common-ltx/
 COPY src/core-ltx/Cargo.toml ./src/core-ltx/
+COPY src/core-ltx/build.rs ./src/core-ltx/
 COPY src/front-ltx/Cargo.toml ./src/front-ltx/
 COPY src/api-ltx/Cargo.toml ./src/api-ltx/
 COPY src/cli-ltx/Cargo.toml ./src/cli-ltx/
@@ -71,7 +72,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 ###
 ### WASM frontend
 ###
-FROM builder as frontend
+FROM builder AS frontend
 
 COPY --from=tools /tools/bin/wasm-pack /usr/local/bin/wasm-pack
 
@@ -86,7 +87,7 @@ RUN cd src/front-ltx && \
 ###
 ### API server
 ###
-FROM builder as api
+FROM builder AS api
 
 # NOTE: Keep up to date! Remove dummy files from crates that **ARE NOT** used.
 RUN for crate in common-ltx core-ltx api-ltx; do \
