@@ -39,7 +39,7 @@ services:
       DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
       HOST: 0.0.0.0
       PORT: 3000
-      RUST_LOG: api_ltx=debug,tower_http=debug
+      RUST_LOG: api-ltx=debug,tower_http=debug
     ports:
       - "3000:3000"
     depends_on:

@@ -7,7 +7,7 @@ build: front
 front:
   #!/usr/bin/env bash
   set -e
-  cd src/front_ltx
+  cd src/front-ltx
   echo "Building WASM frontend..."
   cargo build --target wasm32-unknown-unknown --release
   echo "Generating JS bindings..."
@@ -15,7 +15,7 @@ front:
     ../../target/wasm32-unknown-unknown/release/front_ltx.wasm \
     --out-dir www/pkg \
     --target web
-  echo "Frontend built successfully in src/front_ltx/www/pkg/"
+  echo "Frontend built successfully in src/front-ltx/www/pkg/"
 
 serve: front
   cargo run -p api-ltx
@@ -28,7 +28,7 @@ release: front
   #!/usr/bin/env bash
   set -e
   echo "Optimizing WASM..."
-  wasm-opt -Oz src/front_ltx/www/pkg/front_ltx_bg.wasm -o src/front_ltx/www/pkg/front_ltx_bg.wasm
+  wasm-opt -Oz src/front-ltx/www/pkg/front_ltx_bg.wasm -o src/front-ltx/www/pkg/front_ltx_bg.wasm
   cargo build --release --all-targets --workspace
 
 bench:
@@ -42,7 +42,7 @@ clean:
   rm -rf target/
   rm -rf src/*/target/
   # Remove WASM build artifacts
-  rm -rf src/front_ltx/www/pkg/
+  rm -rf src/front-ltx/www/pkg/
 
 tidy:
   cargo install cargo-machete || true

@@ -13,7 +13,7 @@ The easiest way to run the API server and database is using Docker Compose.
 
 ### Running with Docker Compose
 
-From the **workspace root directory** (not `src/api_ltx`), run:
+From the **workspace root directory** (not `src/api-ltx`), run:
 
 ```bash
 # Enable BuildKit for faster builds with cache mounts (recommended)
@@ -164,7 +164,7 @@ cargo install diesel_cli --no-default-features --features postgres
 
 ### 4. Configure Environment Variables
 
-The `.env` file is already created in the `src/api_ltx/` directory with default values:
+The `.env` file is already created in the `src/api-ltx/` directory with default values:
 
 ```env
 DATABASE_URL=postgres://ltx_user:ltx_password@localhost/ltx_db
@@ -174,10 +174,10 @@ If you used different credentials in step 2, update the `.env` file accordingly.
 
 ### 5. Run Database Migrations
 
-Navigate to the api_ltx directory and run migrations:
+Navigate to the api-ltx directory and run migrations:
 
 ```bash
-cd src/api_ltx
+cd src/api-ltx
 diesel migration run
 ```
 
@@ -191,7 +191,7 @@ diesel migration list
 
 ### 6. Build and Run the Server
 
-From the `src/api_ltx` directory:
+From the `src/api-ltx` directory:
 
 ```bash
 cargo run
@@ -207,7 +207,7 @@ The server will start on `http://127.0.0.1:3000`
 
 You should see output like:
 ```
-2024-01-02T12:00:00.000000Z  INFO api_ltx: Listening on 127.0.0.1:3000
+2024-01-02T12:00:00.000000Z  INFO api-ltx: Listening on 127.0.0.1:3000
 ```
 
 ### 7. Test the API Endpoints
@@ -274,7 +274,7 @@ Expected output:
 ## Project Structure
 
 ```
-src/api_ltx/
+src/api-ltx/
 ├── Cargo.toml              # Dependencies configuration
 ├── diesel.toml             # Diesel configuration
 ├── .env                    # Environment variables (DATABASE_URL)
@@ -302,7 +302,7 @@ The API server can be configured using environment variables:
 - `DATABASE_URL`: PostgreSQL connection string (required)
 - `HOST`: Host to bind to (default: `127.0.0.1`, use `0.0.0.0` for Docker)
 - `PORT`: Port to listen on (default: `3000`)
-- `RUST_LOG`: Logging level (default: `api_ltx=debug,tower_http=debug`)
+- `RUST_LOG`: Logging level (default: `api-ltx=debug,tower_http=debug`)
 
 ---
 

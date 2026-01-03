@@ -32,9 +32,9 @@ pub fn router() -> Router<DbPool> {
         .route("/api/list", get(llms_txt::get_list))
         .route("/api/status", get(job_state::get_status))
         // Serve static assets from frontend pkg directory
-        .nest_service("/pkg", ServeDir::new("src/front_ltx/www/pkg"))
+        .nest_service("/pkg", ServeDir::new("src/front-ltx/www/pkg"))
         // Fallback to index.html for all other routes (enables client-side routing)
-        .fallback_service(ServeFile::new("src/front_ltx/www/index.html"))
+        .fallback_service(ServeFile::new("src/front-ltx/www/index.html"))
         // Middleware
         .layer(TraceLayer::new_for_http())
 }
