@@ -5,6 +5,7 @@ use axum::{
     response::IntoResponse,
     routing::{get, post, put},
 };
+use r2d2;
 use serde_json::json;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
@@ -16,6 +17,10 @@ use crate::models::{
 
 pub mod job_state;
 pub mod llms_txt;
+
+//
+// Router
+//
 
 pub fn router() -> Router<DbPool> {
     Router::new()
@@ -34,7 +39,10 @@ pub fn router() -> Router<DbPool> {
         .layer(TraceLayer::new_for_http())
 }
 
+//
 // Error handling
+//
+
 pub struct AppError(anyhow::Error);
 
 impl IntoResponse for AppError {
@@ -58,27 +66,58 @@ where
     }
 }
 
-// Custom error type IntoResponse implementations
+macro_rules! from_error {
+    ($lib_err:path, $err_type:tt) => {
+        /// Converts a `$lib_err` into an `$err_type::Unknown`.
+        impl From<$lib_err> for $err_type {
+            fn from(e: $lib_err) -> Self {
+                $err_type::Unknown(format!("{:?}", e))
+            }
+        }
+    };
+}
+
+// GetLlmTxtError
 
 impl IntoResponse for GetLlmTxtError {
     fn into_response(self) -> axum::response::Response {
         let status = match self {
             GetLlmTxtError::NotGenerated => StatusCode::NOT_FOUND,
-            GetLlmTxtError::Unknown => StatusCode::INTERNAL_SERVER_ERROR,
+            GetLlmTxtError::Unknown(_) | GetLlmTxtError::GenerationFailure(_) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         };
         (status, Json(self)).into_response()
     }
 }
 
+from_error!(r2d2::Error, GetLlmTxtError);
+
+impl From<diesel::result::Error> for GetLlmTxtError {
+    fn from(e: diesel::result::Error) -> Self {
+        match e {
+            diesel::result::Error::NotFound => GetLlmTxtError::NotGenerated,
+            _ => GetLlmTxtError::Unknown(format!("{:?}", e)),
+        }
+    }
+}
+
+// PostLlmTxtError
+
 impl IntoResponse for PostLlmTxtError {
     fn into_response(self) -> axum::response::Response {
         let status = match self {
             PostLlmTxtError::AlreadyGenerated => StatusCode::CONFLICT,
-            PostLlmTxtError::Unknown => StatusCode::INTERNAL_SERVER_ERROR,
+            PostLlmTxtError::Unknown(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, Json(self)).into_response()
     }
 }
+
+from_error!(r2d2::Error, PostLlmTxtError);
+from_error!(diesel::result::Error, PostLlmTxtError);
+
+// PutLlmTxtError
 
 impl IntoResponse for PutLlmTxtError {
     fn into_response(self) -> axum::response::Response {
@@ -87,23 +126,34 @@ impl IntoResponse for PutLlmTxtError {
     }
 }
 
+from_error!(r2d2::Error, PutLlmTxtError);
+from_error!(diesel::result::Error, PutLlmTxtError);
+
+// StatusError
+
 impl IntoResponse for StatusError {
     fn into_response(self) -> axum::response::Response {
         let status = match self {
             StatusError::InvalidId => StatusCode::BAD_REQUEST,
             StatusError::UnknownId => StatusCode::NOT_FOUND,
-            StatusError::Unknown => StatusCode::INTERNAL_SERVER_ERROR,
+            StatusError::Unknown(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, Json(self)).into_response()
     }
 }
 
+from_error!(r2d2::Error, StatusError);
+from_error!(diesel::result::Error, StatusError);
+
 impl IntoResponse for UpdateLlmTxtError {
     fn into_response(self) -> axum::response::Response {
         let status = match self {
             UpdateLlmTxtError::NotGenerated => StatusCode::NOT_FOUND,
-            UpdateLlmTxtError::Unknown => StatusCode::INTERNAL_SERVER_ERROR,
+            UpdateLlmTxtError::Unknown(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, Json(self)).into_response()
     }
 }
+
+from_error!(r2d2::Error, UpdateLlmTxtError);
+from_error!(diesel::result::Error, UpdateLlmTxtError);

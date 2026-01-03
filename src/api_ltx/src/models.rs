@@ -261,9 +261,12 @@ pub enum GetLlmTxtError {
     /// llms.txt has not been generated for this URL yet
     #[serde(rename = "not_generated")]
     NotGenerated,
+    /// Failed llms.txt generation
+    #[serde(rename = "generation_failure")]
+    GenerationFailure(String),
     /// Unknown error occurred
     #[serde(rename = "unknown")]
-    Unknown,
+    Unknown(String),
 }
 
 /// Error for POST /api/llm_txt endpoint
@@ -275,7 +278,7 @@ pub enum PostLlmTxtError {
     AlreadyGenerated,
     /// Unknown error occurred
     #[serde(rename = "unknown")]
-    Unknown,
+    Unknown(String),
 }
 
 /// Error for PUT /api/llm_txt endpoint
@@ -284,7 +287,7 @@ pub enum PostLlmTxtError {
 pub enum PutLlmTxtError {
     /// Unknown error occurred
     #[serde(rename = "unknown")]
-    Unknown,
+    Unknown(String),
 }
 
 /// Error for GET /api/status endpoint
@@ -299,7 +302,7 @@ pub enum StatusError {
     UnknownId,
     /// Unknown error occurred
     #[serde(rename = "unknown")]
-    Unknown,
+    Unknown(String),
 }
 
 /// Error for POST /api/update endpoint
@@ -311,7 +314,7 @@ pub enum UpdateLlmTxtError {
     NotGenerated,
     /// Unknown error occurred
     #[serde(rename = "unknown")]
-    Unknown,
+    Unknown(String),
 }
 
 // API Payload Types

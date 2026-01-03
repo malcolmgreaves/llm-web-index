@@ -1,5 +1,7 @@
 use diesel::pg::PgConnection;
-use diesel::r2d2::{self, ConnectionManager, Pool, PoolError};
+use diesel::r2d2::{self, ConnectionManager, Pool, PoolError, PooledConnection};
+
+pub type Conn = PooledConnection<ConnectionManager<PgConnection>>;
 
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
