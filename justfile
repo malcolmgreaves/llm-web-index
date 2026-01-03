@@ -49,6 +49,13 @@ tidy:
   [ "${CI_RELAX:-no}" != "yes" ] && cargo machete --with-metadata || true
   cargo clippy --all-targets --workspace --fix
 
-ci: tidy check test bench
-  # trims dependencies, formats & lints code, runs tests, runs benchmarks
+ci: tidy check test
+  #!/usr/bin/env bash
+  set -e
+  CURRENT_BRANCH=$(git branch --show-current)
+  if [ "$CURRENT_BRANCH" = "main" ]; then
+    just bench
+  else
+    echo "Skipping benchmarks because current branch is '$CURRENT_BRANCH' (not 'main')"
+  fi
   echo "Success!"
