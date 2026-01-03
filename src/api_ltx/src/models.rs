@@ -43,6 +43,16 @@ pub enum JobStatus {
     Failure,
 }
 
+impl JobStatus {
+    // True if job's status is Success or Failure. False means it's Queued, Started, or Running.
+    pub fn is_completed(&self) -> bool {
+        match self {
+            Self::Queued | Self::Started | Self::Running => false,
+            Self::Success | Self::Failure => true,
+        }
+    }
+}
+
 impl ToSql<Job_status, Pg> for JobStatus {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         let s = match self {
@@ -134,7 +144,7 @@ impl FromSql<Result_status, Pg> for ResultStatus {
     }
 }
 
-// job_state table model
+// job_state table model (database representation)
 #[derive(Queryable, Selectable, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::job_state)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -143,6 +153,55 @@ pub struct JobState {
     pub url: String,
     pub status: JobStatus,
     pub kind: JobKind,
+    pub llms_txt: Option<String>,
+}
+
+// JobKindData - ergonomic Rust enum for the job kind
+/// Kind of job operation with associated data
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data")]
+pub enum JobKindData {
+    /// New llms.txt fetch
+    New,
+    /// Update existing llms.txt with prior content
+    Update { llms_txt: String },
+}
+
+impl JobState {
+    /// Convert database representation to ergonomic JobKindData enum
+    pub fn to_kind_data(&self) -> JobKindData {
+        match self.kind {
+            JobKind::New => JobKindData::New,
+            JobKind::Update => JobKindData::Update {
+                llms_txt: self.llms_txt.clone().unwrap_or_default(),
+            },
+        }
+    }
+
+    /// Create database representation from ergonomic JobKindData enum
+    pub fn from_kind_data(
+        job_id: Uuid,
+        url: String,
+        status: JobStatus,
+        kind_data: JobKindData,
+    ) -> Self {
+        match kind_data {
+            JobKindData::New => JobState {
+                job_id,
+                url,
+                status,
+                kind: JobKind::New,
+                llms_txt: None,
+            },
+            JobKindData::Update { llms_txt } => JobState {
+                job_id,
+                url,
+                status,
+                kind: JobKind::Update,
+                llms_txt: Some(llms_txt),
+            },
+        }
+    }
 }
 
 // llms_txt table model (database representation)
@@ -212,9 +271,12 @@ pub enum GetLlmTxtError {
     /// llms.txt has not been generated for this URL yet
     #[serde(rename = "not_generated")]
     NotGenerated,
+    /// Failed llms.txt generation
+    #[serde(rename = "generation_failure")]
+    GenerationFailure(String),
     /// Unknown error occurred
     #[serde(rename = "unknown")]
-    Unknown,
+    Unknown(String),
 }
 
 /// Error for POST /api/llm_txt endpoint
@@ -224,9 +286,12 @@ pub enum PostLlmTxtError {
     /// llms.txt has already been generated for this URL
     #[serde(rename = "already_generated")]
     AlreadyGenerated,
+    /// llms.txt jobs are in progress for this URL
+    #[serde(rename = "jobs_in_progress")]
+    JobsInProgress(Vec<Uuid>),
     /// Unknown error occurred
     #[serde(rename = "unknown")]
-    Unknown,
+    Unknown(String),
 }
 
 /// Error for PUT /api/llm_txt endpoint
@@ -235,7 +300,7 @@ pub enum PostLlmTxtError {
 pub enum PutLlmTxtError {
     /// Unknown error occurred
     #[serde(rename = "unknown")]
-    Unknown,
+    Unknown(String),
 }
 
 /// Error for GET /api/status endpoint
@@ -250,7 +315,7 @@ pub enum StatusError {
     UnknownId,
     /// Unknown error occurred
     #[serde(rename = "unknown")]
-    Unknown,
+    Unknown(String),
 }
 
 /// Error for POST /api/update endpoint
@@ -262,7 +327,7 @@ pub enum UpdateLlmTxtError {
     NotGenerated,
     /// Unknown error occurred
     #[serde(rename = "unknown")]
-    Unknown,
+    Unknown(String),
 }
 
 // API Payload Types
@@ -322,11 +387,36 @@ mod tests {
             url: "https://example.com".to_string(),
             status: JobStatus::Queued,
             kind: JobKind::New,
+            llms_txt: None,
         };
 
         assert!(!job_state.url.is_empty());
         assert_eq!(job_state.status, JobStatus::Queued);
         assert_eq!(job_state.kind, JobKind::New);
+        assert_eq!(job_state.llms_txt, None);
+    }
+
+    #[test]
+    fn test_job_kind_data_conversion() {
+        let job_id = Uuid::new_v4();
+        let url = "https://example.com".to_string();
+        let status = JobStatus::Queued;
+
+        // Test New variant
+        let new_kind = JobKindData::New;
+        let db_model = JobState::from_kind_data(job_id, url.clone(), status, new_kind.clone());
+        assert_eq!(db_model.kind, JobKind::New);
+        assert_eq!(db_model.llms_txt, None);
+        assert_eq!(db_model.to_kind_data(), new_kind);
+
+        // Test Update variant
+        let update_kind = JobKindData::Update {
+            llms_txt: "previous content".to_string(),
+        };
+        let db_model = JobState::from_kind_data(job_id, url.clone(), status, update_kind.clone());
+        assert_eq!(db_model.kind, JobKind::Update);
+        assert_eq!(db_model.llms_txt, Some("previous content".to_string()));
+        assert_eq!(db_model.to_kind_data(), update_kind);
     }
 
     #[test]
