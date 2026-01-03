@@ -52,13 +52,13 @@ fn validate_output_file(s: &str) -> Result<PathBuf, String> {
         return Err(format!("Output path is a directory: {}", path.display()));
     }
 
-    if let Some(parent) = path.parent() {
-        if !parent.exists() {
-            return Err(format!(
-                "Output file parent directory does not exist: {}",
-                parent.display()
-            ));
-        }
+    if let Some(parent) = path.parent()
+        && !parent.exists()
+    {
+        return Err(format!(
+            "Output file parent directory does not exist: {}",
+            parent.display()
+        ));
     }
 
     Ok(path)
