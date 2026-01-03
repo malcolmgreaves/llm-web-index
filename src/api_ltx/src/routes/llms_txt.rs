@@ -4,6 +4,7 @@ use axum::{
     response::IntoResponse,
 };
 use diesel::prelude::*;
+use std::collections::HashMap;
 
 use crate::models::{
     GetLlmTxtError, JobIdResponse, JobKindData, JobState, JobStatus as JobStatusEnum,
@@ -18,9 +19,17 @@ use crate::{
 };
 
 /// Gets the most recent llm.txt entry for the website, if available.
+///
+/// Only returns an Ok result if:
+///   - There's at least one row with a result of OK
+///   - There's at least one row that has the url
+/// If there are multiple, the most recent one (using `created_at`) is returned.
+///
+/// An Error is returned if there are either no matching rows or if there's an internal DB error.
 pub fn fetch_llms_txt(conn: &mut Conn, url: &str) -> Result<LlmsTxt, diesel::result::Error> {
     llms_txt::table
         .filter(llms_txt::url.eq(url))
+        .filter(llms_txt::result_status.eq(ResultStatus::Ok))
         .order(llms_txt::created_at.desc())
         .select(LlmsTxt::as_select())
         .first(conn)
@@ -118,7 +127,7 @@ fn update_llms_txt_generation(
     Ok(JobIdResponse { job_id })
 }
 
-// POST /api/update - Create an update job for existing llms.txt
+/// POST /api/update - Create an update job for existing llms.txt
 pub async fn post_update(
     State(pool): State<DbPool>,
     Json(payload): Json<UrlPayload>,
@@ -142,46 +151,26 @@ pub async fn put_llm_txt(
     State(pool): State<DbPool>,
     Json(payload): Json<UrlPayload>,
 ) -> Result<impl IntoResponse, PutLlmTxtError> {
-    let mut conn = pool.get()?;
+    pool.get()?
+        .transaction(|conn| match fetch_llms_txt(conn, &payload.url) {
+            Ok(llms_txt) => {
+                let job_id_response =
+                    update_llms_txt_generation(conn, &payload.url, &llms_txt.result_data)?;
+                Ok((StatusCode::CREATED, Json(job_id_response)))
+            }
 
-    match fetch_llms_txt(&mut conn, &payload.url) {
-        Ok(llms_txt) => {}
-    }
-
-    // Determine job kind and status code based on existing data
-    let (kind_data, status_code) = match existing {
-        Some(llms_txt_record) if llms_txt_record.result_status == ResultStatus::Ok => {
-            // If there's an Ok result, create an Update job (like POST /api/update)
-            (
-                JobKindData::Update {
-                    llms_txt: llms_txt_record.result_data,
-                },
-                StatusCode::OK,
-            )
-        }
-        _ => {
-            // Otherwise, create a New job (like POST /api/llm_txt)
-            // This covers: no existing entry OR existing entry with Error status
-            (JobKindData::New, StatusCode::CREATED)
-        }
-    };
-
-    // Create the job
-    let job_id = uuid::Uuid::new_v4();
-    let new_job = JobState::from_kind_data(job_id, payload.url, JobStatusEnum::Queued, kind_data);
-
-    diesel::insert_into(job_state::table)
-        .values(&new_job)
-        .execute(&mut conn)
-        .map_err(|_| PutLlmTxtError::Unknown)?;
-
-    Ok((status_code, Json(JobIdResponse { job_id })))
+            Err(e) => match e {
+                diesel::result::Error::NotFound => {
+                    let job_id_response = new_llms_txt_generate_job(conn, &payload.url)?;
+                    Ok((StatusCode::CREATED, Json(job_id_response)))
+                }
+                _ => Err(e.into()),
+            },
+        })
 }
 
 // GET /api/list - List all successfully fetched llms.txt files
 pub async fn get_list(State(pool): State<DbPool>) -> Result<impl IntoResponse, AppError> {
-    use std::collections::HashMap;
-
     let mut conn = pool.get()?;
 
     // Load all Ok records ordered by url and created_at DESC

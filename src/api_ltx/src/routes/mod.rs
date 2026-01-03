@@ -167,4 +167,12 @@ impl IntoResponse for StatusError {
 }
 
 from_error!(r2d2::Error, StatusError);
-from_error!(diesel::result::Error, StatusError);
+
+impl From<diesel::result::Error> for StatusError {
+    fn from(err: diesel::result::Error) -> Self {
+        match err {
+            diesel::result::Error::NotFound => StatusError::UnknownId,
+            _ => StatusError::Unknown(err.to_string()),
+        }
+    }
+}
