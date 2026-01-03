@@ -1,0 +1,66 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT job_id, url, result_data, result_status AS \"result_status: ResultStatus\", created_at\n        FROM llms_txt\n        WHERE result_status = $1\n        ORDER BY url ASC, created_at DESC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "job_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "result_data",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "result_status: ResultStatus",
+        "type_info": {
+          "Custom": {
+            "name": "result_status",
+            "kind": {
+              "Enum": [
+                "ok",
+                "error"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "result_status",
+            "kind": {
+              "Enum": [
+                "ok",
+                "error"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "49394421f4a4426ee9b100def808a5622f074f7c6008262fdff6049220dbbd93"
+}

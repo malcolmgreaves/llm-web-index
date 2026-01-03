@@ -1,35 +1,12 @@
 use chrono::{DateTime, Utc};
-use diesel::deserialize::{self, FromSql, FromSqlRow};
-use diesel::expression::AsExpression;
-use diesel::pg::{Pg, PgValue};
-use diesel::prelude::*;
-use diesel::serialize::{self, IsNull, Output, ToSql};
-use diesel::sql_types::SqlType;
 use serde::{Deserialize, Serialize};
-use std::io::Write;
+use sqlx::Type;
 use uuid::Uuid;
-
-// SQL type definitions for custom enums
-// Note: These types use snake_case to match PostgreSQL type names
-#[allow(non_camel_case_types)]
-#[derive(SqlType, diesel::query_builder::QueryId, Debug, Clone, Copy)]
-#[diesel(postgres_type(name = "job_status"))]
-pub struct Job_status;
-
-#[allow(non_camel_case_types)]
-#[derive(SqlType, diesel::query_builder::QueryId, Debug, Clone, Copy)]
-#[diesel(postgres_type(name = "job_kind"))]
-pub struct Job_kind;
-
-#[allow(non_camel_case_types)]
-#[derive(SqlType, diesel::query_builder::QueryId, Debug, Clone, Copy)]
-#[diesel(postgres_type(name = "result_status"))]
-pub struct Result_status;
 
 // JobStatus enum
 /// Status of a job in the system
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, AsExpression, FromSqlRow)]
-#[diesel(sql_type = Job_status)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[sqlx(type_name = "job_status", rename_all = "lowercase")]
 pub enum JobStatus {
     /// A newly created job
     Queued,
@@ -53,37 +30,10 @@ impl JobStatus {
     }
 }
 
-impl ToSql<Job_status, Pg> for JobStatus {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-        let s = match self {
-            JobStatus::Queued => "queued",
-            JobStatus::Started => "started",
-            JobStatus::Running => "running",
-            JobStatus::Success => "success",
-            JobStatus::Failure => "failure",
-        };
-        out.write_all(s.as_bytes())?;
-        Ok(IsNull::No)
-    }
-}
-
-impl FromSql<Job_status, Pg> for JobStatus {
-    fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
-        match bytes.as_bytes() {
-            b"queued" => Ok(JobStatus::Queued),
-            b"started" => Ok(JobStatus::Started),
-            b"running" => Ok(JobStatus::Running),
-            b"success" => Ok(JobStatus::Success),
-            b"failure" => Ok(JobStatus::Failure),
-            _ => Err("Unrecognized enum variant".into()),
-        }
-    }
-}
-
 // JobKind enum
 /// Type of job operation
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, AsExpression, FromSqlRow)]
-#[diesel(sql_type = Job_kind)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[sqlx(type_name = "job_kind", rename_all = "lowercase")]
 pub enum JobKind {
     /// New llms.txt fetch
     New,
@@ -91,31 +41,10 @@ pub enum JobKind {
     Update,
 }
 
-impl ToSql<Job_kind, Pg> for JobKind {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-        let s = match self {
-            JobKind::New => "new",
-            JobKind::Update => "update",
-        };
-        out.write_all(s.as_bytes())?;
-        Ok(IsNull::No)
-    }
-}
-
-impl FromSql<Job_kind, Pg> for JobKind {
-    fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
-        match bytes.as_bytes() {
-            b"new" => Ok(JobKind::New),
-            b"update" => Ok(JobKind::Update),
-            _ => Err("Unrecognized enum variant".into()),
-        }
-    }
-}
-
 // ResultStatus enum
 /// Status of an llms.txt fetch result
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, AsExpression, FromSqlRow)]
-#[diesel(sql_type = Result_status)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[sqlx(type_name = "result_status", rename_all = "lowercase")]
 pub enum ResultStatus {
     /// Successfully fetched llms.txt
     Ok,
@@ -123,31 +52,8 @@ pub enum ResultStatus {
     Error,
 }
 
-impl ToSql<Result_status, Pg> for ResultStatus {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-        let s = match self {
-            ResultStatus::Ok => "ok",
-            ResultStatus::Error => "error",
-        };
-        out.write_all(s.as_bytes())?;
-        Ok(IsNull::No)
-    }
-}
-
-impl FromSql<Result_status, Pg> for ResultStatus {
-    fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
-        match bytes.as_bytes() {
-            b"ok" => Ok(ResultStatus::Ok),
-            b"error" => Ok(ResultStatus::Error),
-            _ => Err("Unrecognized enum variant".into()),
-        }
-    }
-}
-
 // job_state table model (database representation)
-#[derive(Queryable, Selectable, Insertable, Serialize, Deserialize)]
-#[diesel(table_name = crate::schema::job_state)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct JobState {
     pub job_id: Uuid,
     pub url: String,
@@ -205,9 +111,7 @@ impl JobState {
 }
 
 // llms_txt table model (database representation)
-#[derive(Queryable, Selectable, Insertable, Serialize, Deserialize)]
-#[diesel(table_name = crate::schema::llms_txt)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct LlmsTxt {
     pub job_id: Uuid,
     pub url: String,

@@ -47,9 +47,6 @@ pub fn router() -> Router<DbPool> {
 // Error handling
 //
 
-// Type alias for async pool errors
-type PoolError = deadpool::managed::PoolError<diesel_async::pooled_connection::PoolError>;
-
 pub struct AppError(anyhow::Error);
 
 impl IntoResponse for AppError {
@@ -84,14 +81,14 @@ macro_rules! from_error {
     };
 }
 
-macro_rules! from_diesel_not_found_error {
+macro_rules! from_sqlx_not_found_error {
     ($err_type:tt) => {
-        /// Converts a `diesel::result::Error::NotFound` into an `$err_type::NotGenerated`
-        /// otherwise it's a `$err_type::Unknown(diesel::result::Error)`.
-        impl From<diesel::result::Error> for $err_type {
-            fn from(e: diesel::result::Error) -> Self {
+        /// Converts a `sqlx::Error::RowNotFound` into an `$err_type::NotGenerated`
+        /// otherwise it's a `$err_type::Unknown(sqlx::Error)`.
+        impl From<sqlx::Error> for $err_type {
+            fn from(e: sqlx::Error) -> Self {
                 match e {
-                    diesel::result::Error::NotFound => $err_type::NotGenerated,
+                    sqlx::Error::RowNotFound => $err_type::NotGenerated,
                     _ => $err_type::Unknown(format!("{:?}", e)),
                 }
             }
@@ -113,8 +110,7 @@ impl IntoResponse for GetLlmTxtError {
     }
 }
 
-from_error!(PoolError, GetLlmTxtError);
-from_diesel_not_found_error!(GetLlmTxtError);
+from_sqlx_not_found_error!(GetLlmTxtError);
 
 // PostLlmTxtError
 
@@ -130,8 +126,7 @@ impl IntoResponse for PostLlmTxtError {
     }
 }
 
-from_error!(PoolError, PostLlmTxtError);
-from_error!(diesel::result::Error, PostLlmTxtError);
+from_error!(sqlx::Error, PostLlmTxtError);
 
 // PutLlmTxtError
 
@@ -142,8 +137,7 @@ impl IntoResponse for PutLlmTxtError {
     }
 }
 
-from_error!(PoolError, PutLlmTxtError);
-from_error!(diesel::result::Error, PutLlmTxtError);
+from_error!(sqlx::Error, PutLlmTxtError);
 
 // UpdateLlmTxtError
 
@@ -157,8 +151,7 @@ impl IntoResponse for UpdateLlmTxtError {
     }
 }
 
-from_error!(PoolError, UpdateLlmTxtError);
-from_diesel_not_found_error!(UpdateLlmTxtError);
+from_sqlx_not_found_error!(UpdateLlmTxtError);
 
 // StatusError
 
@@ -173,12 +166,10 @@ impl IntoResponse for StatusError {
     }
 }
 
-from_error!(PoolError, StatusError);
-
-impl From<diesel::result::Error> for StatusError {
-    fn from(err: diesel::result::Error) -> Self {
+impl From<sqlx::Error> for StatusError {
+    fn from(err: sqlx::Error) -> Self {
         match err {
-            diesel::result::Error::NotFound => StatusError::UnknownId,
+            sqlx::Error::RowNotFound => StatusError::UnknownId,
             _ => StatusError::Unknown(err.to_string()),
         }
     }

@@ -1,12 +1,11 @@
-use diesel_async::AsyncPgConnection;
-use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use diesel_async::pooled_connection::deadpool::Pool;
+use sqlx::Error as SqlxError;
+use sqlx::postgres::{PgPool, PgPoolOptions};
 
-pub type DbPool = Pool<AsyncPgConnection>;
+pub type DbPool = PgPool;
 
-pub fn establish_connection_pool(
-    database_url: &str,
-) -> Result<DbPool, deadpool::managed::BuildError> {
-    let config = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
-    Pool::builder(config).build()
+pub async fn establish_connection_pool(database_url: &str) -> Result<DbPool, SqlxError> {
+    PgPoolOptions::new()
+        .max_connections(5)
+        .connect(database_url)
+        .await
 }

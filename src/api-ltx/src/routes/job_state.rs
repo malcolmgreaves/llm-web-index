@@ -3,35 +3,33 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use diesel::prelude::*;
-use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use uuid::Uuid;
 
-use crate::models::{JobIdPayload, JobState, JobStatusResponse, StatusError};
-use crate::schema::job_state;
-use crate::{db::DbPool, models::JobStatus};
+use crate::db::DbPool;
+use crate::models::{JobIdPayload, JobKind, JobState, JobStatus, JobStatusResponse, StatusError};
 
 /// Gets all currently running jobs for a given URL.
 ///
 /// Returns all JobIds (UUID v4) of all in-progress jobs that match the `url`.
 /// An in-progress job is one whose status is either Queued, Started, or Running.
 ///
-/// An error is returned if there are no matching rows or if there's an internal DB error.s
+/// An error is returned if there are no matching rows or if there's an internal DB error.
 pub async fn in_progress_jobs(
-    conn: &mut AsyncPgConnection,
+    executor: impl sqlx::PgExecutor<'_>,
     url: &str,
-) -> Result<Vec<Uuid>, diesel::result::Error> {
-    job_state::table
-        .filter(job_state::url.eq(url))
-        // only select currently running jobs
-        .filter(job_state::status.eq_any(&[
-            JobStatus::Queued,
-            JobStatus::Queued,
-            JobStatus::Running,
-        ]))
-        .select(job_state::job_id)
-        .load::<Uuid>(conn)
-        .await
+) -> Result<Vec<Uuid>, sqlx::Error> {
+    sqlx::query_scalar!(
+        r#"
+        SELECT job_id
+        FROM job_state
+        WHERE url = $1
+          AND status = ANY($2)
+        "#,
+        url,
+        &[JobStatus::Queued, JobStatus::Started, JobStatus::Running] as &[JobStatus]
+    )
+    .fetch_all(executor)
+    .await
 }
 
 // GET /api/status - Get the status of a job
@@ -39,13 +37,17 @@ pub async fn get_status(
     State(pool): State<DbPool>,
     Json(payload): Json<JobIdPayload>,
 ) -> Result<impl IntoResponse, StatusError> {
-    let mut conn = pool.get().await?;
-
-    let job = job_state::table
-        .filter(job_state::job_id.eq(&payload.job_id))
-        .select(JobState::as_select())
-        .first::<JobState>(&mut conn)
-        .await?;
+    let job = sqlx::query_as!(
+        JobState,
+        r#"
+        SELECT job_id, url, status AS "status: JobStatus", kind AS "kind: JobKind", llms_txt
+        FROM job_state
+        WHERE job_id = $1
+        "#,
+        payload.job_id
+    )
+    .fetch_one(&pool)
+    .await?;
 
     Ok((
         StatusCode::OK,
@@ -61,13 +63,17 @@ pub async fn get_job(
     State(pool): State<DbPool>,
     Query(payload): Query<JobIdPayload>,
 ) -> Result<impl IntoResponse, StatusError> {
-    let mut conn = pool.get().await?;
-
-    let job = job_state::table
-        .filter(job_state::job_id.eq(&payload.job_id))
-        .select(JobState::as_select())
-        .first::<JobState>(&mut conn)
-        .await?;
+    let job = sqlx::query_as!(
+        JobState,
+        r#"
+        SELECT job_id, url, status AS "status: JobStatus", kind AS "kind: JobKind", llms_txt
+        FROM job_state
+        WHERE job_id = $1
+        "#,
+        payload.job_id
+    )
+    .fetch_one(&pool)
+    .await?;
 
     Ok((StatusCode::OK, Json(job)))
 }
@@ -76,17 +82,17 @@ pub async fn get_job(
 pub async fn get_in_progress_jobs(
     State(pool): State<DbPool>,
 ) -> Result<impl IntoResponse, StatusError> {
-    let mut conn = pool.get().await?;
-
-    let jobs = job_state::table
-        .filter(job_state::status.eq_any(&[
-            JobStatus::Queued,
-            JobStatus::Started,
-            JobStatus::Running,
-        ]))
-        .select(JobState::as_select())
-        .load::<JobState>(&mut conn)
-        .await?;
+    let jobs = sqlx::query_as!(
+        JobState,
+        r#"
+        SELECT job_id, url, status AS "status: JobStatus", kind AS "kind: JobKind", llms_txt
+        FROM job_state
+        WHERE status = ANY($1)
+        "#,
+        &[JobStatus::Queued, JobStatus::Started, JobStatus::Running] as &[JobStatus]
+    )
+    .fetch_all(&pool)
+    .await?;
 
     Ok((StatusCode::OK, Json(jobs)))
 }

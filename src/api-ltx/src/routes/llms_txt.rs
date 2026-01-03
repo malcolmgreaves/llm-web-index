@@ -3,9 +3,6 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use diesel::prelude::*;
-use diesel_async::scoped_futures::ScopedFutureExt;
-use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
 use std::collections::HashMap;
 
 use crate::models::{
@@ -14,7 +11,6 @@ use crate::models::{
     ResultStatus, UpdateLlmTxtError, UrlPayload,
 };
 use crate::routes::AppError;
-use crate::schema::{job_state, llms_txt};
 use crate::{db::DbPool, routes::job_state::in_progress_jobs};
 
 /// Gets the most recent llm.txt entry for the website, if available.
@@ -26,16 +22,24 @@ use crate::{db::DbPool, routes::job_state::in_progress_jobs};
 ///
 /// An Error is returned if there are either no matching rows or if there's an internal DB error.
 pub async fn fetch_llms_txt(
-    conn: &mut AsyncPgConnection,
+    executor: impl sqlx::PgExecutor<'_>,
     url: &str,
-) -> Result<LlmsTxt, diesel::result::Error> {
-    llms_txt::table
-        .filter(llms_txt::url.eq(url))
-        .filter(llms_txt::result_status.eq(ResultStatus::Ok))
-        .order(llms_txt::created_at.desc())
-        .select(LlmsTxt::as_select())
-        .first(conn)
-        .await
+) -> Result<LlmsTxt, sqlx::Error> {
+    sqlx::query_as!(
+        LlmsTxt,
+        r#"
+        SELECT job_id, url, result_data, result_status AS "result_status: ResultStatus", created_at
+        FROM llms_txt
+        WHERE url = $1
+          AND result_status = $2
+        ORDER BY created_at DESC
+        LIMIT 1
+        "#,
+        url,
+        ResultStatus::Ok as ResultStatus
+    )
+    .fetch_one(executor)
+    .await
 }
 
 /// GET /api/llm_txt - Retrieve llms.txt content for a URL
@@ -43,9 +47,7 @@ pub async fn get_llm_txt(
     State(pool): State<DbPool>,
     Query(payload): Query<UrlPayload>,
 ) -> Result<impl IntoResponse, GetLlmTxtError> {
-    let mut conn = pool.get().await?;
-
-    match fetch_llms_txt(&mut conn, &payload.url).await {
+    match fetch_llms_txt(&pool, &payload.url).await {
         Ok(llms_txt_record) => match llms_txt_record.result_status {
             ResultStatus::Ok => Ok((
                 StatusCode::OK,
@@ -63,9 +65,9 @@ pub async fn get_llm_txt(
 
 /// Create a request to generate a new llms.txt
 async fn new_llms_txt_generate_job(
-    conn: &mut AsyncPgConnection,
+    executor: impl sqlx::PgExecutor<'_>,
     url: &str,
-) -> Result<JobIdResponse, diesel::result::Error> {
+) -> Result<JobIdResponse, sqlx::Error> {
     let job_id = uuid::Uuid::new_v4();
     let new_job = JobState::from_kind_data(
         job_id,
@@ -74,10 +76,19 @@ async fn new_llms_txt_generate_job(
         JobKindData::New,
     );
 
-    diesel::insert_into(job_state::table)
-        .values(&new_job)
-        .execute(conn)
-        .await?;
+    sqlx::query!(
+        r#"
+        INSERT INTO job_state (job_id, url, status, kind, llms_txt)
+        VALUES ($1, $2, $3, $4, $5)
+        "#,
+        new_job.job_id,
+        new_job.url,
+        new_job.status as JobStatusEnum,
+        new_job.kind as crate::models::JobKind,
+        new_job.llms_txt
+    )
+    .execute(executor)
+    .await?;
 
     Ok(JobIdResponse { job_id })
 }
@@ -87,42 +98,43 @@ pub async fn post_llm_txt(
     State(pool): State<DbPool>,
     Json(payload): Json<UrlPayload>,
 ) -> Result<impl IntoResponse, PostLlmTxtError> {
-    let mut conn = pool.get().await?;
-    conn.transaction(|conn| {
-        async move {
-            match fetch_llms_txt(conn, &payload.url).await {
-                Ok(_) => Err(PostLlmTxtError::AlreadyGenerated),
-                Err(e) => match e {
-                    diesel::result::Error::NotFound => match in_progress_jobs(conn, &payload.url)
-                        .await
-                    {
-                        Ok(existing_jobs) => Err(PostLlmTxtError::JobsInProgress(existing_jobs)),
+    let mut tx = pool.begin().await?;
 
-                        Err(e_jobs) => match e_jobs {
-                            diesel::result::Error::NotFound => {
-                                let job_id_response =
-                                    new_llms_txt_generate_job(conn, &payload.url).await?;
-                                Ok((StatusCode::CREATED, Json(job_id_response)))
-                            }
-
-                            _ => Err(e_jobs.into()),
-                        },
-                    },
-                    _ => Err(e.into()),
-                },
-            }
+    match fetch_llms_txt(&mut *tx, &payload.url).await {
+        Ok(_) => {
+            tx.rollback().await?;
+            Err(PostLlmTxtError::AlreadyGenerated)
         }
-        .scope_boxed()
-    })
-    .await
+        Err(e) => match e {
+            sqlx::Error::RowNotFound => match in_progress_jobs(&mut *tx, &payload.url).await {
+                Ok(existing_jobs) if !existing_jobs.is_empty() => {
+                    tx.rollback().await?;
+                    Err(PostLlmTxtError::JobsInProgress(existing_jobs))
+                }
+                Ok(_) | Err(sqlx::Error::RowNotFound) => {
+                    let job_id_response = new_llms_txt_generate_job(&mut *tx, &payload.url).await?;
+                    tx.commit().await?;
+                    Ok((StatusCode::CREATED, Json(job_id_response)))
+                }
+                Err(e_jobs) => {
+                    tx.rollback().await?;
+                    Err(e_jobs.into())
+                }
+            },
+            _ => {
+                tx.rollback().await?;
+                Err(e.into())
+            }
+        },
+    }
 }
 
 /// Create a request to update an existing llms.txt
 async fn update_llms_txt_generation(
-    conn: &mut AsyncPgConnection,
+    executor: impl sqlx::PgExecutor<'_>,
     url: &str,
     llms_txt: &str,
-) -> Result<JobIdResponse, diesel::result::Error> {
+) -> Result<JobIdResponse, sqlx::Error> {
     let job_id = uuid::Uuid::new_v4();
     let new_job = JobState::from_kind_data(
         job_id,
@@ -133,10 +145,19 @@ async fn update_llms_txt_generation(
         },
     );
 
-    diesel::insert_into(job_state::table)
-        .values(&new_job)
-        .execute(conn)
-        .await?;
+    sqlx::query!(
+        r#"
+        INSERT INTO job_state (job_id, url, status, kind, llms_txt)
+        VALUES ($1, $2, $3, $4, $5)
+        "#,
+        new_job.job_id,
+        new_job.url,
+        new_job.status as JobStatusEnum,
+        new_job.kind as crate::models::JobKind,
+        new_job.llms_txt
+    )
+    .execute(executor)
+    .await?;
 
     Ok(JobIdResponse { job_id })
 }
@@ -146,24 +167,21 @@ pub async fn post_update(
     State(pool): State<DbPool>,
     Json(payload): Json<UrlPayload>,
 ) -> Result<impl IntoResponse, UpdateLlmTxtError> {
-    let mut conn = pool.get().await?;
-    conn.transaction(|conn| {
-        async move {
-            match fetch_llms_txt(conn, &payload.url).await {
-                Ok(llms_txt) => {
-                    // Create an update job using the existing llms.txt result_data
-                    let job_id_response =
-                        update_llms_txt_generation(conn, &payload.url, &llms_txt.result_data)
-                            .await?;
-                    Ok((StatusCode::CREATED, Json(job_id_response)))
-                }
+    let mut tx = pool.begin().await?;
 
-                Err(e) => Err(e.into()),
-            }
+    match fetch_llms_txt(&mut *tx, &payload.url).await {
+        Ok(llms_txt) => {
+            // Create an update job using the existing llms.txt result_data
+            let job_id_response =
+                update_llms_txt_generation(&mut *tx, &payload.url, &llms_txt.result_data).await?;
+            tx.commit().await?;
+            Ok((StatusCode::CREATED, Json(job_id_response)))
         }
-        .scope_boxed()
-    })
-    .await
+        Err(e) => {
+            tx.rollback().await?;
+            Err(e.into())
+        }
+    }
 }
 
 /// PUT /api/llm_txt - Create a new job: either a 1st time or an update
@@ -171,42 +189,44 @@ pub async fn put_llm_txt(
     State(pool): State<DbPool>,
     Json(payload): Json<UrlPayload>,
 ) -> Result<impl IntoResponse, PutLlmTxtError> {
-    let mut conn = pool.get().await?;
-    conn.transaction(|conn| {
-        async move {
-            match fetch_llms_txt(conn, &payload.url).await {
-                Ok(llms_txt) => {
-                    let job_id_response =
-                        update_llms_txt_generation(conn, &payload.url, &llms_txt.result_data)
-                            .await?;
-                    Ok((StatusCode::CREATED, Json(job_id_response)))
-                }
+    let mut tx = pool.begin().await?;
 
-                Err(e) => match e {
-                    diesel::result::Error::NotFound => {
-                        let job_id_response = new_llms_txt_generate_job(conn, &payload.url).await?;
-                        Ok((StatusCode::CREATED, Json(job_id_response)))
-                    }
-                    _ => Err(e.into()),
-                },
-            }
+    match fetch_llms_txt(&mut *tx, &payload.url).await {
+        Ok(llms_txt) => {
+            let job_id_response =
+                update_llms_txt_generation(&mut *tx, &payload.url, &llms_txt.result_data).await?;
+            tx.commit().await?;
+            Ok((StatusCode::CREATED, Json(job_id_response)))
         }
-        .scope_boxed()
-    })
-    .await
+        Err(e) => match e {
+            sqlx::Error::RowNotFound => {
+                let job_id_response = new_llms_txt_generate_job(&mut *tx, &payload.url).await?;
+                tx.commit().await?;
+                Ok((StatusCode::CREATED, Json(job_id_response)))
+            }
+            _ => {
+                tx.rollback().await?;
+                Err(e.into())
+            }
+        },
+    }
 }
 
 // GET /api/list - List all successfully fetched llms.txt files
 pub async fn get_list(State(pool): State<DbPool>) -> Result<impl IntoResponse, AppError> {
-    let mut conn = pool.get().await?;
-
     // Load all Ok records ordered by url and created_at DESC
-    let all_records = llms_txt::table
-        .filter(llms_txt::result_status.eq(ResultStatus::Ok))
-        .order((llms_txt::url.asc(), llms_txt::created_at.desc()))
-        .select(LlmsTxt::as_select())
-        .load::<LlmsTxt>(&mut conn)
-        .await?;
+    let all_records = sqlx::query_as!(
+        LlmsTxt,
+        r#"
+        SELECT job_id, url, result_data, result_status AS "result_status: ResultStatus", created_at
+        FROM llms_txt
+        WHERE result_status = $1
+        ORDER BY url ASC, created_at DESC
+        "#,
+        ResultStatus::Ok as ResultStatus
+    )
+    .fetch_all(&pool)
+    .await?;
 
     // Deduplicate by URL, keeping only the most recent
     let mut url_map: HashMap<String, String> = HashMap::new();

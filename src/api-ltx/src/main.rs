@@ -1,7 +1,6 @@
 mod db;
 mod models;
 mod routes;
-mod schema;
 
 use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -28,6 +27,7 @@ async fn main() {
 
     // Establish database connection pool
     let pool = establish_connection_pool(&database_url)
+        .await
         .unwrap_or_else(|_| panic!("Couldn't connect to database: {}", database_url));
 
     // Build the router

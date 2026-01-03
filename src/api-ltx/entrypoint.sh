@@ -37,20 +37,15 @@ done
 
 echo "Database is accepting connections!"
 
-# Run diesel setup (creates database if needed, sets up diesel metadata)
-echo "Setting up diesel database..."
-if diesel database setup --locked-schema; then
-  echo "Diesel database setup completed successfully"
+# Run sqlx migrations
+echo "Running database migrations with sqlx..."
+if sqlx migrate run; then
+  echo "Migrations completed successfully"
 else
-  echo "Diesel setup failed, attempting to run migrations directly..."
-  if diesel migration run; then
-    echo "Migrations completed successfully"
-  else
-    echo "ERROR: Failed to run migrations"
-    echo "Attempting to show diesel migration status:"
-    diesel migration list || true
-    exit 1
-  fi
+  echo "ERROR: Failed to run migrations"
+  echo "Attempting to show migration status:"
+  sqlx migrate info || true
+  exit 1
 fi
 
 echo "Database is ready!"

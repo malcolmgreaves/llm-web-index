@@ -18,7 +18,10 @@
       "Bash(cargo clippy:*)",
       "Bash(git mv:*)",
       "Bash(wasm-pack build:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(SQLX_OFFLINE=true cargo check:*)",
+      "Bash(sqlx migrate:*)",
+      "Bash(git add:*)"
     ]
   }
 }

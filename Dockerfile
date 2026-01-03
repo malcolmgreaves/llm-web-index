@@ -9,10 +9,10 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /tools
 
-# Need diesel to run migrations in runtime image build.
+# Install sqlx-cli to run migrations in runtime image build.
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
-    cargo install diesel_cli --no-default-features --features postgres --root /tools
+    cargo install sqlx-cli --no-default-features --features postgres,rustls --root /tools
 
 # Install wasm-pack for building the WASM frontend
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
@@ -101,6 +101,12 @@ COPY src/common-ltx/src ./src/common-ltx/src
 COPY src/core-ltx/src ./src/core-ltx/src
 COPY src/api-ltx/src ./src/api-ltx/src
 
+# Copy sqlx offline query cache for compile-time verification
+COPY .sqlx ./.sqlx
+
+# Set SQLX_OFFLINE to use cached query metadata instead of connecting to database
+ENV SQLX_OFFLINE=true
+
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/target \
@@ -120,7 +126,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=tools /tools/bin/diesel /usr/local/bin/diesel
+COPY --from=tools /tools/bin/sqlx /usr/local/bin/sqlx
 
 WORKDIR /app
 
@@ -128,7 +134,6 @@ WORKDIR /app
 COPY --from=api /app/bin/api-ltx /usr/local/bin/api-ltx
 # DB migrations
 COPY src/api-ltx/migrations ./migrations
-COPY src/api-ltx/diesel.toml ./diesel.toml
 # WASM frontend
 COPY --from=frontend /app/src/front-ltx/www/index.html ./src/front-ltx/www/index.html
 COPY --from=frontend /app/src/front-ltx/www/pkg ./src/front-ltx/www/pkg
