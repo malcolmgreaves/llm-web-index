@@ -77,6 +77,21 @@ macro_rules! from_error {
     };
 }
 
+macro_rules! from_diesel_not_found_error {
+    ($err_type:tt) => {
+        /// Converts a `diesel::result::Error::NotFound` into an `$err_type::NotGenerated`
+        /// otherwise it's a `$err_type::Unknown(diesel::result::Error)`.
+        impl From<diesel::result::Error> for $err_type {
+            fn from(e: diesel::result::Error) -> Self {
+                match e {
+                    diesel::result::Error::NotFound => $err_type::NotGenerated,
+                    _ => $err_type::Unknown(format!("{:?}", e)),
+                }
+            }
+        }
+    };
+}
+
 // GetLlmTxtError
 
 impl IntoResponse for GetLlmTxtError {
@@ -92,22 +107,16 @@ impl IntoResponse for GetLlmTxtError {
 }
 
 from_error!(r2d2::Error, GetLlmTxtError);
-
-impl From<diesel::result::Error> for GetLlmTxtError {
-    fn from(e: diesel::result::Error) -> Self {
-        match e {
-            diesel::result::Error::NotFound => GetLlmTxtError::NotGenerated,
-            _ => GetLlmTxtError::Unknown(format!("{:?}", e)),
-        }
-    }
-}
+from_diesel_not_found_error!(GetLlmTxtError);
 
 // PostLlmTxtError
 
 impl IntoResponse for PostLlmTxtError {
     fn into_response(self) -> axum::response::Response {
         let status = match self {
-            PostLlmTxtError::AlreadyGenerated => StatusCode::CONFLICT,
+            PostLlmTxtError::AlreadyGenerated | PostLlmTxtError::JobsInProgress(_) => {
+                StatusCode::CONFLICT
+            }
             PostLlmTxtError::Unknown(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, Json(self)).into_response()
@@ -129,6 +138,21 @@ impl IntoResponse for PutLlmTxtError {
 from_error!(r2d2::Error, PutLlmTxtError);
 from_error!(diesel::result::Error, PutLlmTxtError);
 
+// UpdateLlmTxtError
+
+impl IntoResponse for UpdateLlmTxtError {
+    fn into_response(self) -> axum::response::Response {
+        let status = match self {
+            UpdateLlmTxtError::NotGenerated => StatusCode::NOT_FOUND,
+            UpdateLlmTxtError::Unknown(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        (status, Json(self)).into_response()
+    }
+}
+
+from_error!(r2d2::Error, UpdateLlmTxtError);
+from_diesel_not_found_error!(UpdateLlmTxtError);
+
 // StatusError
 
 impl IntoResponse for StatusError {
@@ -144,16 +168,3 @@ impl IntoResponse for StatusError {
 
 from_error!(r2d2::Error, StatusError);
 from_error!(diesel::result::Error, StatusError);
-
-impl IntoResponse for UpdateLlmTxtError {
-    fn into_response(self) -> axum::response::Response {
-        let status = match self {
-            UpdateLlmTxtError::NotGenerated => StatusCode::NOT_FOUND,
-            UpdateLlmTxtError::Unknown(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-        (status, Json(self)).into_response()
-    }
-}
-
-from_error!(r2d2::Error, UpdateLlmTxtError);
-from_error!(diesel::result::Error, UpdateLlmTxtError);

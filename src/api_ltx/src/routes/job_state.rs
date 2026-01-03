@@ -4,10 +4,28 @@ use axum::{
     response::IntoResponse,
 };
 use diesel::prelude::*;
+use uuid::Uuid;
 
-use crate::db::DbPool;
 use crate::models::{JobIdPayload, JobState, JobStatusResponse, StatusError};
 use crate::schema::job_state;
+use crate::{
+    db::{Conn, DbPool},
+    models::JobStatus,
+};
+
+/// Gets all currently running jobs for a given URL.
+pub fn in_progress_jobs(conn: &mut Conn, url: &str) -> Result<Vec<Uuid>, diesel::result::Error> {
+    job_state::table
+        .filter(job_state::url.eq(url))
+        // only select currently running jobs
+        .filter(job_state::status.eq_any(&[
+            JobStatus::Queued,
+            JobStatus::Queued,
+            JobStatus::Running,
+        ]))
+        .select(job_state::job_id)
+        .load::<Uuid>(conn)
+}
 
 // GET /api/status - Get the status of a job
 pub async fn get_status(

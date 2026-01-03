@@ -43,6 +43,16 @@ pub enum JobStatus {
     Failure,
 }
 
+impl JobStatus {
+    // True if job's status is Success or Failure. False means it's Queued, Started, or Running.
+    pub fn is_completed(&self) -> bool {
+        match self {
+            Self::Queued | Self::Started | Self::Running => false,
+            Self::Success | Self::Failure => true,
+        }
+    }
+}
+
 impl ToSql<Job_status, Pg> for JobStatus {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         let s = match self {
@@ -276,6 +286,9 @@ pub enum PostLlmTxtError {
     /// llms.txt has already been generated for this URL
     #[serde(rename = "already_generated")]
     AlreadyGenerated,
+    /// llms.txt jobs are in progress for this URL
+    #[serde(rename = "jobs_in_progress")]
+    JobsInProgress(Vec<Uuid>),
     /// Unknown error occurred
     #[serde(rename = "unknown")]
     Unknown(String),
