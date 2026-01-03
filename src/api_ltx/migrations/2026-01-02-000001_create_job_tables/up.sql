@@ -22,7 +22,8 @@ CREATE TABLE job_state (
     job_id UUID PRIMARY KEY,
     url TEXT NOT NULL,
     status job_status NOT NULL,
-    kind job_kind NOT NULL
+    kind job_kind NOT NULL,
+    llms_txt TEXT
 );
 
 -- Create llms_txt table

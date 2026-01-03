@@ -18,7 +18,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use db::{DbPool, establish_connection_pool};
 use models::{
-    GetLlmTxtError, JobIdPayload, JobIdResponse, JobKind, JobState, JobStatus as JobStatusEnum,
+    GetLlmTxtError, JobIdPayload, JobIdResponse, JobKindData, JobState, JobStatus as JobStatusEnum,
     JobStatusResponse, LlmTxtResponse, LlmsTxt, LlmsTxtListItem, LlmsTxtListResponse,
     PostLlmTxtError, PutLlmTxtError, ResultStatus, StatusError, UpdateLlmTxtError, UrlPayload,
 };
@@ -131,12 +131,8 @@ async fn post_llm_txt(
 
     // Create a new job
     let job_id = uuid::Uuid::new_v4();
-    let new_job = JobState {
-        job_id,
-        url: payload.url,
-        status: JobStatusEnum::Queued,
-        kind: JobKind::New,
-    };
+    let new_job =
+        JobState::from_kind_data(job_id, payload.url, JobStatusEnum::Queued, JobKindData::New);
 
     diesel::insert_into(job_state::table)
         .values(&new_job)
@@ -153,21 +149,43 @@ async fn put_llm_txt(
 ) -> Result<impl IntoResponse, PutLlmTxtError> {
     let mut conn = pool.get().map_err(|_| PutLlmTxtError::Unknown)?;
 
-    // Create a new job
-    let job_id = uuid::Uuid::new_v4();
-    let new_job = JobState {
-        job_id,
-        url: payload.url,
-        status: JobStatusEnum::Queued,
-        kind: JobKind::New,
+    // Check if there's an existing entry for the url in the llms_txt table with Ok result
+    let existing = llms_txt::table
+        .filter(llms_txt::url.eq(&payload.url))
+        .order(llms_txt::created_at.desc())
+        .select(LlmsTxt::as_select())
+        .first::<LlmsTxt>(&mut conn)
+        .optional()
+        .map_err(|_| PutLlmTxtError::Unknown)?;
+
+    // Determine job kind and status code based on existing data
+    let (kind_data, status_code) = match existing {
+        Some(llms_txt_record) if llms_txt_record.result_status == ResultStatus::Ok => {
+            // If there's an Ok result, create an Update job (like POST /api/update)
+            (
+                JobKindData::Update {
+                    llms_txt: llms_txt_record.result_data,
+                },
+                StatusCode::OK,
+            )
+        }
+        _ => {
+            // Otherwise, create a New job (like POST /api/llm_txt)
+            // This covers: no existing entry OR existing entry with Error status
+            (JobKindData::New, StatusCode::CREATED)
+        }
     };
+
+    // Create the job
+    let job_id = uuid::Uuid::new_v4();
+    let new_job = JobState::from_kind_data(job_id, payload.url, JobStatusEnum::Queued, kind_data);
 
     diesel::insert_into(job_state::table)
         .values(&new_job)
         .execute(&mut conn)
         .map_err(|_| PutLlmTxtError::Unknown)?;
 
-    Ok((StatusCode::CREATED, Json(JobIdResponse { job_id })))
+    Ok((status_code, Json(JobIdResponse { job_id })))
 }
 
 // GET /api/status - Get the status of a job
@@ -203,33 +221,42 @@ async fn post_update(
 ) -> Result<impl IntoResponse, UpdateLlmTxtError> {
     let mut conn = pool.get().map_err(|_| UpdateLlmTxtError::Unknown)?;
 
-    // Check if llms.txt exists for this URL
+    // Check if llms.txt exists for this URL and get the most recent one
     let existing = llms_txt::table
         .filter(llms_txt::url.eq(&payload.url))
+        .order(llms_txt::created_at.desc())
         .select(LlmsTxt::as_select())
         .first::<LlmsTxt>(&mut conn)
         .optional()
         .map_err(|_| UpdateLlmTxtError::Unknown)?;
 
-    if existing.is_none() {
-        return Err(UpdateLlmTxtError::NotGenerated);
+    match existing {
+        Some(llms_txt_record) => {
+            // Ensure it's an Ok result (not Error)
+            if llms_txt_record.result_status != ResultStatus::Ok {
+                return Err(UpdateLlmTxtError::NotGenerated);
+            }
+
+            // Create an update job using the existing llms.txt result_data
+            let job_id = uuid::Uuid::new_v4();
+            let new_job = JobState::from_kind_data(
+                job_id,
+                payload.url,
+                JobStatusEnum::Queued,
+                JobKindData::Update {
+                    llms_txt: llms_txt_record.result_data,
+                },
+            );
+
+            diesel::insert_into(job_state::table)
+                .values(&new_job)
+                .execute(&mut conn)
+                .map_err(|_| UpdateLlmTxtError::Unknown)?;
+
+            Ok((StatusCode::CREATED, Json(JobIdResponse { job_id })))
+        }
+        None => Err(UpdateLlmTxtError::NotGenerated),
     }
-
-    // Create an update job
-    let job_id = uuid::Uuid::new_v4();
-    let new_job = JobState {
-        job_id,
-        url: payload.url,
-        status: JobStatusEnum::Queued,
-        kind: JobKind::Update,
-    };
-
-    diesel::insert_into(job_state::table)
-        .values(&new_job)
-        .execute(&mut conn)
-        .map_err(|_| UpdateLlmTxtError::Unknown)?;
-
-    Ok((StatusCode::CREATED, Json(JobIdResponse { job_id })))
 }
 
 // GET /api/list - List all successfully fetched llms.txt files

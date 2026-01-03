@@ -9,6 +9,7 @@ diesel::table! {
         url -> Text,
         status -> Job_status,
         kind -> Job_kind,
+        llms_txt -> Nullable<Text>,
     }
 }
 
