@@ -24,6 +24,14 @@ services:
       retries: 5
     networks:
       - ltx_network
+    develop:
+      watch:
+        # Watch for SQL initialization scripts
+        - action: sync+restart
+          path: ./migrations
+          target: /docker-entrypoint-initdb.d
+          ignore:
+            - "*.md"
 
   # API Server
   api:
@@ -47,6 +55,18 @@ services:
         condition: service_healthy
     networks:
       - ltx_network
+    develop:
+      watch:
+        - action: rebuild
+          path: Cargo.toml
+        - action: rebuild
+          path: ./src/api-ltx/
+        - action: rebuild
+          path: ./src/common-ltx/
+        - action: rebuild
+          path: ./src/core-ltx/
+        - action: rebuild
+          path: ./src/front-ltx/
 
 volumes:
   postgres_data:

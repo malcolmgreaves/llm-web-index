@@ -217,8 +217,13 @@ fn create_get_llmstxt_page(
             match fetch_llm_txt(&url).await {
                 Ok(data) => display_text_result(&data.content),
                 Err(e) => {
-                    console::error_1(&format!("Error: {:?}", e).into());
-                    display_text_result(&format!("Error: {:?}", e));
+                    console::error_1(
+                        &format!("Could not retrieve llms.txt file due to: {:?}", e).into(),
+                    );
+                    display_text_result(&format!(
+                        "Could not retrieve llms.txt file due to: {:?}",
+                        e
+                    ));
                 }
             }
         });
