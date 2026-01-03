@@ -1,7 +1,23 @@
+use axum::{
+    Router,
+    extract::Json,
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post, put},
+};
+use serde_json::json;
+use tower_http::services::{ServeDir, ServeFile};
+use tower_http::trace::TraceLayer;
+
+use crate::db::DbPool;
+use crate::models::{
+    GetLlmTxtError, PostLlmTxtError, PutLlmTxtError, StatusError, UpdateLlmTxtError,
+};
+
 pub mod job_state;
 pub mod llms_txt;
 
-pub fn router() -> Router {
+pub fn router() -> Router<DbPool> {
     Router::new()
         // API routes for llms.txt management
         .route("/api/llm_txt", get(llms_txt::get_llm_txt))

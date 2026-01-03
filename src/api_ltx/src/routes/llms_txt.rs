@@ -1,27 +1,21 @@
 use axum::{
-    Router,
     extract::{Json, State},
     http::StatusCode,
     response::IntoResponse,
-    routing::{get, post, put},
 };
 use diesel::prelude::*;
-use serde_json::json;
-use std::net::SocketAddr;
-use tower_http::services::{ServeDir, ServeFile};
-use tower_http::trace::TraceLayer;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::schema::{job_state, llms_txt};
-use db::{DbPool, establish_connection_pool};
-use models::{
-    GetLlmTxtError, JobIdPayload, JobIdResponse, JobKindData, JobState, JobStatus as JobStatusEnum,
-    JobStatusResponse, LlmTxtResponse, LlmsTxt, LlmsTxtListItem, LlmsTxtListResponse,
-    PostLlmTxtError, PutLlmTxtError, ResultStatus, StatusError, UpdateLlmTxtError, UrlPayload,
+use crate::db::DbPool;
+use crate::models::{
+    GetLlmTxtError, JobIdResponse, JobKindData, JobState, JobStatus as JobStatusEnum,
+    LlmTxtResponse, LlmsTxt, LlmsTxtListItem, LlmsTxtListResponse, PostLlmTxtError, PutLlmTxtError,
+    ResultStatus, UpdateLlmTxtError, UrlPayload,
 };
+use crate::routes::AppError;
+use crate::schema::{job_state, llms_txt};
 
 // GET /api/llm_txt - Retrieve llms.txt content for a URL
-async fn get_llm_txt(
+pub async fn get_llm_txt(
     State(pool): State<DbPool>,
     Json(payload): Json<UrlPayload>,
 ) -> Result<impl IntoResponse, GetLlmTxtError> {
@@ -38,20 +32,20 @@ async fn get_llm_txt(
 
     match result {
         Some(llms_txt_record) => match llms_txt_record.result_status {
-            models::ResultStatus::Ok => Ok((
+            ResultStatus::Ok => Ok((
                 StatusCode::OK,
                 Json(LlmTxtResponse {
                     content: llms_txt_record.result_data,
                 }),
             )),
-            models::ResultStatus::Error => Err(GetLlmTxtError::NotGenerated),
+            ResultStatus::Error => Err(GetLlmTxtError::NotGenerated),
         },
         None => Err(GetLlmTxtError::NotGenerated),
     }
 }
 
 // POST /api/llm_txt - Create a new job to generate llms.txt
-async fn post_llm_txt(
+pub async fn post_llm_txt(
     State(pool): State<DbPool>,
     Json(payload): Json<UrlPayload>,
 ) -> Result<impl IntoResponse, PostLlmTxtError> {
@@ -83,7 +77,7 @@ async fn post_llm_txt(
 }
 
 // PUT /api/llm_txt - Create a new job (unconditionally)
-async fn put_llm_txt(
+pub async fn put_llm_txt(
     State(pool): State<DbPool>,
     Json(payload): Json<UrlPayload>,
 ) -> Result<impl IntoResponse, PutLlmTxtError> {
@@ -129,7 +123,7 @@ async fn put_llm_txt(
 }
 
 // POST /api/update - Create an update job for existing llms.txt
-async fn post_update(
+pub async fn post_update(
     State(pool): State<DbPool>,
     Json(payload): Json<UrlPayload>,
 ) -> Result<impl IntoResponse, UpdateLlmTxtError> {
@@ -174,7 +168,7 @@ async fn post_update(
 }
 
 // GET /api/list - List all successfully fetched llms.txt files
-async fn get_list(State(pool): State<DbPool>) -> Result<impl IntoResponse, AppError> {
+pub async fn get_list(State(pool): State<DbPool>) -> Result<impl IntoResponse, AppError> {
     use std::collections::HashMap;
 
     let mut conn = pool.get()?;
