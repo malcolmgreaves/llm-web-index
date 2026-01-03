@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rust WASM Frontend</title>
+    <title>LLMs.txt List Viewer</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -21,14 +21,11 @@
             padding: 40px;
             border-radius: 10px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            text-align: center;
         }
         h1 {
             color: #333;
             margin-top: 0;
-        }
-        p {
-            color: #666;
-            line-height: 1.6;
         }
         button {
             background: #667eea;
@@ -39,6 +36,7 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background 0.3s;
+            margin: 20px 0;
         }
         button:hover {
             background: #5568d3;
@@ -50,6 +48,71 @@
             text-align: center;
             color: white;
             font-size: 18px;
+        }
+
+        /* Dialog styles */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .dialog-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .dialog-content h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .dialog-content.error {
+            border: 2px solid #ff6b6b;
+        }
+
+        .dialog-content.error h2 {
+            color: #ff6b6b;
+        }
+
+        .items-container {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .item {
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .item h3 {
+            margin-top: 0;
+            color: #667eea;
+            word-break: break-all;
+        }
+
+        .item pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
     </style>
 </head>
