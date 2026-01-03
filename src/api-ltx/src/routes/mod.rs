@@ -5,7 +5,6 @@ use axum::{
     response::IntoResponse,
     routing::{get, post, put},
 };
-use r2d2;
 use serde_json::json;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;

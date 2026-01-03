@@ -169,7 +169,7 @@ fn create_get_llmstxt_page(
     document: &Document,
     container: &web_sys::Element,
 ) -> Result<(), JsValue> {
-    container.append_child(&create_back_button(document)?)?;
+    container.append_child(&create_back_button(document)?.into())?;
 
     let heading = document.create_element("h1")?;
     heading.set_text_content(Some("Get LLMs.txt for a Website"));
@@ -246,7 +246,7 @@ fn create_generate_or_update_page(
     document: &Document,
     container: &web_sys::Element,
 ) -> Result<(), JsValue> {
-    container.append_child(&create_back_button(document)?)?;
+    container.append_child(&create_back_button(document)?.into())?;
 
     let heading = document.create_element("h1")?;
     heading.set_text_content(Some("Generate or Update LLMs.txt"));
@@ -320,7 +320,7 @@ fn create_generate_or_update_page(
 // ============================================================================
 
 fn create_list_all_page(document: &Document, container: &web_sys::Element) -> Result<(), JsValue> {
-    container.append_child(&create_back_button(document)?)?;
+    container.append_child(&create_back_button(document)?.into())?;
 
     let heading = document.create_element("h1")?;
     heading.set_text_content(Some("All Up-to-Date LLMs.txts"));
@@ -358,7 +358,7 @@ fn create_list_in_progress_page(
     document: &Document,
     container: &web_sys::Element,
 ) -> Result<(), JsValue> {
-    container.append_child(&create_back_button(document)?)?;
+    container.append_child(&create_back_button(document)?.into())?;
 
     let heading = document.create_element("h1")?;
     heading.set_text_content(Some("All In-Progress Jobs"));
@@ -396,7 +396,7 @@ fn create_inspect_job_page(
     document: &Document,
     container: &web_sys::Element,
 ) -> Result<(), JsValue> {
-    container.append_child(&create_back_button(document)?)?;
+    container.append_child(&create_back_button(document)?.into())?;
 
     let heading = document.create_element("h1")?;
     heading.set_text_content(Some("Inspect Job"));

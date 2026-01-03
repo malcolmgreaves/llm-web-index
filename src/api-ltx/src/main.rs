@@ -28,7 +28,7 @@ async fn main() {
 
     // Establish database connection pool
     let pool = establish_connection_pool(&database_url)
-        .expect(&format!("Couldn't connect to database: {}", database_url));
+        .unwrap_or_else(|_| panic!("Couldn't connect to database: {}", database_url));
 
     // Build the router
     let app = routes::router().with_state(pool);
