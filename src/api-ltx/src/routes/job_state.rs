@@ -4,14 +4,12 @@ use axum::{
     response::IntoResponse,
 };
 use diesel::prelude::*;
+use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use uuid::Uuid;
 
 use crate::models::{JobIdPayload, JobState, JobStatusResponse, StatusError};
 use crate::schema::job_state;
-use crate::{
-    db::{Conn, DbPool},
-    models::JobStatus,
-};
+use crate::{db::DbPool, models::JobStatus};
 
 /// Gets all currently running jobs for a given URL.
 ///
@@ -19,7 +17,10 @@ use crate::{
 /// An in-progress job is one whose status is either Queued, Started, or Running.
 ///
 /// An error is returned if there are no matching rows or if there's an internal DB error.s
-pub fn in_progress_jobs(conn: &mut Conn, url: &str) -> Result<Vec<Uuid>, diesel::result::Error> {
+pub async fn in_progress_jobs(
+    conn: &mut AsyncPgConnection,
+    url: &str,
+) -> Result<Vec<Uuid>, diesel::result::Error> {
     job_state::table
         .filter(job_state::url.eq(url))
         // only select currently running jobs
@@ -30,6 +31,7 @@ pub fn in_progress_jobs(conn: &mut Conn, url: &str) -> Result<Vec<Uuid>, diesel:
         ]))
         .select(job_state::job_id)
         .load::<Uuid>(conn)
+        .await
 }
 
 // GET /api/status - Get the status of a job
@@ -37,12 +39,13 @@ pub async fn get_status(
     State(pool): State<DbPool>,
     Json(payload): Json<JobIdPayload>,
 ) -> Result<impl IntoResponse, StatusError> {
-    let mut conn = pool.get()?;
+    let mut conn = pool.get().await?;
 
     let job = job_state::table
         .filter(job_state::job_id.eq(&payload.job_id))
         .select(JobState::as_select())
-        .first::<JobState>(&mut conn)?;
+        .first::<JobState>(&mut conn)
+        .await?;
 
     Ok((
         StatusCode::OK,
@@ -58,12 +61,13 @@ pub async fn get_job(
     State(pool): State<DbPool>,
     Query(payload): Query<JobIdPayload>,
 ) -> Result<impl IntoResponse, StatusError> {
-    let mut conn = pool.get()?;
+    let mut conn = pool.get().await?;
 
     let job = job_state::table
         .filter(job_state::job_id.eq(&payload.job_id))
         .select(JobState::as_select())
-        .first::<JobState>(&mut conn)?;
+        .first::<JobState>(&mut conn)
+        .await?;
 
     Ok((StatusCode::OK, Json(job)))
 }
@@ -72,7 +76,7 @@ pub async fn get_job(
 pub async fn get_in_progress_jobs(
     State(pool): State<DbPool>,
 ) -> Result<impl IntoResponse, StatusError> {
-    let mut conn = pool.get()?;
+    let mut conn = pool.get().await?;
 
     let jobs = job_state::table
         .filter(job_state::status.eq_any(&[
@@ -81,7 +85,8 @@ pub async fn get_in_progress_jobs(
             JobStatus::Running,
         ]))
         .select(JobState::as_select())
-        .load::<JobState>(&mut conn)?;
+        .load::<JobState>(&mut conn)
+        .await?;
 
     Ok((StatusCode::OK, Json(jobs)))
 }
