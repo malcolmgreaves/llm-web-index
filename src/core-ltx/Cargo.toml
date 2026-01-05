@@ -6,6 +6,7 @@ authors = { workspace = true }
 license = { workspace = true }
 description = "Functional core: all llms.txt generation logic + CLI program for one-offs (generation + update)."
 build = "build.rs"
+readme = "README.md"
 
 [dependencies]
 async-openai = "0.28"
