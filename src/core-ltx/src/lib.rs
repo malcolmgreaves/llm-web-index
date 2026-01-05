@@ -1,4 +1,13 @@
 pub mod llms;
+pub mod markdown;
+
+pub fn is_valid_markdown(content: &str) -> bool {
+    unimplemented!("Need to implement markdown validation, got: '{}'", content);
+}
+
+pub fn is_valid_llm_txt(content: &Markdown) -> bool {
+    unimplemented!("Need to implement LLM TXT validation, got: '{}'", content);
+}
 
 #[derive(Debug)]
 pub enum Error {
@@ -63,17 +72,9 @@ macro_rules! newtype_valid {
     };
 }
 
-pub fn is_valid_markdown(content: &str) -> bool {
-    unimplemented!("Need to implement markdown validation, got: '{}'", content);
-}
-
 newtype_valid!(Markdown, String, is_valid_markdown, Error, |_| {
     Error::InvalidMarkdown
 });
-
-pub fn is_valid_llm_txt(content: &Markdown) -> bool {
-    unimplemented!("Need to implement LLM TXT validation, got: '{}'", content);
-}
 
 newtype_valid!(LlmTxt, Markdown, is_valid_llm_txt, Error, |_| {
     Error::InvalidLlmTxtFormat
