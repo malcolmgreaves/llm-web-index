@@ -77,13 +77,11 @@ pub const RETRY_GENERATE_LLMS_TXT: &str = indoc! { "
   <\\output>
 
   But this is not a valid markdown llms.txt file because:
-  $ERROR. Please fix the error and output a valid llms.txt file for the website."
+  $ERROR. Please fix the error and output a valid llms.txt file for the website.
 "};
 
-
-pub const UPDATE_LLMS_TXT: &str = {
-  "You need to update an existing llms.txt file with recent website changes."
-};
+pub const UPDATE_LLMS_TXT: &str =
+    { "You need to update an existing llms.txt file with recent website changes." };
 
 pub const RETRY_UPDATE_LLMS_TXT: &str = indoc! { "
   You failed to generate a valid llms.txt file!

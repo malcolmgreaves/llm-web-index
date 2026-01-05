@@ -65,10 +65,6 @@ fn validate_output_file(s: &str) -> Result<PathBuf, String> {
 }
 
 fn main() {
-    use core_ltx::markdown::example;
-
-    example();
-
     let args = Args::parse();
 
     println!("URL: {}", args.url);
