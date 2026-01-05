@@ -35,7 +35,7 @@ macro_rules! newtype_valid {
                 if Self::is_valid(&maybe_valid_inner) {
                     Ok($name(maybe_valid_inner))
                 } else {
-                    let e: $error = $new_error();
+                    let e: $error = $new_error(&maybe_valid_inner);
                     Err(e)
                 }
             }
@@ -63,53 +63,18 @@ macro_rules! newtype_valid {
     };
 }
 
-// #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
-// pub struct Markdown(String);
-
-// impl std::fmt::Display for Markdown {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{}", self.0)
-//     }
-// }
-
-// impl Markdown {
-//     pub fn new(maybe_markdown: String) -> Result<Self, Error> {
-//         if Self::is_markdown(&maybe_markdown) {
-//             Ok(Markdown(maybe_markdown))
-//         } else {
-//             Err(Error::InvalidMarkdown)
-//         }
-//     }
-
-//     pub fn is_markdown(content: &str) -> bool {
-//         unimplemented!("Need to implement markdown validation, got: '{}'", content)
-//     }
-// }
-
-newtype_valid!(
-    Markdown,
-    String,
-    |content: &str| -> bool {
-        unimplemented!("Need to implement markdown validation, got: '{}'", content);
-    },
-    Error,
-    || { Error::InvalidMarkdown }
-);
-
-pub struct LlmTxt {
-    pub file: Markdown,
+pub fn is_valid_markdown(content: &str) -> bool {
+    unimplemented!("Need to implement markdown validation, got: '{}'", content);
 }
 
-impl LlmTxt {
-    pub fn new(llm_txt: Markdown) -> Result<Self, Error> {
-        if Self::is_valid_llm_txt(&llm_txt) {
-            Ok(LlmTxt { file: llm_txt })
-        } else {
-            Err(Error::InvalidLlmTxtFormat)
-        }
-    }
+newtype_valid!(Markdown, String, is_valid_markdown, Error, |_| {
+    Error::InvalidMarkdown
+});
 
-    pub fn is_valid_llm_txt(content: &Markdown) -> bool {
-        unimplemented!("Need to implement LLM TXT validation, got: '{}'", content)
-    }
+pub fn is_valid_llm_txt(content: &Markdown) -> bool {
+    unimplemented!("Need to implement LLM TXT validation, got: '{}'", content);
 }
+
+newtype_valid!(LlmTxt, Markdown, is_valid_llm_txt, Error, |_| {
+    Error::InvalidLlmTxtFormat
+});
