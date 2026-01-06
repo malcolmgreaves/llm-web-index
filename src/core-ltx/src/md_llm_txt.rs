@@ -34,7 +34,25 @@ pub fn is_valid_markdown(content: &str) -> Result<Markdown, Error> {
 #[derive(Debug, Clone)]
 pub struct LlmTxt(Markdown);
 
+/// The only way to make an LlmTxt is to validate it with `validate_is_llm_txt`.
+impl LlmTxt {
+    /// Provide access to the underlying llms.txt markdown document.
+    pub fn map<F, T>(&self, f: F) -> T
+    where
+        F: FnOnce(&Markdown) -> T,
+    {
+        f(&self.0)
+    }
+
+    /// Destroy the LlmTxt wrapper, extracting the underlying markdown AST.
+    pub fn extract(self) -> Markdown {
+        self.0
+    }
+}
+
 /// Determines whether or not the markdown document adheres to the llms.txt specification.
+///
+/// This function is the only way to make an `LlmTxt` instance.
 pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
     use ast::Block::*;
 
