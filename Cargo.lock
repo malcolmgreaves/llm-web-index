@@ -480,6 +480,7 @@ dependencies = [
  "indoc",
  "libtest-with",
  "markdown-ppp",
+ "nom 8.0.0",
  "test-with",
  "tokio",
  "url",

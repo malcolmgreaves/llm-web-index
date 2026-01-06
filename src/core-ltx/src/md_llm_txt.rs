@@ -38,7 +38,7 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-type Markdown = ast::Document;
+pub type Markdown = ast::Document;
 
 #[derive(Debug, Clone)]
 pub struct LlmTxt(Markdown);
@@ -51,7 +51,10 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
         LookingForH1,
         LookingForSummaryBlockquote,
         LookingForOptionalDetails,
-        LookingForFileListSections,
+        // LookingForFileListSections,
+        LookingForFileListSections_NeedH2,
+        LookingForFileListSections_NeedList,
+        LookingForFileListSections_NeedListOrH2,
     }
 
     impl std::fmt::Display for Stage {
@@ -62,8 +65,23 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
                 Stage::LookingForOptionalDetails => {
                     write!(f, "Looking for Optional Detail Section(s)")
                 }
-                Stage::LookingForFileListSections => {
-                    write!(f, "Looking for Optional File List Section(s)")
+                Stage::LookingForFileListSections_NeedH2 => {
+                    write!(
+                        f,
+                        "Looking for Optional File List Section(s): Need to find an H2"
+                    )
+                }
+                Stage::LookingForFileListSections_NeedList => {
+                    write!(
+                        f,
+                        "Looking for Optional File List Section(s): Need to find a List element"
+                    )
+                }
+                Stage::LookingForFileListSections_NeedListOrH2 => {
+                    write!(
+                        f,
+                        "Looking for Optional File List Section(s): Need to continue a list or start a new section"
+                    )
                 }
             }
         }
@@ -151,9 +169,11 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
 
         fn accept_other_header(&mut self) -> Step {
             match self.stage {
-                Stage::LookingForFileListSections | Stage::LookingForOptionalDetails => {
+                Stage::LookingForFileListSections_NeedH2
+                | Stage::LookingForFileListSections_NeedListOrH2
+                | Stage::LookingForOptionalDetails => {
                     // accept: make sure we stay in the file list stage (we could skip over the optional details)
-                    self.stage = Stage::LookingForFileListSections;
+                    self.stage = Stage::LookingForFileListSections_NeedH2;
                     Ok(())
                 }
                 wrong_stage => {
@@ -241,7 +261,7 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
                                 return Err(Error::InvalidLlmsTxtFormat(format!(
                                     "Found image outside of optional details section | destination: '{}', title: '{}', alt: '{}'",
                                     destination,
-                                    title.unwrap_or_default(),
+                                    title.clone().unwrap_or("".to_string()),
                                     alt
                                 )));
                             }
@@ -286,14 +306,14 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
                 use ast::SetextHeading::*;
                 match kind {
                     Atx(h_num) => {
-                        if h_num == 1 {
+                        if *h_num == 1 {
                             state.accept_h1(content)?;
-                        } else if h_num == 2 {
+                        } else if *h_num == 2 {
                             state.accept_other_header()?;
                         } else {
                             return Err(Error::InvalidLlmsTxtFormat(format!(
                                 "Can only accept H2 headers in the file lists section. Invalid H{}: '{:?}'",
-                                h_num, content
+                                *h_num, content
                             )));
                         }
                     }
@@ -339,9 +359,13 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
 
             // List (bullet or ordered)
             List(ast::List { kind, items }) => {
-                match stage {
-                    Stage::LookingForOptionalDetails | Stage::LookingForFileListSections => {
-                        // ok to have these here
+                match state.stage {
+                    Stage::LookingForOptionalDetails => {
+                        // ok to have here
+                    }
+                    Stage::LookingForFileListSections_NeedList
+                    | Stage::LookingForFileListSections_NeedListOrH2 => {
+                        state.stage = Stage::LookingForFileListSections_NeedListOrH2;
                     }
                     wrong_stage => {
                         return Err(Error::InvalidLlmsTxtFormat(format!(
@@ -380,7 +404,7 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
             }) => {
                 if state.stage != Stage::LookingForOptionalDetails {
                     return Err(Error::InvalidLlmsTxtFormat(format!(
-                        "Found a Link definition outside of the optional details section | label: '{}', destination: '{}', title: '{}'",
+                        "Found a Link definition outside of the optional details section | label: '{:?}', destination: '{}', title: '{:?}'",
                         label, destination, title
                     )));
                 }
