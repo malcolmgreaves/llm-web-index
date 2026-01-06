@@ -1,28 +1,11 @@
 use markdown_ppp::ast::{self};
 use markdown_ppp::parser::{MarkdownParserState, parse_markdown};
 
-pub fn is_valid_markdown(content: &str) -> bool {
-    match parse_markdown(MarkdownParserState::default(), content) {
-        Ok(document) => {
-            println!("parsed! document: {:?}", document);
-            true
-        }
-        Err(error) => {
-            println!("failed! error: {}", error);
-            false
-        }
-    }
-}
-
-pub fn is_valid_llm_txt(content: &Markdown) -> bool {
-    unimplemented!("Need to implement LLM TXT validation, got: '{:?}'", content);
-}
-
+/// Failures that can occur while parsing the markdown-formatted llms.txt file.
 #[derive(Debug)]
 pub enum Error {
-    InvalidMarkdown(nom::Err<nom::error::Error<&'static str>>),
+    InvalidMarkdown(nom::Err<nom::error::Error<String>>),
     InvalidLlmsTxtFormat(String),
-    Unknown(String),
 }
 
 impl std::fmt::Display for Error {
@@ -30,18 +13,28 @@ impl std::fmt::Display for Error {
         match self {
             Error::InvalidMarkdown(err) => write!(f, "Not valid Markdown: {}", err),
             Error::InvalidLlmsTxtFormat(msg) => write!(f, "Not valid llms.txt Format: {}", msg),
-            Error::Unknown(msg) => write!(f, "Unknown Error: {}", msg),
         }
     }
 }
 
 impl std::error::Error for Error {}
 
+/// A markdown document, represented as an abstract syntax tree (AST) of markdown blocks.
 pub type Markdown = ast::Document;
 
+/// Parses the text as markdown, returning a Markdown AST. Otherwise, produces an error explaining why the text isn't valid markdown.
+pub fn is_valid_markdown(content: &str) -> Result<Markdown, Error> {
+    match parse_markdown(MarkdownParserState::default(), content) {
+        Err(error) => Err(Error::InvalidMarkdown(error.to_owned())),
+        Ok(document) => Ok(document),
+    }
+}
+
+/// A valid llms.txt file, described by a markdown document.
 #[derive(Debug, Clone)]
 pub struct LlmTxt(Markdown);
 
+/// Determines whether or not the markdown document adheres to the llms.txt specification.
 pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
     use ast::Block::*;
 
