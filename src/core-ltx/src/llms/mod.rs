@@ -7,6 +7,8 @@ pub use prompts::{
     prompt_generate_llms_txt, prompt_retry_generate_llms_txt, prompt_retry_update_llms_txt, prompt_update_llms_txt,
 };
 
+pub use chatgpt::ChatGpt;
+
 use crate::{Error, LlmsTxt, download, is_valid_markdown, is_valid_url, validate_is_llm_txt};
 
 /// Interface to a hosted LLM that lets us complete a prompt and await a response.
@@ -40,7 +42,7 @@ pub async fn update_llms_txt<P: LlmProvider>(
     let url = is_valid_url(website_url)?;
 
     // check that we're being supplied with a valid llms.txt file
-    validate_is_llm_txt({ is_valid_markdown(&existing_llms_txt)? })?;
+    validate_is_llm_txt(is_valid_markdown(&existing_llms_txt)?)?;
 
     let html = download(&url).await?;
 

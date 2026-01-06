@@ -1,17 +1,10 @@
-use async_openai::{
-    Client,
-    config::OpenAIConfig,
-    types::{
-        ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs,
-        CreateCompletionRequestArgs,
-    },
-};
+use async_openai::{Client, config::OpenAIConfig, types::CreateCompletionRequestArgs};
 use async_trait::async_trait;
 
 use crate::{Error, llms::LlmProvider};
 
 #[derive(Debug, Clone)]
-struct ChatGpt {
+pub struct ChatGpt {
     pub client: Client<OpenAIConfig>,
     pub model_name: String,
 }

@@ -18,7 +18,8 @@
       "Bash(cargo clippy:*)",
       "Bash(git mv:*)",
       "Bash(wasm-pack build:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "WebFetch(domain:docs.rs)"
     ]
   }
 }

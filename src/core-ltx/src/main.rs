@@ -1,7 +1,11 @@
 use std::path::PathBuf;
 
-use clap::{Args, Parser, Subcommand};
-use core_ltx::{is_valid_markdown, validate_is_llm_txt};
+use clap::{Args, Parser, Subcommand, ValueEnum};
+use core_ltx::{
+    is_valid_markdown,
+    llms::{ChatGpt, LlmProvider},
+    validate_is_llm_txt,
+};
 
 #[derive(Parser)]
 #[command(name = "core-llmstxt")]
@@ -12,6 +16,21 @@ struct CoreCli {
     /// Output file path for the generated llms.txt
     #[arg(short, long, value_parser = validate_output_file)]
     output: PathBuf,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum LlmProviders {
+    ChatGpt,
+    Claude,
+}
+
+impl LlmProviders {
+    pub fn provider(&self) -> Box<dyn LlmProvider> {
+        Box::new(match self {
+            LlmProviders::ChatGpt => core_ltx::llms::ChatGpt::default(),
+            LlmProviders::Claude => unimplemented!("implement Claude LLM provider"),
+        })
+    }
 }
 
 #[derive(Subcommand)]
@@ -30,16 +49,27 @@ enum Commands {
     },
 
     /// Generate a new llms.txt from a website
-    Generate(Website),
+    Generate {
+        /// The website to generate an llms.txt file for.
+        #[command(flatten)]
+        website: Website,
+
+        /// The LLM provider to use for generation
+        provider: LlmProviders,
+    },
 
     /// Update an existing llms.txt
     Update {
-        // The website to generate an updated llms.txt file for.
+        /// The website to generate an updated llms.txt file for.
         #[command(flatten)]
         website: Website,
+
         /// The prior existing llms.txt file.
         #[arg(short, long, value_parser = validate_input_file)]
         llms_txt: PathBuf,
+
+        /// The LLM provider to use for generation
+        provider: LlmProviders,
     },
 }
 
@@ -93,7 +123,8 @@ fn validate_output_file(s: &str) -> Result<PathBuf, String> {
     Ok(path)
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cli = CoreCli::parse();
 
     match &cli.command {
@@ -119,13 +150,21 @@ fn main() {
             }
         },
 
-        Commands::Generate(website) => {
-            let web_content = website_content(website);
-            unimplemented!("generate llms.txt from website content:\n{web_content}")
+        Commands::Generate { website, provider: _ } => {
+            // let web_content = website_content(website).await;
+            // let llm_provider = provider.provider().as_ref();
+            let llms_txt = core_ltx::llms::generate_llms_txt(&ChatGpt::default(), &website.url.clone().unwrap())
+                .await
+                .unwrap();
+            println!("{}", llms_txt.to_string());
         }
 
-        Commands::Update { website, llms_txt } => {
-            let web_content = website_content(website);
+        Commands::Update {
+            website,
+            llms_txt,
+            provider,
+        } => {
+            let web_content = website_content(website).await;
 
             let llms_txt_content = match std::fs::read_to_string(llms_txt) {
                 Ok(x) => x,
@@ -135,12 +174,14 @@ fn main() {
                 }
             };
 
-            unimplemented!("update llms.txt [1] with website [2]:\n[1]\n{llms_txt_content}\n[2]\n{web_content}");
+            unimplemented!(
+                "update llms.txt [1] with website [2]:\n[1]\n{llms_txt_content}\n[2]\n{web_content}\n[3] {provider:?}"
+            );
         }
     }
 }
 
-fn website_content(website: &Website) -> String {
+async fn website_content(website: &Website) -> String {
     if let Some(file) = &website.file {
         match std::fs::read_to_string(file) {
             Ok(content) => content,
@@ -150,7 +191,8 @@ fn website_content(website: &Website) -> String {
             }
         }
     } else if let Some(url) = &website.url {
-        unimplemented!("download URL ({url}) as file")
+        let validated_url = core_ltx::is_valid_url(url.as_str()).unwrap();
+        core_ltx::download(&validated_url).await.unwrap()
     } else {
         unreachable!("Clap should enforce that exactly one option is provided")
     }

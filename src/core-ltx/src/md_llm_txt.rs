@@ -1,5 +1,6 @@
 use markdown_ppp::ast::{self};
 use markdown_ppp::parser::{MarkdownParserState, parse_markdown};
+use markdown_ppp::printer::{config::Config, render_markdown};
 
 use crate::Error;
 
@@ -31,6 +32,11 @@ impl LlmsTxt {
     /// Destroy the LlmTxt wrapper, extracting the underlying markdown AST.
     pub fn extract(self) -> Markdown {
         self.0
+    }
+
+    /// Gets the Markdown content as a string.
+    pub fn to_string(&self) -> String {
+        render_markdown(&self.0, Config::default())
     }
 }
 
