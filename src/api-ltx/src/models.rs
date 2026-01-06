@@ -179,12 +179,7 @@ impl JobState {
     }
 
     /// Create database representation from ergonomic JobKindData enum
-    pub fn from_kind_data(
-        job_id: Uuid,
-        url: String,
-        status: JobStatus,
-        kind_data: JobKindData,
-    ) -> Self {
+    pub fn from_kind_data(job_id: Uuid, url: String, status: JobStatus, kind_data: JobKindData) -> Self {
         match kind_data {
             JobKindData::New => JobState {
                 job_id,

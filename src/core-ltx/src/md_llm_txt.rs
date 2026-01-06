@@ -137,8 +137,7 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
 
         fn accept_other_header(&mut self) -> Step {
             match self.stage {
-                Stage::LookingForFileListSections_NeedListOrH2
-                | Stage::LookingForOptionalDetails => {
+                Stage::LookingForFileListSections_NeedListOrH2 | Stage::LookingForOptionalDetails => {
                     // accept: make sure we stay in the file list stage (we could skip over the optional details)
                     // we just saw the H2, so we need to see a list element
                     self.stage = Stage::LookingForFileListSections_NeedList;
@@ -182,8 +181,7 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
                         LineBreak => {
                             if state.stage != Stage::LookingForOptionalDetails {
                                 return Err(Error::InvalidLlmsTxtFormat(
-                                    "Found a line break outside of the optional details section."
-                                        .into(),
+                                    "Found a line break outside of the optional details section.".into(),
                                 ));
                             }
                         }
@@ -329,8 +327,7 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
                     Stage::LookingForOptionalDetails => {
                         // ok to have here
                     }
-                    Stage::LookingForFileListSections_NeedList
-                    | Stage::LookingForFileListSections_NeedListOrH2 => {
+                    Stage::LookingForFileListSections_NeedList | Stage::LookingForFileListSections_NeedListOrH2 => {
                         state.stage = Stage::LookingForFileListSections_NeedListOrH2;
                     }
                     wrong_stage => {
@@ -464,16 +461,16 @@ mod tests {
             x => panic!("unexpected block type: {:?}", x),
         }
 
-        assert!(is_valid_markdown("# Title\n- a list\n-with more\n-than one element\n```hello world!\nhow are you?\n```\n").is_ok())
+        assert!(
+            is_valid_markdown("# Title\n- a list\n-with more\n-than one element\n```hello world!\nhow are you?\n```\n")
+                .is_ok()
+        )
     }
 
     #[test]
     fn llm_txt_validation() {
         // minimally ok
-        assert!(
-            validate_is_llm_txt(is_valid_markdown("# a title\n>>>> blockquote section").unwrap())
-                .is_ok()
-        );
+        assert!(validate_is_llm_txt(is_valid_markdown("# a title\n>>>> blockquote section").unwrap()).is_ok());
 
         // maxmimal example
         assert!(

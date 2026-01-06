@@ -9,9 +9,8 @@ use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
 use std::collections::HashMap;
 
 use crate::models::{
-    GetLlmTxtError, JobIdResponse, JobKindData, JobState, JobStatus as JobStatusEnum,
-    LlmTxtResponse, LlmsTxt, LlmsTxtListItem, LlmsTxtListResponse, PostLlmTxtError, PutLlmTxtError,
-    ResultStatus, UpdateLlmTxtError, UrlPayload,
+    GetLlmTxtError, JobIdResponse, JobKindData, JobState, JobStatus as JobStatusEnum, LlmTxtResponse, LlmsTxt,
+    LlmsTxtListItem, LlmsTxtListResponse, PostLlmTxtError, PutLlmTxtError, ResultStatus, UpdateLlmTxtError, UrlPayload,
 };
 use crate::routes::AppError;
 use crate::schema::{job_state, llms_txt};
@@ -25,10 +24,7 @@ use crate::{db::DbPool, routes::job_state::in_progress_jobs};
 /// If there are multiple, the most recent one (using `created_at`) is returned.
 ///
 /// An Error is returned if there are either no matching rows or if there's an internal DB error.
-pub async fn fetch_llms_txt(
-    conn: &mut AsyncPgConnection,
-    url: &str,
-) -> Result<LlmsTxt, diesel::result::Error> {
+pub async fn fetch_llms_txt(conn: &mut AsyncPgConnection, url: &str) -> Result<LlmsTxt, diesel::result::Error> {
     llms_txt::table
         .filter(llms_txt::url.eq(url))
         .filter(llms_txt::result_status.eq(ResultStatus::Ok))
@@ -53,9 +49,7 @@ pub async fn get_llm_txt(
                     content: llms_txt_record.result_data,
                 }),
             )),
-            ResultStatus::Error => Err(GetLlmTxtError::GenerationFailure(
-                llms_txt_record.result_data,
-            )),
+            ResultStatus::Error => Err(GetLlmTxtError::GenerationFailure(llms_txt_record.result_data)),
         },
         Err(e) => Err(e.into()),
     }
@@ -67,12 +61,7 @@ async fn new_llms_txt_generate_job(
     url: &str,
 ) -> Result<JobIdResponse, diesel::result::Error> {
     let job_id = uuid::Uuid::new_v4();
-    let new_job = JobState::from_kind_data(
-        job_id,
-        url.to_string(),
-        JobStatusEnum::Queued,
-        JobKindData::New,
-    );
+    let new_job = JobState::from_kind_data(job_id, url.to_string(), JobStatusEnum::Queued, JobKindData::New);
 
     diesel::insert_into(job_state::table)
         .values(&new_job)
@@ -93,15 +82,12 @@ pub async fn post_llm_txt(
             match fetch_llms_txt(conn, &payload.url).await {
                 Ok(_) => Err(PostLlmTxtError::AlreadyGenerated),
                 Err(e) => match e {
-                    diesel::result::Error::NotFound => match in_progress_jobs(conn, &payload.url)
-                        .await
-                    {
+                    diesel::result::Error::NotFound => match in_progress_jobs(conn, &payload.url).await {
                         Ok(existing_jobs) => Err(PostLlmTxtError::JobsInProgress(existing_jobs)),
 
                         Err(e_jobs) => match e_jobs {
                             diesel::result::Error::NotFound => {
-                                let job_id_response =
-                                    new_llms_txt_generate_job(conn, &payload.url).await?;
+                                let job_id_response = new_llms_txt_generate_job(conn, &payload.url).await?;
                                 Ok((StatusCode::CREATED, Json(job_id_response)))
                             }
 
@@ -152,9 +138,7 @@ pub async fn post_update(
             match fetch_llms_txt(conn, &payload.url).await {
                 Ok(llms_txt) => {
                     // Create an update job using the existing llms.txt result_data
-                    let job_id_response =
-                        update_llms_txt_generation(conn, &payload.url, &llms_txt.result_data)
-                            .await?;
+                    let job_id_response = update_llms_txt_generation(conn, &payload.url, &llms_txt.result_data).await?;
                     Ok((StatusCode::CREATED, Json(job_id_response)))
                 }
 
@@ -176,9 +160,7 @@ pub async fn put_llm_txt(
         async move {
             match fetch_llms_txt(conn, &payload.url).await {
                 Ok(llms_txt) => {
-                    let job_id_response =
-                        update_llms_txt_generation(conn, &payload.url, &llms_txt.result_data)
-                            .await?;
+                    let job_id_response = update_llms_txt_generation(conn, &payload.url, &llms_txt.result_data).await?;
                     Ok((StatusCode::CREATED, Json(job_id_response)))
                 }
 

@@ -65,8 +65,7 @@ fn validate_input_file(s: &str) -> Result<PathBuf, String> {
         return Err(format!("Input path is not a file: {}", path.display()));
     }
 
-    let metadata =
-        std::fs::metadata(&path).map_err(|e| format!("Cannot read update file metadata: {}", e))?;
+    let metadata = std::fs::metadata(&path).map_err(|e| format!("Cannot read update file metadata: {}", e))?;
 
     if metadata.len() == 0 {
         return Err(format!("Input file is empty: {}", path.display()));
@@ -112,9 +111,7 @@ fn main() {
                     Ok(_llms_txt) => println!("Valid llms.txt file: {file:?}"),
                     Err(e) => println!("Invalid llms.txt file ({file:?}): {e:?}"),
                 },
-                Err(e) => println!(
-                    "Invalid llms.txt file because it's an invalid markdown file ({file:?}):\n{e:?}"
-                ),
+                Err(e) => println!("Invalid llms.txt file because it's an invalid markdown file ({file:?}):\n{e:?}"),
             },
             Err(e) => {
                 println!("Cannot read file ({file:?}) due to: {e:?}");
@@ -138,9 +135,7 @@ fn main() {
                 }
             };
 
-            unimplemented!(
-                "update llms.txt [1] with website [2]:\n[1]\n{llms_txt_content}\n[2]\n{web_content}"
-            );
+            unimplemented!("update llms.txt [1] with website [2]:\n[1]\n{llms_txt_content}\n[2]\n{web_content}");
         }
     }
 }

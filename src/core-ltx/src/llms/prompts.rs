@@ -96,11 +96,7 @@ const RETRY_GENERATE_LLMS_TXT: &str = indoc! { "
   Please fix the error and output a valid llms.txt file for the website.
 "};
 
-pub fn prompt_retry_generate_llms_txt(
-    website: &str,
-    llms_txt: &str,
-    error: &str,
-) -> Result<String, Error> {
+pub fn prompt_retry_generate_llms_txt(website: &str, llms_txt: &str, error: &str) -> Result<String, Error> {
     let res = envsubst::substitute(RETRY_GENERATE_LLMS_TXT, &{
         let mut v = HashMap::new();
         v.insert("WEBSITE".to_string(), website.to_string());
@@ -236,8 +232,7 @@ mod tests {
     use super::*;
 
     const WEBSITE: &str = "<html><head></head><body><h1>Hello, World!</h1></body></html>";
-    const LLMS_TXT: &str =
-        "# Example\n>>>> Example website suitable to be linked to in example documentation.";
+    const LLMS_TXT: &str = "# Example\n>>>> Example website suitable to be linked to in example documentation.";
     const ERROR: &str = "QUALITY: Not a good summary of website content.";
 
     #[test]

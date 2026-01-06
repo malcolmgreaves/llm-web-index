@@ -17,18 +17,11 @@ use crate::{db::DbPool, models::JobStatus};
 /// An in-progress job is one whose status is either Queued, Started, or Running.
 ///
 /// An error is returned if there are no matching rows or if there's an internal DB error.s
-pub async fn in_progress_jobs(
-    conn: &mut AsyncPgConnection,
-    url: &str,
-) -> Result<Vec<Uuid>, diesel::result::Error> {
+pub async fn in_progress_jobs(conn: &mut AsyncPgConnection, url: &str) -> Result<Vec<Uuid>, diesel::result::Error> {
     job_state::table
         .filter(job_state::url.eq(url))
         // only select currently running jobs
-        .filter(job_state::status.eq_any(&[
-            JobStatus::Queued,
-            JobStatus::Queued,
-            JobStatus::Running,
-        ]))
+        .filter(job_state::status.eq_any(&[JobStatus::Queued, JobStatus::Queued, JobStatus::Running]))
         .select(job_state::job_id)
         .load::<Uuid>(conn)
         .await
@@ -73,17 +66,11 @@ pub async fn get_job(
 }
 
 // GET /api/jobs/in_progress - List all in-progress jobs
-pub async fn get_in_progress_jobs(
-    State(pool): State<DbPool>,
-) -> Result<impl IntoResponse, StatusError> {
+pub async fn get_in_progress_jobs(State(pool): State<DbPool>) -> Result<impl IntoResponse, StatusError> {
     let mut conn = pool.get().await?;
 
     let jobs = job_state::table
-        .filter(job_state::status.eq_any(&[
-            JobStatus::Queued,
-            JobStatus::Started,
-            JobStatus::Running,
-        ]))
+        .filter(job_state::status.eq_any(&[JobStatus::Queued, JobStatus::Started, JobStatus::Running]))
         .select(JobState::as_select())
         .load::<JobState>(&mut conn)
         .await?;

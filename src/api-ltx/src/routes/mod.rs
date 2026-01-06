@@ -10,9 +10,7 @@ use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 
 use crate::db::DbPool;
-use crate::models::{
-    GetLlmTxtError, PostLlmTxtError, PutLlmTxtError, StatusError, UpdateLlmTxtError,
-};
+use crate::models::{GetLlmTxtError, PostLlmTxtError, PutLlmTxtError, StatusError, UpdateLlmTxtError};
 
 pub mod job_state;
 pub mod llms_txt;
@@ -31,10 +29,7 @@ pub fn router() -> Router<DbPool> {
         .route("/api/list", get(llms_txt::get_list))
         .route("/api/status", get(job_state::get_status))
         .route("/api/job", get(job_state::get_job))
-        .route(
-            "/api/jobs/in_progress",
-            get(job_state::get_in_progress_jobs),
-        )
+        .route("/api/jobs/in_progress", get(job_state::get_in_progress_jobs))
         // Serve static assets from frontend pkg directory
         .nest_service("/pkg", ServeDir::new("src/front-ltx/www/pkg"))
         // Fallback to index.html for all other routes (enables client-side routing)
@@ -105,9 +100,7 @@ impl IntoResponse for GetLlmTxtError {
     fn into_response(self) -> axum::response::Response {
         let status = match self {
             GetLlmTxtError::NotGenerated => StatusCode::NOT_FOUND,
-            GetLlmTxtError::Unknown(_) | GetLlmTxtError::GenerationFailure(_) => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            GetLlmTxtError::Unknown(_) | GetLlmTxtError::GenerationFailure(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, Json(self)).into_response()
     }
@@ -121,9 +114,7 @@ from_diesel_not_found_error!(GetLlmTxtError);
 impl IntoResponse for PostLlmTxtError {
     fn into_response(self) -> axum::response::Response {
         let status = match self {
-            PostLlmTxtError::AlreadyGenerated | PostLlmTxtError::JobsInProgress(_) => {
-                StatusCode::CONFLICT
-            }
+            PostLlmTxtError::AlreadyGenerated | PostLlmTxtError::JobsInProgress(_) => StatusCode::CONFLICT,
             PostLlmTxtError::Unknown(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, Json(self)).into_response()
