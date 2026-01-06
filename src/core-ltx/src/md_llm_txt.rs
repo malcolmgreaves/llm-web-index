@@ -458,6 +458,7 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
 
 #[cfg(test)]
 mod tests {
+    use indoc::indoc;
     use markdown_ppp::ast::Block;
 
     use super::*;
@@ -480,5 +481,83 @@ mod tests {
         }
 
         assert!(is_valid_markdown("# Title\n- a list\n-with more\n-than one element\n```hello world!\nhow are you?\n```\n").is_ok())
+    }
+
+    #[test]
+    fn llm_txt_validation() {
+        // minimally ok
+        assert!(
+            validate_is_llm_txt(is_valid_markdown("# a title\n>>>> blockquote section").unwrap())
+                .is_ok()
+        );
+
+        // maxmimal example
+        assert!(
+            validate_is_llm_txt(
+                is_valid_markdown(indoc! { "
+            # a title
+            >>>> blockquote
+            >>>> section
+            >>>> here
+
+            - something else here
+            1. is
+            2. ok
+            We just **cannot** have a section heading here!
+
+            ## One we are in the file lists
+            - we
+            - are
+            - ok
+
+            ## note that we
+            - do not
+
+            ## check
+            - that each list element here is link format
+            - which we really _should_ do
+          "})
+                .unwrap()
+            )
+            .is_ok()
+        );
+
+        // missing everything
+        assert!(validate_is_llm_txt(is_valid_markdown("").unwrap()).is_err());
+
+        // missing blockquote summary
+        assert!(validate_is_llm_txt(is_valid_markdown("# a title").unwrap()).is_err());
+
+        // has an invalid header section
+        assert!(
+            validate_is_llm_txt(
+                is_valid_markdown(indoc! { "
+            # a title
+            >>>> blockquote
+            >>>> section
+            >>>> here
+
+            - something else here
+            1. is
+            2. ok
+
+            ### We just **cannot** have a section heading here!
+
+            ## One we are in the file lists
+            - we
+            - are
+            - ok
+
+            ## note that we
+            - do not
+
+            ## check
+            - that each list element here is link format
+            - which we really _should_ do
+          "})
+                .unwrap()
+            )
+            .is_err()
+        );
     }
 }
