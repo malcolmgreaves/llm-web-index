@@ -104,7 +104,7 @@ fn main() {
     let cli = CoreCli::parse();
 
     match &cli.command {
-        Commands::Markdown { file } => match std::fs::read_to_string(&file) {
+        Commands::Markdown { file } => match std::fs::read_to_string(file) {
             Ok(content) => match is_valid_markdown(&content) {
                 Ok(_doc) => println!("Valid markdown file: {file:?}"),
                 Err(e) => println!("Invalid markdown file ({file:?}):\n{e:?}"),
@@ -112,7 +112,7 @@ fn main() {
             Err(e) => println!("Cannot read file ({file:?}) due to: {e:?}"),
         },
 
-        Commands::Validate { file } => match std::fs::read_to_string(&file) {
+        Commands::Validate { file } => match std::fs::read_to_string(file) {
             Ok(content) => match is_valid_markdown(&content) {
                 Ok(doc) => match validate_is_llm_txt(doc) {
                     Ok(_llms_txt) => println!("Valid llms.txt file: {file:?}"),
@@ -129,14 +129,14 @@ fn main() {
         },
 
         Commands::Generate(website) => {
-            let web_content = website_content(&website);
+            let web_content = website_content(website);
             unimplemented!("generate llms.txt from website content:\n{web_content}")
         }
 
         Commands::Update { website, llms_txt } => {
-            let web_content = website_content(&website);
+            let web_content = website_content(website);
 
-            let llms_txt_content = match std::fs::read_to_string(&llms_txt) {
+            let llms_txt_content = match std::fs::read_to_string(llms_txt) {
                 Ok(x) => x,
                 Err(e) => {
                     println!("ERROR: Cannot read file ({llms_txt:?}) due to: {e:?}");
