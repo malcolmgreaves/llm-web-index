@@ -54,12 +54,6 @@ struct Website {
     file: Option<PathBuf>,
 }
 
-fn validate_url(s: &str) -> Result<String, String> {
-    url::Url::parse(s)
-        .map(|_| s.to_string())
-        .map_err(|e| format!("Invalid URL: {}", e))
-}
-
 fn validate_input_file(s: &str) -> Result<PathBuf, String> {
     let path = PathBuf::from(s);
 

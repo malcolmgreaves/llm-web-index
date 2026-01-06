@@ -22,6 +22,9 @@ pub enum Error {
 
     /// Markdown file does not adhere to the llms.txt format.
     InvalidLlmsTxtFormat(String),
+
+    /// Internal error: prompt substitution failed.
+    PromptCreationFailure(envsubst::Error),
 }
 
 impl std::fmt::Display for Error {
@@ -32,6 +35,7 @@ impl std::fmt::Display for Error {
             Error::InvalidHtml(txt) => write!(f, "Not a valid HTML: {}", txt),
             Error::InvalidMarkdown(err) => write!(f, "Not valid Markdown: {}", err),
             Error::InvalidLlmsTxtFormat(msg) => write!(f, "Not valid llms.txt Format: {}", msg),
+            Error::PromptCreationFailure(err) => write!(f, "Failed to create prompt: {}", err),
         }
     }
 }
@@ -63,5 +67,11 @@ impl From<std::string::FromUtf8Error> for Error {
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
         Error::InvalidHtml(err.to_string())
+    }
+}
+
+impl From<envsubst::Error> for Error {
+    fn from(err: envsubst::Error) -> Self {
+        Error::PromptCreationFailure(err)
     }
 }

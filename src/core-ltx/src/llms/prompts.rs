@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use indoc::indoc;
 
+use crate::Error;
+
 const GENERATE_LLMS_TXT: &str = indoc! { "
   You need to generate an llms.txt file for a website. This file summarizes and describes the main content of the website. It includes a description of the website's structured elements and all outbound links.
 
@@ -64,12 +66,13 @@ const GENERATE_LLMS_TXT: &str = indoc! { "
   Output only valid markdown exactly in the described llms.txt format. Do not output any other text!
 "};
 
-pub fn prompt_generate_llms_txt(website: &str) -> Result<String, envsubst::Error> {
-    envsubst::substitute(GENERATE_LLMS_TXT, &{
+pub fn prompt_generate_llms_txt(website: &str) -> Result<String, Error> {
+    let res = envsubst::substitute(GENERATE_LLMS_TXT, &{
         let mut v = HashMap::new();
         v.insert("WEBSITE".to_string(), website.to_string());
         v
-    })
+    })?;
+    Ok(res)
 }
 
 const RETRY_GENERATE_LLMS_TXT: &str = indoc! { "
@@ -97,14 +100,15 @@ pub fn prompt_retry_generate_llms_txt(
     website: &str,
     llms_txt: &str,
     error: &str,
-) -> Result<String, envsubst::Error> {
-    envsubst::substitute(RETRY_GENERATE_LLMS_TXT, &{
+) -> Result<String, Error> {
+    let res = envsubst::substitute(RETRY_GENERATE_LLMS_TXT, &{
         let mut v = HashMap::new();
         v.insert("WEBSITE".to_string(), website.to_string());
         v.insert("LLMS_TXT".to_string(), llms_txt.to_string());
         v.insert("ERROR".to_string(), error.to_string());
         v
-    })
+    })?;
+    Ok(res)
 }
 
 const UPDATE_LLMS_TXT: &str = indoc! {"
@@ -174,13 +178,14 @@ const UPDATE_LLMS_TXT: &str = indoc! {"
   Output only valid markdown exactly in the described llms.txt format. Do not output any other text!
 "};
 
-pub fn prompt_update_llms_txt(llms_txt: &str, website: &str) -> Result<String, envsubst::Error> {
-    envsubst::substitute(UPDATE_LLMS_TXT, &{
+pub fn prompt_update_llms_txt(llms_txt: &str, website: &str) -> Result<String, Error> {
+    let res = envsubst::substitute(UPDATE_LLMS_TXT, &{
         let mut v = HashMap::new();
         v.insert("LLMS_TXT".to_string(), llms_txt.to_string());
         v.insert("WEBSITE".to_string(), website.to_string());
         v
-    })
+    })?;
+    Ok(res)
 }
 
 const RETRY_UPDATE_LLMS_TXT: &str = indoc! { "
@@ -214,15 +219,16 @@ pub fn prompt_retry_update_llms_txt(
     website: &str,
     new_llms_txt: &str,
     error: &str,
-) -> Result<String, envsubst::Error> {
-    envsubst::substitute(RETRY_UPDATE_LLMS_TXT, &{
+) -> Result<String, Error> {
+    let res = envsubst::substitute(RETRY_UPDATE_LLMS_TXT, &{
         let mut v = HashMap::new();
         v.insert("OLD_LLMS_TXT".to_string(), old_llms_txt.to_string());
         v.insert("WEBSITE".to_string(), website.to_string());
         v.insert("NEW_LLMS_TXT".to_string(), new_llms_txt.to_string());
         v.insert("ERROR".to_string(), error.to_string());
         v
-    })
+    })?;
+    Ok(res)
 }
 
 #[cfg(test)]
