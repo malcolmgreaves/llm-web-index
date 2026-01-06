@@ -40,3 +40,27 @@ pub fn parse_html(content: &str) -> Result<String, Error> {
     let html = String::from_utf8(output)?;
     Ok(html)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_download() {
+        let url = Url::parse("https://example.com").unwrap();
+        let content = download(&url).await.unwrap();
+        assert!(!content.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_parse_html() {
+        let expected = "<html><head></head><body><h1>Hello, World!</h1></body></html>";
+        for html in [
+            "<html><body><h1>Hello, World!</h1></body></html>", // valid
+            "<html><body><h1>Hello, World!</body></html>", // assert that it can close missing tags -- this is missing a closing </h1>
+        ] {
+            let parsed_html = parse_html(html).unwrap();
+            assert_eq!(parsed_html, expected);
+        }
+    }
+}
