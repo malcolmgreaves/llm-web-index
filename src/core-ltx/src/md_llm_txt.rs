@@ -1,23 +1,7 @@
 use markdown_ppp::ast::{self};
 use markdown_ppp::parser::{MarkdownParserState, parse_markdown};
 
-/// Failures that can occur while parsing the markdown-formatted llms.txt file.
-#[derive(Debug)]
-pub enum Error {
-    InvalidMarkdown(nom::Err<nom::error::Error<String>>),
-    InvalidLlmsTxtFormat(String),
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::InvalidMarkdown(err) => write!(f, "Not valid Markdown: {}", err),
-            Error::InvalidLlmsTxtFormat(msg) => write!(f, "Not valid llms.txt Format: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for Error {}
+use crate::Error;
 
 /// A markdown document, represented as an abstract syntax tree (AST) of markdown blocks.
 pub type Markdown = ast::Document;
