@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
-use core_ltx::{LlmsTxt, is_valid_markdown, validate_is_llm_txt};
+use core_ltx::{is_valid_markdown, validate_is_llm_txt};
 
 #[derive(Parser)]
 #[command(name = "core-llmstxt")]
@@ -35,6 +35,7 @@ enum Commands {
     /// Update an existing llms.txt
     Update {
         // The website to generate an updated llms.txt file for.
+        #[command(flatten)]
         website: Website,
         /// The prior existing llms.txt file.
         #[arg(short, long, value_parser = validate_input_file)]
@@ -42,15 +43,15 @@ enum Commands {
     },
 }
 
-#[derive(Args)]
+#[derive(Clone, Args)]
 #[group(required = true, multiple = false)]
-enum Website {
+struct Website {
     /// The website URL to download and generate an llms.txt for.
     #[arg(short, long, group = "website")]
-    Url(String),
+    url: Option<String>,
     /// The local filepath of HTML of a pre-downloaded webpage to generate an llms.txt for.
     #[arg(short, long, group = "website")]
-    File(PathBuf),
+    file: Option<PathBuf>,
 }
 
 fn validate_url(s: &str) -> Result<String, String> {
@@ -151,16 +152,17 @@ fn main() {
 }
 
 fn website_content(website: &Website) -> String {
-    match website {
-        Website::File(file) => match std::fs::read_to_string(&file) {
+    if let Some(file) = &website.file {
+        match std::fs::read_to_string(file) {
             Ok(content) => content,
             Err(e) => {
                 println!("ERROR: Cannot read file ({file:?}) due to: {e:?}");
                 std::process::exit(1)
             }
-        },
-        Website::Url(url) => {
-            unimplemented!("download URL ({url}) as file")
         }
+    } else if let Some(url) = &website.url {
+        unimplemented!("download URL ({url}) as file")
+    } else {
+        unreachable!("Clap should enforce that exactly one option is provided")
     }
 }
