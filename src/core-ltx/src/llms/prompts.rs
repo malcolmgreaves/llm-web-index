@@ -81,7 +81,7 @@ pub const RETRY_GENERATE_LLMS_TXT: &str = indoc! { "
 "};
 
 pub const UPDATE_LLMS_TXT: &str =
-    { "You need to update an existing llms.txt file with recent website changes." };
+    "You need to update an existing llms.txt file with recent website changes.";
 
 pub const RETRY_UPDATE_LLMS_TXT: &str = indoc! { "
   You failed to generate a valid llms.txt file!

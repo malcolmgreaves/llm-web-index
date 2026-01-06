@@ -1,6 +1,5 @@
-use markdown_ppp::ast::{self, GitHubAlertType};
+use markdown_ppp::ast::{self};
 use markdown_ppp::parser::{MarkdownParserState, parse_markdown};
-use markdown_ppp::printer::{config::Config, render_markdown};
 
 pub fn is_valid_markdown(content: &str) -> bool {
     match parse_markdown(MarkdownParserState::default(), content) {
@@ -52,7 +51,6 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
         LookingForSummaryBlockquote,
         LookingForOptionalDetails,
         // LookingForFileListSections,
-        LookingForFileListSections_NeedH2,
         LookingForFileListSections_NeedList,
         LookingForFileListSections_NeedListOrH2,
     }
@@ -64,12 +62,6 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
                 Stage::LookingForSummaryBlockquote => write!(f, "Looking for Summary Blockquote"),
                 Stage::LookingForOptionalDetails => {
                     write!(f, "Looking for Optional Detail Section(s)")
-                }
-                Stage::LookingForFileListSections_NeedH2 => {
-                    write!(
-                        f,
-                        "Looking for Optional File List Section(s): Need to find an H2"
-                    )
                 }
                 Stage::LookingForFileListSections_NeedList => {
                     write!(
@@ -100,12 +92,6 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
         has_h1_name_site: bool,
         /// Need a blockquote summarizing the content. Will treat as required.
         has_summary_blockquote: bool,
-        /// Optional. If present, then there can be several non-header elements after the blockquote.
-        valid_optional_details: bool,
-        /// True means they have already been seen. False means that they have not been seen.
-        saw_optional_details: bool,
-        /// Optional. If present, then each next section has to be an H2 and be a list of URLs / files
-        valid_file_list_sections: bool,
     }
 
     type Step = Result<(), Error>;
@@ -117,9 +103,6 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
                 stage: Stage::LookingForH1,
                 has_h1_name_site: false,
                 has_summary_blockquote: false,
-                valid_optional_details: true,
-                saw_optional_details: false,
-                valid_file_list_sections: true,
             }
         }
 
@@ -130,16 +113,6 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
             if !self.has_summary_blockquote {
                 return Err(Error::InvalidLlmsTxtFormat(
                     "Missing required summary blockquote.".into(),
-                ));
-            }
-            if !self.valid_optional_details {
-                return Err(Error::InvalidLlmsTxtFormat(
-                    "Invalid optional details section.".into(),
-                ));
-            }
-            if !self.valid_file_list_sections {
-                return Err(Error::InvalidLlmsTxtFormat(
-                    "Invalid optional file list sections.".into(),
                 ));
             }
             Ok(())
@@ -169,19 +142,17 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
 
         fn accept_other_header(&mut self) -> Step {
             match self.stage {
-                Stage::LookingForFileListSections_NeedH2
-                | Stage::LookingForFileListSections_NeedListOrH2
+                Stage::LookingForFileListSections_NeedListOrH2
                 | Stage::LookingForOptionalDetails => {
                     // accept: make sure we stay in the file list stage (we could skip over the optional details)
-                    self.stage = Stage::LookingForFileListSections_NeedH2;
+                    // we just saw the H2, so we need to see a list element
+                    self.stage = Stage::LookingForFileListSections_NeedList;
                     Ok(())
                 }
-                wrong_stage => {
-                    return Err(Error::InvalidLlmsTxtFormat(format!(
-                        "Found a header when we were not looking for file lists! We are looking for: {}",
-                        wrong_stage
-                    )));
-                }
+                wrong_stage => Err(Error::InvalidLlmsTxtFormat(format!(
+                    "Found a header when we were not looking for file lists! We are looking for: {}",
+                    wrong_stage
+                ))),
             }
         }
     }
@@ -208,7 +179,7 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
                 use ast::Inline::*;
                 for s in inline_segments.iter() {
                     match s {
-                        Text(text) => {
+                        Text(_text) => {
                             // Ok
                         }
 
@@ -223,7 +194,7 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
                         }
 
                         // Inline code span
-                        Code(code) => {
+                        Code(_code) => {
                             // Ok
                         }
 
@@ -468,6 +439,8 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
         }
         state.i += 1;
     }
+
+    state.final_validation()?;
 
     Ok(LlmTxt(doc))
 }
