@@ -32,10 +32,10 @@ pub fn is_valid_markdown(content: &str) -> Result<Markdown, Error> {
 
 /// A valid llms.txt file, described by a markdown document.
 #[derive(Debug, Clone)]
-pub struct LlmTxt(Markdown);
+pub struct LlmsTxt(Markdown);
 
 /// The only way to make an LlmTxt is to validate it with `validate_is_llm_txt`.
-impl LlmTxt {
+impl LlmsTxt {
     /// Provide access to the underlying llms.txt markdown document.
     pub fn map<F, T>(&self, f: F) -> T
     where
@@ -53,7 +53,7 @@ impl LlmTxt {
 /// Determines whether or not the markdown document adheres to the llms.txt specification.
 ///
 /// This function is the only way to make an `LlmTxt` instance.
-pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
+pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
     use ast::Block::*;
 
     #[derive(PartialEq, Eq, Copy, Clone)]
@@ -453,7 +453,7 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
 
     state.final_validation()?;
 
-    Ok(LlmTxt(doc))
+    Ok(LlmsTxt(doc))
 }
 
 #[cfg(test)]
