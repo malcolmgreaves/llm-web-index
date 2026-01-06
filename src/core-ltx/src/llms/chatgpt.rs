@@ -6,6 +6,7 @@ use async_openai::{
         CreateCompletionRequestArgs,
     },
 };
+use async_trait::async_trait;
 
 use crate::{Error, llms::LlmProvider};
 
@@ -24,6 +25,7 @@ impl Default for ChatGpt {
     }
 }
 
+#[async_trait]
 impl LlmProvider for ChatGpt {
     async fn complete_prompt(&self, prompt: &str) -> Result<String, Error> {
         let request = CreateCompletionRequestArgs::default()
