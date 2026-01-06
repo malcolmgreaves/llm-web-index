@@ -455,3 +455,30 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmTxt, Error> {
 
     Ok(LlmTxt(doc))
 }
+
+#[cfg(test)]
+mod tests {
+    use markdown_ppp::ast::Block;
+
+    use super::*;
+
+    #[test]
+    fn markdown_validation() {
+        assert!(is_valid_markdown("").is_ok());
+
+        let x = is_valid_markdown("# Title");
+        assert!(x.is_ok());
+        match x.unwrap().blocks.get(0).unwrap() {
+            Block::Heading(ast::Heading {
+                kind: ast::HeadingKind::Atx(1),
+                content,
+            }) => match content.get(0).unwrap() {
+                ast::Inline::Text(text) => assert_eq!(text, "Title"),
+                _ => panic!("unexpected text: {:?}", content),
+            },
+            x => panic!("unexpected block type: {:?}", x),
+        }
+
+        assert!(is_valid_markdown("# Title\n- a list\n-with more\n-than one element\n```hello world!\nhow are you?\n```\n").is_ok())
+    }
+}
