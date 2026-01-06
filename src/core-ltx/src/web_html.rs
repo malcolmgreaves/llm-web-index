@@ -45,6 +45,15 @@ pub fn parse_html(content: &str) -> Result<String, Error> {
 mod tests {
     use super::*;
 
+    #[test]
+    fn test_url() {
+        let url = "https://example.com";
+        assert!(is_valid_url(url).is_ok());
+
+        let url = "invalid";
+        assert!(is_valid_url(url).is_err());
+    }
+
     #[tokio::test]
     async fn test_download() {
         let url = Url::parse("https://example.com").unwrap();
@@ -52,8 +61,8 @@ mod tests {
         assert!(!content.is_empty());
     }
 
-    #[tokio::test]
-    async fn test_parse_html() {
+    #[test]
+    fn test_html() {
         let expected = "<html><head></head><body><h1>Hello, World!</h1></body></html>";
         for html in [
             "<html><body><h1>Hello, World!</h1></body></html>", // valid

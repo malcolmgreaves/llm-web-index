@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use indoc::indoc;
 
-pub const GENERATE_LLMS_TXT: &str = indoc! { "
+const GENERATE_LLMS_TXT: &str = indoc! { "
   You need to generate an llms.txt file for a website. This file summarizes and describes the main content of the website. It includes a description of the website's structured elements and all outbound links.
 
   Here's a more formal the off what an llms.txt file is (_note the XML-like tags delineate specific content_):
@@ -62,7 +64,15 @@ pub const GENERATE_LLMS_TXT: &str = indoc! { "
   Output only valid markdown exactly in the described llms.txt format. Do not output any other text!
 "};
 
-pub const RETRY_GENERATE_LLMS_TXT: &str = indoc! { "
+pub fn prompt_generate_llms_txt(website: &str) -> Result<String, envsubst::Error> {
+    envsubst::substitute(GENERATE_LLMS_TXT, &{
+        let mut v = HashMap::new();
+        v.insert("WEBSITE".to_string(), website.to_string());
+        v
+    })
+}
+
+const RETRY_GENERATE_LLMS_TXT: &str = indoc! { "
   You failed to generate a valid llms.txt file!
 
   From the website:
@@ -83,7 +93,19 @@ pub const RETRY_GENERATE_LLMS_TXT: &str = indoc! { "
   Please fix the error and output a valid llms.txt file for the website.
 "};
 
-pub const UPDATE_LLMS_TXT: &str = indoc! {"
+pub fn prompt_retry_generate_llms_txt(
+    website: &str,
+    error: &str,
+) -> Result<String, envsubst::Error> {
+    envsubst::substitute(RETRY_GENERATE_LLMS_TXT, &{
+        let mut v = HashMap::new();
+        v.insert("WEBSITE".to_string(), website.to_string());
+        v.insert("ERROR".to_string(), error.to_string());
+        v
+    })
+}
+
+const UPDATE_LLMS_TXT: &str = indoc! {"
   You need to update an existing llms.txt file with recent website changes.
 
   Here's a more formal the off what an llms.txt file is (_note the XML-like tags delineate specific content_):
@@ -150,7 +172,16 @@ pub const UPDATE_LLMS_TXT: &str = indoc! {"
   Output only valid markdown exactly in the described llms.txt format. Do not output any other text!
 "};
 
-pub const RETRY_UPDATE_LLMS_TXT: &str = indoc! { "
+pub fn prompt_update_llms_txt(llms_txt: &str, website: &str) -> Result<String, envsubst::Error> {
+    envsubst::substitute(UPDATE_LLMS_TXT, &{
+        let mut v = HashMap::new();
+        v.insert("LLMS_TXT".to_string(), llms_txt.to_string());
+        v.insert("WEBSITE".to_string(), website.to_string());
+        v
+    })
+}
+
+const RETRY_UPDATE_LLMS_TXT: &str = indoc! { "
   You failed to generate a valid llms.txt file!
 
   From the existing llms.txt file:
@@ -175,3 +206,17 @@ pub const RETRY_UPDATE_LLMS_TXT: &str = indoc! { "
 
   Please fix the error and output a valid updated llms.txt file for the updated website. (Only output valid markdown. Only output the exact content of the llms.txt file. Do not output any other text!)
 "};
+
+pub fn prompt_retry_update_llms_txt(
+    llms_txt: &str,
+    website: &str,
+    error: &str,
+) -> Result<String, envsubst::Error> {
+    envsubst::substitute(RETRY_UPDATE_LLMS_TXT, &{
+        let mut v = HashMap::new();
+        v.insert("LLMS_TXT".to_string(), llms_txt.to_string());
+        v.insert("WEBSITE".to_string(), website.to_string());
+        v.insert("ERROR".to_string(), error.to_string());
+        v
+    })
+}
