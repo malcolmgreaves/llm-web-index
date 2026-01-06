@@ -25,6 +25,9 @@ pub enum Error {
 
     /// Internal error: prompt substitution failed.
     PromptCreationFailure(envsubst::Error),
+
+    /// Error calling ChatGPT
+    ChatGptError(async_openai::error::OpenAIError),
 }
 
 impl std::fmt::Display for Error {
@@ -36,6 +39,7 @@ impl std::fmt::Display for Error {
             Error::InvalidMarkdown(err) => write!(f, "Not valid Markdown: {}", err),
             Error::InvalidLlmsTxtFormat(msg) => write!(f, "Not valid llms.txt Format: {}", msg),
             Error::PromptCreationFailure(err) => write!(f, "Failed to create prompt: {}", err),
+            Error::ChatGptError(err) => write!(f, "Error calling ChatGPT: {}", err),
         }
     }
 }
@@ -73,5 +77,11 @@ impl From<std::io::Error> for Error {
 impl From<envsubst::Error> for Error {
     fn from(err: envsubst::Error) -> Self {
         Error::PromptCreationFailure(err)
+    }
+}
+
+impl From<async_openai::error::OpenAIError> for Error {
+    fn from(err: async_openai::error::OpenAIError) -> Self {
+        Error::ChatGptError(err)
     }
 }
