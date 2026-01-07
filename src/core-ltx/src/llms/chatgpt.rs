@@ -1,4 +1,13 @@
-use async_openai::{Client, config::OpenAIConfig, types::CreateCompletionRequestArgs};
+use std::iter::FlatMap;
+
+use async_openai::{
+    Client,
+    config::OpenAIConfig,
+    types::{
+        ChatCompletionRequestAssistantMessage, ChatCompletionRequestMessage, ChatCompletionRequestSystemMessage,
+        ChatCompletionRequestUserMessage, CreateChatCompletionRequestArgs,
+    },
+};
 use async_trait::async_trait;
 
 use crate::{Error, llms::LlmProvider};
@@ -13,27 +22,83 @@ impl Default for ChatGpt {
     fn default() -> Self {
         Self {
             client: Client::new(),
-            model_name: "gpt-3.5-turbo".to_string(),
+            model_name: "gpt-5-mini".to_string(),
         }
     }
 }
 
+// macro_rules! first {
+//   ($iter:expr) => {
+//     let mut maybe_first = None;
+//     for x in $iter.take(1) {
+//       maybe_first = Some(x);
+//     }
+//     maybe_first
+//   }
+// }
+
 #[async_trait]
 impl LlmProvider for ChatGpt {
     async fn complete_prompt(&self, prompt: &str) -> Result<String, Error> {
-        let request = CreateCompletionRequestArgs::default()
-            .model(self.model_name.as_str())
-            .prompt(prompt)
+        // let request = CreateChatCompletionRequestArgs::default()
+        //     .model(self.model_name.as_str())
+        //     .messages(value)
+        //     .build()?;
+        let request = CreateChatCompletionRequestArgs::default()
+            // .max_tokens(512u32)
+            .model(&self.model_name)
+            .messages([
+                // Can also use ChatCompletionRequest<Role>MessageArgs for builder pattern
+                ChatCompletionRequestSystemMessage::from("You are a helpful assistant. You produce summaries of websites formatted in Markdown according to the llms.txt specification.").into(),
+                ChatCompletionRequestUserMessage::from(prompt).into(),
+            ])
             .build()?;
 
-        let response = self.client.completions().create(request).await?;
+        // let response = self.client.completions().create(request).await?;
+        let response = self.client.chat().create(request).await?;
 
-        let llm_text_response = response
-            .choices
-            .first()
-            .map(|choice| choice.text.clone())
-            .unwrap_or("".to_string());
+        // let llm_text_response = response
+        //     .choices
+        //     .first()
+        //     .map(|choice| choice.text.clone())
+        //     .unwrap_or("".to_string());
+        // use FirstFlatMap;
+        let llm_text_response = {
+            let x = response
+                .choices
+                .iter()
+                .flat_map(|choice| choice.message.content.clone());
+            // let y = first!(x);
+            // let y = x.take(1).fold(None, |_, item| Some(item));
+            let y = x.take(1).fold("".to_string(), |_, item| item);
+            // y.unwrap_or("".to_string())
+            y
+        };
 
         Ok(llm_text_response)
     }
 }
+
+// struct FirstFlatMap<S, U, F>(FlatMap<S, U, F>)
+// where S:Iterator, U:IntoIterator;
+
+// impl <S,U,F> FirstFlatMap<S,U,F>
+// where S:Iterator, U:IntoIterator {
+
+//   pub fn first(self) -> Option<U> {
+
+//     let mut maybe_first: Option<U> = None;
+//     for x in self.0.take(1) {
+//       maybe_first = Some(x);
+//     }
+//     maybe_first
+//   }
+
+// }
+
+// impl <S,U,F> From<FlatMap<S, U, F>> for FirstFlatMap<S,U,F>
+// where S:Iterator, U:IntoIterator {
+//   fn from(flat_map: FlatMap<S, U, F>) -> Self {
+//     FirstFlatMap(flat_map)
+//   }
+// }
