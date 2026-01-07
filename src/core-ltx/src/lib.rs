@@ -24,7 +24,7 @@ pub enum Error {
     InvalidLlmsTxtFormat(String),
 
     /// Internal error: prompt substitution failed.
-    PromptCreationFailure(envsubst::Error),
+    PromptCreationFailure(subst::Error),
 
     /// Error calling ChatGPT
     ChatGptError(async_openai::error::OpenAIError),
@@ -74,8 +74,8 @@ impl From<std::io::Error> for Error {
     }
 }
 
-impl From<envsubst::Error> for Error {
-    fn from(err: envsubst::Error) -> Self {
+impl From<subst::Error> for Error {
+    fn from(err: subst::Error) -> Self {
         Error::PromptCreationFailure(err)
     }
 }

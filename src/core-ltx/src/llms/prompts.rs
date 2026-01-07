@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use indoc::indoc;
-
 use crate::Error;
+use indoc::indoc;
+use subst::substitute;
 
 const GENERATE_LLMS_TXT: &str = indoc! { "
   You need to generate an llms.txt file for a website. This file summarizes and describes the main content of the website. It includes a description of the website's structured elements and all outbound links.
@@ -67,7 +67,7 @@ const GENERATE_LLMS_TXT: &str = indoc! { "
 "};
 
 pub fn prompt_generate_llms_txt(website: &str) -> Result<String, Error> {
-    let res = envsubst::substitute(GENERATE_LLMS_TXT, &{
+    let res = substitute(GENERATE_LLMS_TXT, &{
         let mut v = HashMap::new();
         v.insert("WEBSITE".to_string(), website.to_string());
         v
@@ -97,7 +97,7 @@ const RETRY_GENERATE_LLMS_TXT: &str = indoc! { "
 "};
 
 pub fn prompt_retry_generate_llms_txt(website: &str, llms_txt: &str, error: &str) -> Result<String, Error> {
-    let res = envsubst::substitute(RETRY_GENERATE_LLMS_TXT, &{
+    let res = substitute(RETRY_GENERATE_LLMS_TXT, &{
         let mut v = HashMap::new();
         v.insert("WEBSITE".to_string(), website.to_string());
         v.insert("LLMS_TXT".to_string(), llms_txt.to_string());
@@ -175,7 +175,7 @@ const UPDATE_LLMS_TXT: &str = indoc! {"
 "};
 
 pub fn prompt_update_llms_txt(llms_txt: &str, website: &str) -> Result<String, Error> {
-    let res = envsubst::substitute(UPDATE_LLMS_TXT, &{
+    let res = substitute(UPDATE_LLMS_TXT, &{
         let mut v = HashMap::new();
         v.insert("LLMS_TXT".to_string(), llms_txt.to_string());
         v.insert("WEBSITE".to_string(), website.to_string());
@@ -216,7 +216,7 @@ pub fn prompt_retry_update_llms_txt(
     new_llms_txt: &str,
     error: &str,
 ) -> Result<String, Error> {
-    let res = envsubst::substitute(RETRY_UPDATE_LLMS_TXT, &{
+    let res = substitute(RETRY_UPDATE_LLMS_TXT, &{
         let mut v = HashMap::new();
         v.insert("OLD_LLMS_TXT".to_string(), old_llms_txt.to_string());
         v.insert("WEBSITE".to_string(), website.to_string());
