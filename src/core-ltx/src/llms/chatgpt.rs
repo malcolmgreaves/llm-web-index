@@ -17,7 +17,7 @@ impl Default for ChatGpt {
     fn default() -> Self {
         Self {
             client: Client::new(),
-            model_name: "gpt-5-mini".to_string(),
+            model_name: "gpt-5-nano".to_string(),
         }
     }
 }
