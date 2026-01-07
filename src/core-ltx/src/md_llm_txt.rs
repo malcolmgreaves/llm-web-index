@@ -35,7 +35,7 @@ impl LlmsTxt {
     }
 
     /// Gets the Markdown content as a string.
-    pub fn to_string(&self) -> String {
+    pub fn md_content(&self) -> String {
         render_markdown(&self.0, Config::default())
     }
 }

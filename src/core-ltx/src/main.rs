@@ -9,9 +9,6 @@ use core_ltx::{is_valid_markdown, llms::LlmProvider, validate_is_llm_txt};
 struct CoreCli {
     #[command(subcommand)]
     command: Commands,
-    /// Output file path for the generated llms.txt
-    #[arg(short, long, value_parser = validate_output_file)]
-    output: PathBuf,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -53,6 +50,10 @@ enum Commands {
 
         /// The LLM provider to use for generation
         provider: LlmProviders,
+
+        /// Output file path for the generated llms.txt
+        #[arg(short, long, value_parser = validate_output_file)]
+        output: PathBuf,
     },
 
     /// Update an existing llms.txt
@@ -67,6 +68,10 @@ enum Commands {
 
         /// The LLM provider to use for generation
         provider: LlmProviders,
+
+        /// Output file path for the updated llms.txt
+        #[arg(short, long, value_parser = validate_output_file)]
+        output: PathBuf,
     },
 }
 
@@ -104,9 +109,13 @@ fn validate_input_file(s: &str) -> Result<PathBuf, String> {
 fn validate_output_file(s: &str) -> Result<PathBuf, String> {
     let path = PathBuf::from(s);
 
-    if path.exists() && path.is_dir() {
+    if path.is_dir() {
         return Err(format!("Output path is a directory: {}", path.display()));
     }
+
+    let path = path
+        .canonicalize()
+        .map_err(|e| format!("Cannot canonicalize output path: {}", e))?;
 
     if let Some(parent) = path.parent()
         && !parent.exists()
@@ -176,31 +185,30 @@ async fn main() -> Result<(), MainError> {
             }
         },
 
-        Commands::Generate { website, provider } => {
+        Commands::Generate {
+            website,
+            provider,
+            output,
+        } => {
             let html = website_content(website).await?;
             let llm_provider = provider.provider();
             let llms_txt = core_ltx::llms::generate_llms_txt(&*llm_provider, &html).await?;
-            println!("{}", llms_txt.to_string());
+            let as_markdown = llms_txt.md_content();
+            std::fs::write(output, &as_markdown)?;
         }
 
         Commands::Update {
             website,
             llms_txt,
             provider,
+            output,
         } => {
-            let web_content = website_content(website).await;
-
-            let llms_txt_content = match std::fs::read_to_string(llms_txt) {
-                Ok(x) => x,
-                Err(e) => {
-                    println!("ERROR: Cannot read file ({llms_txt:?}) due to: {e:?}");
-                    std::process::exit(1)
-                }
-            };
-
-            unimplemented!(
-                "update llms.txt [1] with website [2]:\n[1]\n{llms_txt_content}\n[2]\n{web_content:?}\n[3] {provider:?}"
-            );
+            let html = website_content(website).await?;
+            let llms_txt_content = std::fs::read_to_string(llms_txt)?;
+            let llm_provider = provider.provider();
+            let updated_llms_txt = core_ltx::llms::update_llms_txt(&*llm_provider, &llms_txt_content, &html).await?;
+            let as_markdown = updated_llms_txt.md_content();
+            std::fs::write(output, &as_markdown)?;
         }
     }
     Ok(())
