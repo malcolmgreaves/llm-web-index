@@ -1,0 +1,140 @@
+# FastHTML
+
+> FastHTML — a library and demo site for building modern web applications in
+> pure Python. The homepage is a live FastHTML app that demonstrates:
+> interactive Python-defined UI components (scoped CSS/JS), dynamic
+> server-side-rendered snippets, reusable components (accordion, 3D card),
+> database example, sample applications (Game of Life, TODO, chatbot,
+> Pictionary), FAQ, testimonials, and links to docs, source code, and deployment
+> guides. The page includes embedded demos, code snippets, and third‑party
+> assets (YouTube, highlight.js, CDNs).
+
+This llms.txt summarizes the page structure and the important URLs. Use it to
+help an LLM quickly understand what the site provides and where to find detailed
+resources.
+
+High-level page structure and interpretation notes:
+
+ - Hero: headline "Modern web applications in pure Python", short pitch, CTA to
+   docs and "Learn more" (about).
+ - Interactive demos section: four live demo tabs (Components, Dynamic,
+   Reusable, Databases). Each tab shows a Python code snippet and a rendered UI
+   preview (3D card, weather table, accordion, DB-generated todo list).
+ - Samples: links to example repositories demonstrating small, self-contained
+   FastHTML apps (Game of life, To‑do, Chat bot, Pictionary AI).
+ - Tech stack / Stacked cards: shows foundations (ASGI, HTMX, HTTP, HTML),
+   familiar tools (Python, Uvicorn, Starlette, SQLite) and deploy targets
+   (Railway, Vercel, Hugging Face, PythonAnywhere).
+ - FAQ: common questions and answers about use cases, deployment, relation to
+   FastAPI, HTMX, JS usage, and performance.
+ - Testimonials: quoted endorsements and a carousel.
+ - Footer: copyright, links to main repo, Discord, docs, and site designer.
+ - Client-side assets: multiple CDN scripts (surreal, css-scope-inline,
+   highlight.js, highlightjs-line-numbers), local JS helpers (carousel,
+   highlight, code copy), and embedded YouTube video used for "Watch intro".
+ - How to use this file: internal pages and canonical URLs are listed below
+   under “Primary pages”. External resources, example repos, community links and
+   third‑party CDNs are grouped into focused lists to help LLMs fetch
+   authoritative context.
+
+## Primary pages (canonical / site pages)
+
+ - [https://fastht.ml/](https://fastht.ml/): Canonical homepage (this page).
+ - [https://fastht.ml/docs](https://fastht.ml/docs): Documentation (Read docs
+   CTA).
+ - [https://fastht.ml/about](https://fastht.ml/about): About / overview (Learn
+   more).
+ - [https://fastht.ml/about/vision](https://fastht.ml/about/vision): Design
+   philosophy (linked from Tech Stack).
+ - [https://fastht.ml/about/foundation#sec1](https://fastht.ml/about/foundation#sec1):
+   Foundations section (ASGI, HTMX references).
+ - [https://fastht.ml/about/components](https://fastht.ml/about/components):
+   Components overview (linked in stack).
+ - [https://fastht.ml/about/tech#sec1](https://fastht.ml/about/tech#sec1): Tech
+   page — Python section.
+ - [https://fastht.ml/about/tech#sec3](https://fastht.ml/about/tech#sec3): Tech
+   page — Uvicorn section.
+ - [https://fastht.ml/about/tech#sec4](https://fastht.ml/about/tech#sec4): Tech
+   page — Starlette section.
+ - [https://fastht.ml/about/tech#sec5](https://fastht.ml/about/tech#sec5): Tech
+   page — SQLite section.
+
+## Examples & source code (repositories and example projects)
+
+ - [https://github.com/AnswerDotAI/fasthtml](https://github.com/AnswerDotAI/fasthtml):
+   Main FastHTML repository (project source).
+ - [https://github.com/AnswerDotAI/fasthtml-example/tree/main](https://github.com/AnswerDotAI/fasthtml-example/tree/main):
+   All example projects: collection of small demos.
+ - [https://github.com/AnswerDotAI/fasthtml-example/tree/main/00_game_of_life](https://github.com/AnswerDotAI/fasthtml-example/tree/main/00_game_of_life):
+   Game of Life example.
+ - [https://github.com/AnswerDotAI/fasthtml-example/tree/main/01_todo_app](https://github.com/AnswerDotAI/fasthtml-example/tree/main/01_todo_app):
+   To‑do app example.
+ - [https://github.com/AnswerDotAI/fasthtml-example/tree/main/02_chatbot](https://github.com/AnswerDotAI/fasthtml-example/tree/main/02_chatbot):
+   Chat bot example.
+ - [https://github.com/AnswerDotAI/fasthtml-example/tree/main/03_pictionary](https://github.com/AnswerDotAI/fasthtml-example/tree/main/03_pictionary):
+   Pictionary AI example.
+
+## Deploy & hosting targets
+
+ - [https://railway.app/](https://railway.app/): Railway — documented one‑click
+   deploy target.
+ - [https://vercel.com/templates/python/fasthtml-python-boilerplate](https://vercel.com/templates/python/fasthtml-python-boilerplate):
+   Vercel Python template for FastHTML.
+ - [https://huggingface.co/](https://huggingface.co/): Hugging Face Spaces
+   (supported deploy target).
+ - [https://www.pythonanywhere.com/](https://www.pythonanywhere.com/):
+   PythonAnywhere (supported hosting).
+
+## Community & social
+
+ - [https://github.com/AnswerDotAI/fasthtml](https://github.com/AnswerDotAI/fasthtml):
+   Project GitHub (duplicate entry for emphasis: issues, source, contributions).
+ - [https://discord.gg/qcXvcxMhdP](https://discord.gg/qcXvcxMhdP): Discord
+   community invite.
+ - [https://x.com/rauchg/status/1807965785585078773](https://x.com/rauchg/status/1807965785585078773):
+   Example tweet / testimonial linked in testimonials.
+ - Twitter handle in meta: @answerdotai (meta tag reference): social handle for
+   the project.
+
+## Third‑party scripts & assets
+
+ - [https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js](https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js):
+   Surreal small DOM helper used on the page.
+ - [https://cdn.jsdelivr.net/gh/gnat/css-scope-inline@main/script.js](https://cdn.jsdelivr.net/gh/gnat/css-scope-inline@main/script.js):
+   CSS scoping helper.
+ - [https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js):
+   Highlight.js for code highlighting.
+ - [https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js](https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js):
+   Line numbers plugin for highlight.js.
+ - YouTube embed used for intro video:
+   https://www.youtube.com/embed/QqZUzkPcU7A?si=lTtHuMT5HPC66-49: intro video
+   that loads into an iframe when user clicks "Watch intro".
+ - OG / social image:
+   [https://fastht.ml/assets/og-sq.png](https://fastht.ml/assets/og-sq.png):
+   OpenGraph / Twitter image used in meta tags.
+ - Site designer: [https://tinloof.com/](https://tinloof.com/): credited in
+   footer for site design.
+
+## Optional (secondary / assets and local scripts — can be skipped for short context)
+
+ - Local JS helpers and modules (relative URLs):
+   
+    - [js/pythonHighlighter.js](js/pythonHighlighter.js): local syntax highlight
+      glue/script.
+    - [js/carouselScroll.js](js/carouselScroll.js): testimonial carousel
+      behavior.
+    - [js/stack.js](js/stack.js): stack/tech interactive behavior.
+    - [js/togglePreview.js](js/togglePreview.js): demo tab toggles.
+    - [js/codeOverflow.js](js/codeOverflow.js): code snippet overflow handling.
+    - [js/copyCode.js](js/copyCode.js): copy-to-clipboard behavior for code
+      examples.
+ - Various image and asset files (site icons, thumbnails, logos) served under:
+   
+    - [https://fastht.ml/assets/](https://fastht.ml/assets/): icons, thumbnails,
+      logos, testimonial portraits, and other images.
+    - Favicons: /favicon.ico and /favicon-dark.ico (relative).
+ - Inline embedded code: the homepage contains multiple inline Python code
+   snippets (card3d.py, weather.py, accordion.py, todos.py) shown in the UI
+   previews — useful for quick reference but not full docs.
+ - Inline CSS/JS snippets used by demos (scoped to components) — embedded in the
+   rendered previews.

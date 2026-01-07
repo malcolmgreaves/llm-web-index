@@ -49,6 +49,7 @@ enum Commands {
         website: Website,
 
         /// The LLM provider to use for generation
+        #[arg(short, long)]
         provider: LlmProviders,
 
         /// Output file path for the generated llms.txt
@@ -67,6 +68,7 @@ enum Commands {
         llms_txt: PathBuf,
 
         /// The LLM provider to use for generation
+        #[arg(short, long)]
         provider: LlmProviders,
 
         /// Output file path for the updated llms.txt
@@ -113,18 +115,18 @@ fn validate_output_file(s: &str) -> Result<PathBuf, String> {
         return Err(format!("Output path is a directory: {}", path.display()));
     }
 
-    let path = path
-        .canonicalize()
-        .map_err(|e| format!("Cannot canonicalize output path: {}", e))?;
+    // let path = path
+    //     .canonicalize()
+    //     .map_err(|e| format!("Cannot canonicalize output path: {}", e))?;
 
-    if let Some(parent) = path.parent()
-        && !parent.exists()
-    {
-        return Err(format!(
-            "Output file parent directory does not exist: {}",
-            parent.display()
-        ));
-    }
+    // if let Some(parent) = path.parent()
+    //     && !parent.exists()
+    // {
+    //     return Err(format!(
+    //         "Output file parent directory does not exist: {}",
+    //         parent.display()
+    //     ));
+    // }
 
     Ok(path)
 }
