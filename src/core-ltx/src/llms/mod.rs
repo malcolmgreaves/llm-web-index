@@ -17,11 +17,16 @@ pub trait LlmProvider {
     async fn complete_prompt(&self, prompt: &str) -> Result<String, Error>;
 }
 
-/// Generates an llms.txt file for a website.
-pub async fn generate_llms_txt<P: LlmProvider>(provider: &P, website_url: &str) -> Result<LlmsTxt, Error> {
+/// Downloads a website's HTML and generates an llms.txt file for it using an LLM.
+pub async fn generate_llms_txt_url<P: LlmProvider>(provider: &P, website_url: &str) -> Result<LlmsTxt, Error> {
     let url = is_valid_url(website_url)?;
     let html = download(&url).await?;
-    let prompt = prompt_generate_llms_txt(&html)?;
+    generate_llms_txt(provider, &html).await
+}
+
+/// Generates an llms.txt file from a website's HTML using an LLM provider with specific prompting.
+pub async fn generate_llms_txt<P: LlmProvider>(provider: &P, html: &str) -> Result<LlmsTxt, Error> {
+    let prompt = prompt_generate_llms_txt(html)?;
     let llm_response = provider.complete_prompt(&prompt).await?;
 
     match is_valid_markdown(&llm_response) {
@@ -33,18 +38,24 @@ pub async fn generate_llms_txt<P: LlmProvider>(provider: &P, website_url: &str) 
     }
 }
 
-/// Updates an old llms.txt file with the website's new content.
-pub async fn update_llms_txt<P: LlmProvider>(
+/// Updates an old llms.txt file with the newly downloaded website changes.
+pub async fn update_llms_txt_url<P: LlmProvider>(
     provider: &P,
     existing_llms_txt: &str,
     website_url: &str,
 ) -> Result<LlmsTxt, Error> {
     let url = is_valid_url(website_url)?;
-
-    // check that we're being supplied with a valid llms.txt file
-    validate_is_llm_txt(is_valid_markdown(existing_llms_txt)?)?;
-
     let html = download(&url).await?;
+    update_llms_txt(provider, existing_llms_txt, &html).await
+}
+
+/// Updates an old llms.txt file with the website's new content.
+pub async fn update_llms_txt<P: LlmProvider>(
+    provider: &P,
+    existing_llms_txt: &str,
+    html: &str,
+) -> Result<LlmsTxt, Error> {
+    validate_is_llm_txt(is_valid_markdown(existing_llms_txt)?)?;
 
     let prompt = prompt_update_llms_txt(existing_llms_txt, &html)?;
     let llm_response = provider.complete_prompt(&prompt).await?;
