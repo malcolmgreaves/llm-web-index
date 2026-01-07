@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fmt::Debug, path::PathBuf};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use core_ltx::{is_valid_markdown, llms::LlmProvider, validate_is_llm_txt};
@@ -120,37 +120,66 @@ fn validate_output_file(s: &str) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+struct MainError(String);
+
+impl Debug for MainError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::fmt::Display for MainError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::error::Error for MainError {}
+
+impl From<core_ltx::Error> for MainError {
+    fn from(e: core_ltx::Error) -> Self {
+        Self(e.to_string())
+    }
+}
+
+impl From<std::io::Error> for MainError {
+    fn from(e: std::io::Error) -> Self {
+        Self(e.to_string())
+    }
+}
+
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), MainError> {
     let cli = CoreCli::parse();
 
     match &cli.command {
         Commands::Markdown { file } => match std::fs::read_to_string(file) {
             Ok(content) => match is_valid_markdown(&content) {
                 Ok(_doc) => println!("Valid markdown file: {file:?}"),
-                Err(e) => println!("Invalid markdown file ({file:?}):\n{e:?}"),
+                Err(e) => println!("[ERROR] Invalid markdown file ({file:?}):\n{e:?}"),
             },
-            Err(e) => println!("Cannot read file ({file:?}) due to: {e:?}"),
+            Err(e) => return Err(MainError(format!("Cannot read file ({file:?}) due to: {e:?}"))),
         },
 
         Commands::Validate { file } => match std::fs::read_to_string(file) {
             Ok(content) => match is_valid_markdown(&content) {
                 Ok(doc) => match validate_is_llm_txt(doc) {
                     Ok(_llms_txt) => println!("Valid llms.txt file: {file:?}"),
-                    Err(e) => println!("Invalid llms.txt file ({file:?}): {e:?}"),
+                    Err(e) => println!("[ERROR] Invalid llms.txt file ({file:?}): {e:?}"),
                 },
-                Err(e) => println!("Invalid llms.txt file because it's an invalid markdown file ({file:?}):\n{e:?}"),
+                Err(e) => {
+                    println!("[ERROR] Invalid llms.txt file because it's an invalid markdown file ({file:?}):\n{e:?}")
+                }
             },
             Err(e) => {
-                println!("Cannot read file ({file:?}) due to: {e:?}");
-                std::process::exit(1)
+                return Err(MainError(format!("Cannot read file ({file:?}) due to: {e:?}")));
             }
         },
 
         Commands::Generate { website, provider } => {
-            let html = website_content(website).await;
+            let html = website_content(website).await?;
             let llm_provider = provider.provider();
-            let llms_txt = core_ltx::llms::generate_llms_txt(&*llm_provider, &html).await.unwrap();
+            let llms_txt = core_ltx::llms::generate_llms_txt(&*llm_provider, &html).await?;
             println!("{}", llms_txt.to_string());
         }
 
@@ -170,24 +199,21 @@ async fn main() {
             };
 
             unimplemented!(
-                "update llms.txt [1] with website [2]:\n[1]\n{llms_txt_content}\n[2]\n{web_content}\n[3] {provider:?}"
+                "update llms.txt [1] with website [2]:\n[1]\n{llms_txt_content}\n[2]\n{web_content:?}\n[3] {provider:?}"
             );
         }
     }
+    Ok(())
 }
 
-async fn website_content(website: &Website) -> String {
+async fn website_content(website: &Website) -> Result<String, MainError> {
     if let Some(file) = &website.file {
-        match std::fs::read_to_string(file) {
-            Ok(content) => content,
-            Err(e) => {
-                println!("ERROR: Cannot read file ({file:?}) due to: {e:?}");
-                std::process::exit(1)
-            }
-        }
+        let content = std::fs::read_to_string(file)?;
+        Ok(content)
     } else if let Some(url) = &website.url {
-        let validated_url = core_ltx::is_valid_url(url.as_str()).unwrap();
-        core_ltx::download(&validated_url).await.unwrap()
+        let validated_url = core_ltx::is_valid_url(url.as_str())?;
+        let html = core_ltx::download(&validated_url).await?;
+        Ok(html)
     } else {
         unreachable!("Clap should enforce that exactly one option is provided")
     }
