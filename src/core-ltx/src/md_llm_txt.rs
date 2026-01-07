@@ -52,8 +52,8 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
         LookingForSummaryBlockquote,
         LookingForOptionalDetails,
         // LookingForFileListSections,
-        LookingForFileListSections_NeedList,
-        LookingForFileListSections_NeedListOrH2,
+        LookingForFileListSectionsNeedList,
+        LookingForFileListSectionsNeedListOrH2,
     }
 
     impl std::fmt::Display for Stage {
@@ -64,13 +64,13 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
                 Stage::LookingForOptionalDetails => {
                     write!(f, "Looking for Optional Detail Section(s)")
                 }
-                Stage::LookingForFileListSections_NeedList => {
+                Stage::LookingForFileListSectionsNeedList => {
                     write!(
                         f,
                         "Looking for Optional File List Section(s): Need to find a List element"
                     )
                 }
-                Stage::LookingForFileListSections_NeedListOrH2 => {
+                Stage::LookingForFileListSectionsNeedListOrH2 => {
                     write!(
                         f,
                         "Looking for Optional File List Section(s): Need to continue a list or start a new section"
@@ -143,10 +143,10 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
 
         fn accept_other_header(&mut self) -> Step {
             match self.stage {
-                Stage::LookingForFileListSections_NeedListOrH2 | Stage::LookingForOptionalDetails => {
+                Stage::LookingForFileListSectionsNeedListOrH2 | Stage::LookingForOptionalDetails => {
                     // accept: make sure we stay in the file list stage (we could skip over the optional details)
                     // we just saw the H2, so we need to see a list element
-                    self.stage = Stage::LookingForFileListSections_NeedList;
+                    self.stage = Stage::LookingForFileListSectionsNeedList;
                     Ok(())
                 }
                 wrong_stage => Err(Error::InvalidLlmsTxtFormat(format!(
@@ -333,8 +333,8 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
                     Stage::LookingForOptionalDetails => {
                         // ok to have here
                     }
-                    Stage::LookingForFileListSections_NeedList | Stage::LookingForFileListSections_NeedListOrH2 => {
-                        state.stage = Stage::LookingForFileListSections_NeedListOrH2;
+                    Stage::LookingForFileListSectionsNeedList | Stage::LookingForFileListSectionsNeedListOrH2 => {
+                        state.stage = Stage::LookingForFileListSectionsNeedListOrH2;
                     }
                     wrong_stage => {
                         return Err(Error::InvalidLlmsTxtFormat(format!(

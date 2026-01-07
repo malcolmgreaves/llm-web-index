@@ -18,14 +18,14 @@ pub trait LlmProvider {
 }
 
 /// Downloads a website's HTML and generates an llms.txt file for it using an LLM.
-pub async fn generate_llms_txt_url<P: LlmProvider>(provider: &P, website_url: &str) -> Result<LlmsTxt, Error> {
+pub async fn generate_llms_txt_url(provider: &dyn LlmProvider, website_url: &str) -> Result<LlmsTxt, Error> {
     let url = is_valid_url(website_url)?;
     let html = download(&url).await?;
     generate_llms_txt(provider, &html).await
 }
 
 /// Generates an llms.txt file from a website's HTML using an LLM provider with specific prompting.
-pub async fn generate_llms_txt<P: LlmProvider>(provider: &P, html: &str) -> Result<LlmsTxt, Error> {
+pub async fn generate_llms_txt(provider: &dyn LlmProvider, html: &str) -> Result<LlmsTxt, Error> {
     let prompt = prompt_generate_llms_txt(html)?;
     let llm_response = provider.complete_prompt(&prompt).await?;
 
@@ -39,8 +39,8 @@ pub async fn generate_llms_txt<P: LlmProvider>(provider: &P, html: &str) -> Resu
 }
 
 /// Updates an old llms.txt file with the newly downloaded website changes.
-pub async fn update_llms_txt_url<P: LlmProvider>(
-    provider: &P,
+pub async fn update_llms_txt_url(
+    provider: &dyn LlmProvider,
     existing_llms_txt: &str,
     website_url: &str,
 ) -> Result<LlmsTxt, Error> {
@@ -50,8 +50,8 @@ pub async fn update_llms_txt_url<P: LlmProvider>(
 }
 
 /// Updates an old llms.txt file with the website's new content.
-pub async fn update_llms_txt<P: LlmProvider>(
-    provider: &P,
+pub async fn update_llms_txt(
+    provider: &dyn LlmProvider,
     existing_llms_txt: &str,
     html: &str,
 ) -> Result<LlmsTxt, Error> {
@@ -69,8 +69,8 @@ pub async fn update_llms_txt<P: LlmProvider>(
     }
 }
 
-async fn retry_generate<P: LlmProvider>(
-    provider: &P,
+async fn retry_generate(
+    provider: &dyn LlmProvider,
     html: &str,
     llm_response: &str,
     error: &Error,
@@ -82,8 +82,8 @@ async fn retry_generate<P: LlmProvider>(
     .await
 }
 
-async fn retry_update<P: LlmProvider>(
-    provider: &P,
+async fn retry_update(
+    provider: &dyn LlmProvider,
     existing_llms_txt: &str,
     html: &str,
     llm_response: &str,
@@ -96,7 +96,7 @@ async fn retry_update<P: LlmProvider>(
     .await
 }
 
-async fn retry<P: LlmProvider>(provider: &P, prompt: &str) -> Result<LlmsTxt, Error> {
+async fn retry(provider: &dyn LlmProvider, prompt: &str) -> Result<LlmsTxt, Error> {
     let new_llm_response = provider.complete_prompt(prompt).await?;
     is_valid_markdown(&new_llm_response).and_then(validate_is_llm_txt)
 }

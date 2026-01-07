@@ -1,11 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use core_ltx::{
-    is_valid_markdown,
-    llms::{ChatGpt, LlmProvider},
-    validate_is_llm_txt,
-};
+use core_ltx::{is_valid_markdown, llms::LlmProvider, validate_is_llm_txt};
 
 #[derive(Parser)]
 #[command(name = "core-llmstxt")]
@@ -154,9 +150,7 @@ async fn main() {
         Commands::Generate { website, provider } => {
             let html = website_content(website).await;
             let llm_provider = provider.provider();
-            let llms_txt = core_ltx::llms::generate_llms_txt(llm_provider.as_ref(), &html)
-                .await
-                .unwrap();
+            let llms_txt = core_ltx::llms::generate_llms_txt(&*llm_provider, &html).await.unwrap();
             println!("{}", llms_txt.to_string());
         }
 
