@@ -1,0 +1,307 @@
+# Sherwin‑Williams — Paints, Stains, Supplies and Coating Solutions
+
+> Sherwin‑Williams global gateway: marketing and commerce home for color, paint
+> products, tools, inspiration and B2B groups (Homeowners, Painting Contractors
+> / PRO+, Industrial/Performance Coatings, Architects & Designers). The page is
+> a mega‑menu driven gateway that links to product catalogs, color tools (Color
+> Visualizer, Color Expert, Paint Calculator), collections (ColorMix, Top 50,
+> Color ID), project resources (how‑to videos, FAQs), PRO+ business tools, and
+> industrial subdomains (industrial.sherwin‑williams.com). It also embeds
+> analytics/third‑party scripts and a large image carousel, top‑colors carousel
+> and multiple teaser/link grids. Use this llms.txt to find canonical site entry
+> points and the most relevant internal and external resources to fetch
+> LLM‑friendly content.
+
+This file describes the page structure and provides curated lists of important
+URLs grouped by purpose. Sections marked "Optional" point to resources you can
+skip for a smaller context (images, CDNs, analytics). Use the "Primary" and
+"Color & Tools" groups first when you need compact, high‑value context for
+color/product queries; use "Industrial" and "Professional" for specification and
+product data.
+
+Key structural elements (how to interpret the site)
+
+ - Global gateway / mega‑menu: primary navigation with tabs — "Shop Products &
+   Color", "Color Tools", "Get Inspired", "Homeowner Paints, Stains & Supplies",
+   "Professional Paint & Supplies", "Industrial Products by Industry", "Services
+   & Resources", "Industrial Coatings", "Our Company". Each tab opens a large
+   flyout with grouped links.
+ - Color features: Color families, Collections (Top 50, Colormix Forecast, Color
+   ID, Designer collections), Room and Exterior selectors, Color Tools
+   (Visualizer, Color Expert app, Paint Calculator), Order Paint Samples.
+ - Product verticals: Homeowner (interior/exterior paint, primers, stains,
+   tools, wallpaper), Professional/PRO+ (contractor tools, specs, data sheets),
+   Industrial (multiple subdomains for Aerospace, Automotive, Coil & Extrusion,
+   Protective & Marine, General Industrial, Packaging, Industrial Wood).
+ - Tools & resources: color visualizer, paint calculator, how‑to videos, project
+   center, FAQs, product data sheets, specifications and problem solver.
+ - Store + account utilities: Find a Store (store‑locator), Select Region, Sign
+   In / Register (account, PRO+ sign in).
+ - Media and news: corporate, investor, sustainability, careers and press
+   resources (corporate and investor sites).
+ - Visual components: hero/carousel (promotional slides), color carousel (top
+   colors), content carousel for Performance Coatings, teasers and image grid
+   for brands.
+ - Scripts & third parties: Adobe Tag Manager, Google Tag Manager, Ensighten,
+   Glassbox, Gigya, Scene7 image CDN, various clientlibs JS/CSS.
+
+## Primary (site root & gateway)
+
+ - [Homepage — Sherwin‑Williams global
+   gateway](https://www.sherwin-williams.com/): Global entry, mega‑menu and
+   featured carousels.
+ - [Store Locator](https://www.sherwin-williams.com/store-locator): Find retail
+   locations.
+ - [Sign In / Account](https://www.sherwin-williams.com/login): Customer and PRO
+   sign in page.
+ - [Contact](https://www.sherwin-williams.com/contact): Contact forms and
+   channels.
+
+## Color & Tools
+
+ - [Explore Color / Color
+   landing](https://www.sherwin-williams.com/en-us/color): Main color center
+   (families, collections, rooms).
+ - [Paint Colors by
+   Family](https://www.sherwin-williams.com/homeowners/color/find-and-explore-colors/paint-colors-by-family):
+   All paint colors overview.
+ - Color families (examples):
+   
+    - [Reds](https://www.sherwin-williams.com/en-us/color/color-family/red-paint-colors)
+    - [Blues](https://www.sherwin-williams.com/en-us/color/color-family/blue-paint-colors)
+    - [Neutrals](https://www.sherwin-williams.com/en-us/color/color-family/neutral-paint-colors)
+    - [Whites](https://www.sherwin-williams.com/en-us/color/color-family/white-paint-colors)
+ - Collections:
+   
+    - [Top 50
+      Colors](https://www.sherwin-williams.com/en-us/color/color-collections/top-50-colors)
+    - [Colormix
+      Forecast](https://www.sherwin-williams.com/en-us/color/color-collections/colormix-forecast)
+    - [Color
+      ID](https://www.sherwin-williams.com/en-us/color/color-collections/color-id)
+    - [All
+      Collections](https://www.sherwin-williams.com/en-us/color/color-collections)
+ - Room color guides (examples):
+   
+    - [Bedroom paint
+      colors](https://www.sherwin-williams.com/en-us/color/room-paint-colors/bedroom-paint-colors)
+    - [Kitchen paint
+      colors](https://www.sherwin-williams.com/en-us/color/room-paint-colors/kitchen-paint-colors)
+ - Color tools:
+   
+    - [Color
+      Visualizer](https://www.sherwin-williams.com/en-us/color/color-tools/color-visualizer):
+      Upload/preview colors on rooms.
+    - [Sherwin‑Williams Color Expert
+      (app)](https://www.sherwin-williams.com/en-us/color/color-tools/color-expert):
+      mobile app details and AI color recommendations.
+    - [Paint
+      Calculator](https://www.sherwin-williams.com/en-us/color/color-tools/paint-calculator):
+      estimate coverage and quantities.
+    - [Order Paint Samples](https://samples.sherwin-williams.com/): external
+      sample ordering service.
+ - Color services:
+   
+    - [Color
+      Services](https://www.sherwin-williams.com/en-us/color/color-tools/color-services)
+
+## Homeowner products & projects
+
+ - [Homeowners landing](https://www.sherwin-williams.com/homeowners): Products,
+   inspiration and DIY resources.
+ - Interior products:
+   
+    - [Interior
+      Paint](https://www.sherwin-williams.com/homeowners/products/interior-paint-coatings/interior-paint)
+    - [Primers](https://www.sherwin-williams.com/homeowners/products/interior-paint-coatings/interior-primers)
+    - [Wood Stains &
+      Sealers](https://www.sherwin-williams.com/homeowners/products/interior-paint-coatings/interior-wood-stains-sealers-clear-topcoats)
+ - Exterior products:
+   
+    - [Exterior
+      Paint](https://www.sherwin-williams.com/homeowners/products/exterior-paint-coatings/exterior-paint)
+    - [Deck
+      Products](https://www.sherwin-williams.com/homeowners/products/exterior-paint-coatings/deck-products)
+ - Wallpaper:
+   
+    - [Wallpaper
+      main](https://www.sherwin-williams.com/homeowners/products/wallpaper)
+    - Magnolia home, HGTV and partner collections (links in navigation).
+
+## Professional / PRO+ (painting contractors)
+
+ - [Professional landing / Painting
+   Contractors](https://www.sherwin-williams.com/painting-contractors/products):
+   PRO product lines and contractor services.
+ - [PRO+
+   program](https://www.sherwin-williams.com/painting-contractors/pro-plus):
+   program benefits, account resources.
+ - PRO tools & business:
+   
+    - [PRO+ Business
+      Tools](https://www.sherwin-williams.com/painting-contractors/pro-plus/business-tools)
+    - [Project Bids / Project
+      Solutions](https://www.sherwin-williams.com/painting-contractors/project-solutions/project-bids)
+    - [PRO+ Mobile
+      App](https://www.sherwin-williams.com/painting-contractors/pro-plus/pro-app)
+    - [PRO+ webinars / Learning &
+      Development](https://www.sherwin-williams.com/painting-contractors/pro-plus/webinars)
+ - PRO resources:
+   
+    - [Data
+      sheets](https://www.sherwin-williams.com/painting-contractors/products/data-sheets)
+    - [Product
+      Specifications](https://www.sherwin-williams.com/painting-contractors/specifications)
+    - [Paint Calculator / PRO
+      version](https://www.sherwin-williams.com/painting-contractors/color/color-tools/paint-calculator#/home)
+
+## Industrial / Performance Coatings (industrial.sherwin-williams.com)
+
+ - Industrial gateway: [industrial.sherwin-williams.com (general
+   industrial)](http://industrial.sherwin-williams.com/general-industrial) and
+   main industrial homepage
+   [industrial.sherwin-williams.com/na/us/en/home.html](https://industrial.sherwin-williams.com/na/us/en/home.html)
+ - Key industrial verticals / example pages:
+   
+    - Aerospace: [industrial aerospace products & paint
+      systems](https://industrial.sherwin-williams.com/na/us/en/aerospace/products-by-industry/paint-systems.html)
+    - Automotive: [industrial automotive
+      main](https://industrial.sherwin-williams.com/na/us/en/automotive)
+    - Coil & Extrusion:
+      [coil/extrusion](https://industrial.sherwin-williams.com/na/us/en/coil-extrusion.html)
+    - Protective & Marine: [protective &
+      marine](https://industrial.sherwin-williams.com/na/us/en/protective-marine.html)
+    - Packaging:
+      [packaging](https://industrial.sherwin-williams.com/na/us/en/packaging.html)
+    - General Industrial: [general
+      industrial](https://industrial.sherwin-williams.com/na/us/en/general-industrial.html)
+    - Industrial Wood: [industrial
+      wood](https://industrial.sherwin-williams.com/na/us/en/industrial-wood.html)
+    - Resin/High‑performance flooring: [resin flooring / floor
+      coatings](https://industrial.sherwin-williams.com/na/us/en/resin-flooring.html)
+
+## Inspiration & Projects
+
+ - [Get Inspired / Homeowners
+   Inspiration](https://www.sherwin-williams.com/homeowners/inspiration)
+ - [Project Center — Painting Projects, Gallery, How‑To
+   Videos](https://www.sherwin-williams.com/homeowners/inspiration/project-center)
+ - [Inspiration Videos / How To
+   Videos](https://www.sherwin-williams.com/homeowners/inspiration/inspiration-videos)
+
+## Corporate / Company / Investor / Careers
+
+ - Corporate & company pages:
+   
+    - [Corporate — Our Company / About
+      Us](https://corporate.sherwin-williams.com/our-company.html)
+    - [News & Media / Corporate
+      News](https://corporate.sherwin-williams.com/media-center.html)
+    - [Sustainability
+      (corporate)](https://corporate.sherwin-williams.com/sustainability.html)
+ - Investor Relations:
+   
+    - [Investor
+      homepage](https://investors.sherwin-williams.com/investor-home/default.aspx)
+    - [Quarterly
+      Results](https://investors.sherwin-williams.com/financials/quarterly-results/default.aspx)
+    - [Annual Reports & Proxy
+      Statements](https://investors.sherwin-williams.com/financials/annual-reports-and-proxy-statements/default.aspx)
+    - [SEC
+      Filings](https://investors.sherwin-williams.com/financials/sec-filings/default.aspx)
+ - Careers:
+   
+    - [Careers main](https://careers.sherwin-williams.com/home)
+    - [Search Jobs (jobsearch.sherwin.com)](https://jobsearch.sherwin.com/)
+    - [Jobs / PaintProTraining careers](https://jobs.paintprotraining.com/)
+
+## Brand pages & partner links (examples from JSON + footer)
+
+ - Brands mentioned (info / external):
+   
+    - [Valspar](https://en.wikipedia.org/wiki/Valspar)
+    - [Minwax](https://en.wikipedia.org/wiki/Minwax)
+    - [Purdy](https://www.purdy.com/)
+    - [Krylon](https://www.krylon.com/)
+    - [Thompson's WaterSeal](https://www.thompsonswaterseal.com/)
+    - [Cabot](https://www.cabotstain.com/en)
+    - [Dutch Boy](https://www.dutchboy.com/)
+    - [Dupli‑Color](https://www.duplicolor.com/)
+
+## External/third‑party services & analytics (Optional — can be skipped if focusing on content)
+
+ - Analytics & tag managers:
+   
+    - [Ensighten Bootstrap](//nexus.ensighten.com/sherwin/Bootstrap.js) —
+      clientside tag loader.
+    - [Adobe DTM / Launch
+      (assets.adobedtm.com)](https://assets.adobedtm.com/17713f378cbf/07f3e400ceb0/launch-3c0eb47f22e7.min.js)
+    - [Google Tag
+      Manager](https://www.googletagmanager.com/gtm.js?id=GTM-PHG9GCP) (GTM
+      container).
+    - [Glassbox detector/report endpoint]
+      reportURI=https://report.swp.gbqofs.io/reporting/e364031c-502a-5789-a561-6e32f935d970/cls_report
+      and script https://cdn.gbqofs.com/swp/p/detector-dom.min.js.
+    - [Gigya / Customer Identity (CDN)](https://cdns.gigya.com/js/gigya.js)
+ - Image CDN (Scene7) / assets:
+   
+    - Scene7 image host examples: https://s7d2.scene7.com (used for hero and
+      color swatches).
+ - Other external tools:
+   
+    - [Samples ordering service
+      (external)](https://samples.sherwin-williams.com/)
+    - [Flipbook (Scott Living
+      collection)](https://online.flipbuilder.com/vcji/vgvy/)
+    - [Industrial subdomain (external
+      host)](https://industrial.sherwin-williams.com/)
+    - [PRO+ resources, webinars, QuickBooks integrations] linked on PRO pages
+      (hosted on sherwin domain and third‑party pages like QuickBooks link).
+    - [Report & tracking endpoints for Glassbox / Pype / other monitoring CDNs]
+      (cdn.gbqofs.com, report.swp.gbqofs.io).
+    - [YouTube channel / Social channels] referenced in schema.org sameAs:
+      
+       - https://www.facebook.com/SherwinWilliamsforYourHome
+       - https://twitter.com/SherwinWilliams
+       - https://www.pinterest.com/SherwinWilliams/
+       - https://www.houzz.com/professionals/paint-and-wall-covering-dealers/sherwin-williams-pfvwus-pf~1006762013?
+       - https://www.youtube.com/user/sherwinwilliams
+
+## Important deep pages (product & spec resources)
+
+ - [Product Data Sheets (PRO /
+   Industrial)](https://www.sherwin-williams.com/painting-contractors/products/data-sheets)
+ - [Product
+   Specifications](https://www.sherwin-williams.com/painting-contractors/specifications)
+ - [Problem Solver
+   (Troubleshooting)](https://www.sherwin-williams.com/painting-contractors/products/resources/problem-solver)
+ - [Maintenance & Repair /
+   FAQs](https://www.sherwin-williams.com/en-us/project-center/faqs) and
+   [Maintenance & Repair
+   page](https://www.sherwin-williams.com/en-us/project-center/maintenance-repair)
+
+## Optional
+
+ - Static assets, image CDN and script host URLs (skip if you only need text
+   content):
+   
+    - Scene7 image CDN examples: https://s7d2.scene7.com/
+    - Ensighten, Adobe DTM, Google Tag Manager, Glassbox, Gigya: (see
+      External/third‑party section)
+    - Other asset references present as clientlibs:
+      
+       - /etc.clientlibs/... (site JS and CSS client libraries — internal assets
+         for rendering; not required for content fetch)
+ - Miscellaneous/one‑off links that are low priority for content fetch:
+   
+    - Flipbook partner: https://online.flipbuilder.com/vcji/vgvy/
+    - jobs.paintprotraining.com (careers/training)
+    - jobsearch.sherwin.com (job search)
+    - report endpoints used by monitoring (report.swp.gbqofs.io)
+    - scene7 image variations used by carousel and teasers (images can be loaded
+      via s7d2.scene7.com URLs shown in page markup)
+
+If you want, I can produce a compact text crawl order (priority list) for an LLM
+to fetch pages (which pages first and which to skip) or generate a smaller
+llms.txt trimmed to only content pages (color tools, product data sheets, PRO+
+and industrial product catalogs).
