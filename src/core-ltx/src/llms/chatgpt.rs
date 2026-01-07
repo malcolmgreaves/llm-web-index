@@ -1,12 +1,7 @@
-use std::iter::FlatMap;
-
 use async_openai::{
     Client,
     config::OpenAIConfig,
-    types::{
-        ChatCompletionRequestAssistantMessage, ChatCompletionRequestMessage, ChatCompletionRequestSystemMessage,
-        ChatCompletionRequestUserMessage, CreateChatCompletionRequestArgs,
-    },
+    types::{ChatCompletionRequestSystemMessage, ChatCompletionRequestUserMessage, CreateChatCompletionRequestArgs},
 };
 use async_trait::async_trait;
 
@@ -52,27 +47,3 @@ impl LlmProvider for ChatGpt {
         Ok(llm_text_response)
     }
 }
-
-// struct FirstFlatMap<S, U, F>(FlatMap<S, U, F>)
-// where S:Iterator, U:IntoIterator;
-
-// impl <S,U,F> FirstFlatMap<S,U,F>
-// where S:Iterator, U:IntoIterator {
-
-//   pub fn first(self) -> Option<U> {
-
-//     let mut maybe_first: Option<U> = None;
-//     for x in self.0.take(1) {
-//       maybe_first = Some(x);
-//     }
-//     maybe_first
-//   }
-
-// }
-
-// impl <S,U,F> From<FlatMap<S, U, F>> for FirstFlatMap<S,U,F>
-// where S:Iterator, U:IntoIterator {
-//   fn from(flat_map: FlatMap<S, U, F>) -> Self {
-//     FirstFlatMap(flat_map)
-//   }
-// }
