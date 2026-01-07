@@ -42,11 +42,11 @@ pub async fn update_llms_txt<P: LlmProvider>(
     let url = is_valid_url(website_url)?;
 
     // check that we're being supplied with a valid llms.txt file
-    validate_is_llm_txt(is_valid_markdown(&existing_llms_txt)?)?;
+    validate_is_llm_txt(is_valid_markdown(existing_llms_txt)?)?;
 
     let html = download(&url).await?;
 
-    let prompt = prompt_update_llms_txt(&existing_llms_txt, &html)?;
+    let prompt = prompt_update_llms_txt(existing_llms_txt, &html)?;
     let llm_response = provider.complete_prompt(&prompt).await?;
 
     match is_valid_markdown(&llm_response) {
@@ -66,7 +66,7 @@ async fn retry_generate<P: LlmProvider>(
 ) -> Result<LlmsTxt, Error> {
     retry(
         provider,
-        &prompt_retry_generate_llms_txt(&html, &llm_response, &error.to_string())?,
+        &prompt_retry_generate_llms_txt(html, llm_response, &error.to_string())?,
     )
     .await
 }
@@ -86,8 +86,6 @@ async fn retry_update<P: LlmProvider>(
 }
 
 async fn retry<P: LlmProvider>(provider: &P, prompt: &str) -> Result<LlmsTxt, Error> {
-    let new_llm_response = provider.complete_prompt(&prompt).await?;
-    is_valid_markdown(&new_llm_response)
-        .and_then(|markdown| validate_is_llm_txt(markdown))
-        .and_then(|llms_txt| Ok(llms_txt))
+    let new_llm_response = provider.complete_prompt(prompt).await?;
+    is_valid_markdown(&new_llm_response).and_then(validate_is_llm_txt)
 }
