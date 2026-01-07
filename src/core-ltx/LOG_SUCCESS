@@ -1,0 +1,138 @@
+$ cargo run -- --output ./here generate chat-gpt -u https://fastht.ml
+
+----------------
+# FastHTML
+
+> FastHTML — a small Python-first framework for building modern web applications
+> and SPAs. The homepage demonstrates live, reusable Python components,
+> HTMX-driven partial updates, example apps, deployment guides, and links to
+> docs, source code, and third‑party tools used by the project.
+
+Fast summary of structured content and interpretation notes:
+
+ - Purpose: framework / library site + interactive homepage app built with
+   FastHTML itself.
+ - Main structural elements on the homepage:
+
+    - Hero with CTA to docs and an intro video (YouTube embed).
+    - Live code demo area with four demo tabs: Components, Dynamic, Reusable,
+      Databases — each shows a short Python snippet and a rendered preview.
+    - Tech stack / “stacked cards” section linking to design & tech pages.
+    - Samples grid linking to example repositories (Game of Life, To‑do, Chat
+      bot, Pictionary AI) and a link to the examples index.
+    - FAQ and testimonials sections.
+    - Footer with primary community & source links.
+ - Important behavior artifacts:
+
+    - HTMX-style partial updates and component previews are demonstrated.
+    - Several inline demos include JS/CSS scoped to components (surreal/cs-scope
+      usage).
+ - Use the “Optional” section (below) to skip less-relevant asset and local
+   script URLs when a short context is needed.
+
+## Main pages
+
+ - [https://fastht.ml/](https://fastht.ml/): Canonical homepage (the HTML
+   document parsed here)
+ - [https://fastht.ml/docs](https://fastht.ml/docs): Documentation entry point
+   (Read docs CTA)
+ - [https://fastht.ml/about](https://fastht.ml/about): About / Learn more
+
+## Documentation & guides
+
+ - [https://fastht.ml/about/vision](https://fastht.ml/about/vision): Design
+   philosophy / vision
+ - [https://fastht.ml/about/foundation#sec1](https://fastht.ml/about/foundation#sec1):
+   Foundation section (ASGI / HTTP / HTMX references)
+ - [https://fastht.ml/about/components](https://fastht.ml/about/components):
+   Components page
+ - [https://fastht.ml/about/tech#sec1](https://fastht.ml/about/tech#sec1): Tech
+   page (Python)
+ - [https://fastht.ml/about/tech#sec3](https://fastht.ml/about/tech#sec3): Tech
+   page (Uvicorn)
+ - [https://fastht.ml/about/tech#sec4](https://fastht.ml/about/tech#sec4): Tech
+   page (Starlette)
+ - [https://fastht.ml/about/tech#sec5](https://fastht.ml/about/tech#sec5): Tech
+   page (SQLite)
+
+## Source code & examples
+
+ - [https://github.com/AnswerDotAI/fasthtml](https://github.com/AnswerDotAI/fasthtml):
+   Main GitHub repository
+ - [https://github.com/AnswerDotAI/fasthtml-example/tree/main](https://github.com/AnswerDotAI/fasthtml-example/tree/main):
+   Examples index (Discover all)
+ - [https://github.com/AnswerDotAI/fasthtml-example/tree/main/00_game_of_life](https://github.com/AnswerDotAI/fasthtml-example/tree/main/00_game_of_life):
+   Example — Game of Life
+ - [https://github.com/AnswerDotAI/fasthtml-example/tree/main/01_todo_app](https://github.com/AnswerDotAI/fasthtml-example/tree/main/01_todo_app):
+   Example — To‑do app
+ - [https://github.com/AnswerDotAI/fasthtml-example/tree/main/02_chatbot](https://github.com/AnswerDotAI/fasthtml-example/tree/main/02_chatbot):
+   Example — Chat bot
+ - [https://github.com/AnswerDotAI/fasthtml-example/tree/main/03_pictionary](https://github.com/AnswerDotAI/fasthtml-example/tree/main/03_pictionary):
+   Example — Pictionary AI
+
+## Deploy targets & partner links
+
+ - [https://railway.app/](https://railway.app/): 1-click deploy option listed on
+   site
+ - [https://vercel.com/templates/python/fasthtml-python-boilerplate](https://vercel.com/templates/python/fasthtml-python-boilerplate):
+   Vercel template / deploy target
+ - [https://huggingface.co/](https://huggingface.co/): Hugging Face Spaces
+   (deploy target)
+ - [https://www.pythonanywhere.com/](https://www.pythonanywhere.com/):
+   PythonAnywhere (deploy target)
+
+## Third‑party libraries & CDNs referenced
+
+ - [https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js](https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js):
+   Surreal helper (used inline for demo event handling)
+ - [https://cdn.jsdelivr.net/gh/gnat/css-scope-inline@main/script.js](https://cdn.jsdelivr.net/gh/gnat/css-scope-inline@main/script.js):
+   CSS scoping helper
+ - [https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js):
+   Syntax highlighting for code snippets
+ - [https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js](https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js):
+   Line numbers plugin for highlight.js
+
+## Media & embeds
+
+ - [https://www.youtube.com/embed/QqZUzkPcU7A?si=lTtHuMT5HPC66-49](https://www.youtube.com/embed/QqZUzkPcU7A?si=lTtHuMT5HPC66-49):
+   Intro video embedded in the hero (opened by video overlay)
+ - [https://fastht.ml/assets/og-sq.png](https://fastht.ml/assets/og-sq.png):
+   Open Graph / social preview image (og:image)
+ - [https://ucarecdn.com/35a0e8a7-fcc5-48af-8a3f-70bb96ff5c48/-/preview/750x1000/](https://ucarecdn.com/35a0e8a7-fcc5-48af-8a3f-70bb96ff5c48/-/preview/750x1000/):
+   Example background image used in the card3d demo
+
+## Community & footer links
+
+ - [https://discord.gg/qcXvcxMhdP](https://discord.gg/qcXvcxMhdP): Discord
+   invite (community)
+ - [https://tinloof.com/](https://tinloof.com/): Site design credit (footer)
+ - [https://x.com/rauchg/status/1807965785585078773](https://x.com/rauchg/status/1807965785585078773):
+   Quoted tweet referenced in testimonials
+
+## Optional
+
+(Secondary resources and local assets that can be skipped for a short context)
+
+ - [/css/main.css](https://fastht.ml/css/main.css): Local stylesheet
+ - [/css/tailwind.css](https://fastht.ml/css/tailwind.css): Tailwind CSS file
+   used on site
+ - [/css/stack.css](https://fastht.ml/css/stack.css): Local stylesheet
+ - [/css/preview-stack.css](https://fastht.ml/css/preview-stack.css): Local
+   stylesheet
+ - [/css/highlighter-theme.css](https://fastht.ml/css/highlighter-theme.css):
+   Highlighter theme CSS
+ - [/js/pythonHighlighter.js](https://fastht.ml/js/pythonHighlighter.js): Local
+   script for highlighting code snippets
+ - [/js/carouselScroll.js](https://fastht.ml/js/carouselScroll.js): Local
+   carousel behavior
+ - [/js/stack.js](https://fastht.ml/js/stack.js): Local stack interactions
+ - [/js/togglePreview.js](https://fastht.ml/js/togglePreview.js): Tab toggling
+   for code demos
+ - [/js/codeOverflow.js](https://fastht.ml/js/codeOverflow.js): Code overflow
+   handling
+ - [/js/copyCode.js](https://fastht.ml/js/copyCode.js): Copy-to-clipboard
+   behavior for code snippets
+ - [/assets/*](https://fastht.ml/assets/): Site image and icon assets
+   (favicon.ico, logo.svg, thumbnails, testimonial portraits, icons)
+ - [mailto: (none present)]: No explicit email contact link found in the page
+   HTML
