@@ -19,9 +19,12 @@ enum LlmProviders {
 }
 
 impl LlmProviders {
-    pub fn provider(&self) -> Box<dyn LlmProvider> {
+    pub fn provider(&self, model_name: &Option<String>) -> Box<dyn LlmProvider> {
         Box::new(match self {
-            LlmProviders::ChatGpt => core_ltx::llms::ChatGpt::default(),
+            LlmProviders::ChatGpt => match model_name {
+                Some(model_name) => core_ltx::llms::ChatGpt::new(model_name),
+                None => core_ltx::llms::ChatGpt::default(),
+            },
             LlmProviders::Claude => unimplemented!("implement Claude LLM provider"),
         })
     }
@@ -52,6 +55,10 @@ enum Commands {
         #[arg(short, long)]
         provider: LlmProviders,
 
+        /// The model to use for generation. Otherwise uses default for the provider.
+        #[arg(short, long)]
+        model: Option<String>,
+
         /// Output file path for the generated llms.txt
         #[arg(short, long, value_parser = validate_output_file)]
         output: PathBuf,
@@ -70,6 +77,10 @@ enum Commands {
         /// The LLM provider to use for generation
         #[arg(short, long)]
         provider: LlmProviders,
+
+        /// The model to use for generation. Otherwise uses default for the provider.
+        #[arg(short, long)]
+        model: Option<String>,
 
         /// Output file path for the updated llms.txt
         #[arg(short, long, value_parser = validate_output_file)]
@@ -190,10 +201,11 @@ async fn main() -> Result<(), MainError> {
         Commands::Generate {
             website,
             provider,
+            model,
             output,
         } => {
             let html = website_content(website).await?;
-            let llm_provider = provider.provider();
+            let llm_provider = provider.provider(model);
             let llms_txt = core_ltx::llms::generate_llms_txt(&*llm_provider, &html).await?;
             let as_markdown = llms_txt.md_content();
             std::fs::write(output, &as_markdown)?;
@@ -203,11 +215,12 @@ async fn main() -> Result<(), MainError> {
             website,
             llms_txt,
             provider,
+            model,
             output,
         } => {
             let html = website_content(website).await?;
             let llms_txt_content = std::fs::read_to_string(llms_txt)?;
-            let llm_provider = provider.provider();
+            let llm_provider = provider.provider(model);
             let updated_llms_txt = core_ltx::llms::update_llms_txt(&*llm_provider, &llms_txt_content, &html).await?;
             let as_markdown = updated_llms_txt.md_content();
             std::fs::write(output, &as_markdown)?;

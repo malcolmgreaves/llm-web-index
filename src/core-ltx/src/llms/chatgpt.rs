@@ -13,6 +13,15 @@ pub struct ChatGpt {
     pub model_name: String,
 }
 
+impl ChatGpt {
+    pub fn new(model_name: &str) -> Self {
+        Self {
+            client: Client::new(),
+            model_name: model_name.to_string(),
+        }
+    }
+}
+
 impl Default for ChatGpt {
     fn default() -> Self {
         Self {
