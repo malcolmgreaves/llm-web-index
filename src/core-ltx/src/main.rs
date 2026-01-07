@@ -19,6 +19,7 @@ struct CoreCli {
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
+#[value(rename_all = "lowercase")]
 enum LlmProviders {
     ChatGpt,
     Claude,
@@ -150,10 +151,10 @@ async fn main() {
             }
         },
 
-        Commands::Generate { website, provider: _ } => {
-            // let web_content = website_content(website).await;
-            // let llm_provider = provider.provider().as_ref();
-            let llms_txt = core_ltx::llms::generate_llms_txt(&ChatGpt::default(), &website.url.clone().unwrap())
+        Commands::Generate { website, provider } => {
+            let html = website_content(website).await;
+            let llm_provider = provider.provider();
+            let llms_txt = core_ltx::llms::generate_llms_txt(llm_provider.as_ref(), &html)
                 .await
                 .unwrap();
             println!("{}", llms_txt.to_string());
