@@ -27,23 +27,9 @@ impl Default for ChatGpt {
     }
 }
 
-// macro_rules! first {
-//   ($iter:expr) => {
-//     let mut maybe_first = None;
-//     for x in $iter.take(1) {
-//       maybe_first = Some(x);
-//     }
-//     maybe_first
-//   }
-// }
-
 #[async_trait]
 impl LlmProvider for ChatGpt {
     async fn complete_prompt(&self, prompt: &str) -> Result<String, Error> {
-        // let request = CreateChatCompletionRequestArgs::default()
-        //     .model(self.model_name.as_str())
-        //     .messages(value)
-        //     .build()?;
         let request = CreateChatCompletionRequestArgs::default()
             // .max_tokens(512u32)
             .model(&self.model_name)
@@ -54,26 +40,14 @@ impl LlmProvider for ChatGpt {
             ])
             .build()?;
 
-        // let response = self.client.completions().create(request).await?;
         let response = self.client.chat().create(request).await?;
 
-        // let llm_text_response = response
-        //     .choices
-        //     .first()
-        //     .map(|choice| choice.text.clone())
-        //     .unwrap_or("".to_string());
-        // use FirstFlatMap;
-        let llm_text_response = {
-            let x = response
-                .choices
-                .iter()
-                .flat_map(|choice| choice.message.content.clone());
-            // let y = first!(x);
-            // let y = x.take(1).fold(None, |_, item| Some(item));
-            let y = x.take(1).fold("".to_string(), |_, item| item);
-            // y.unwrap_or("".to_string())
-            y
-        };
+        let llm_text_response = response
+            .choices
+            .iter()
+            .flat_map(|choice| choice.message.content.clone())
+            .take(1)
+            .fold("".to_string(), |_, item| item);
 
         Ok(llm_text_response)
     }
