@@ -32,9 +32,9 @@ pub async fn generate_llms_txt(provider: &dyn LlmProvider, html: &str) -> Result
     match is_valid_markdown(&llm_response) {
         Ok(markdown) => match validate_is_llm_txt(markdown) {
             Ok(llms_txt) => Ok(llms_txt),
-            Err(e) => retry_generate(provider, &html, &llm_response, &e).await,
+            Err(e) => retry_generate(provider, html, &llm_response, &e).await,
         },
-        Err(e) => retry_generate(provider, &html, &llm_response, &e).await,
+        Err(e) => retry_generate(provider, html, &llm_response, &e).await,
     }
 }
 
@@ -57,15 +57,15 @@ pub async fn update_llms_txt(
 ) -> Result<LlmsTxt, Error> {
     validate_is_llm_txt(is_valid_markdown(existing_llms_txt)?)?;
 
-    let prompt = prompt_update_llms_txt(existing_llms_txt, &html)?;
+    let prompt = prompt_update_llms_txt(existing_llms_txt, html)?;
     let llm_response = provider.complete_prompt(&prompt).await?;
 
     match is_valid_markdown(&llm_response) {
         Ok(markdown) => match validate_is_llm_txt(markdown) {
             Ok(llms_txt) => Ok(llms_txt),
-            Err(e) => retry_update(provider, existing_llms_txt, &html, &llm_response, &e).await,
+            Err(e) => retry_update(provider, existing_llms_txt, html, &llm_response, &e).await,
         },
-        Err(e) => retry_update(provider, existing_llms_txt, &html, &llm_response, &e).await,
+        Err(e) => retry_update(provider, existing_llms_txt, html, &llm_response, &e).await,
     }
 }
 
