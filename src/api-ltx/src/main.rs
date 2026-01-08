@@ -23,8 +23,7 @@ async fn main() {
     dotenvy::dotenv().ok();
 
     // Get database URL from environment
-    let database_url =
-        std::env::var("DATABASE_URL").expect("DATABASE_URL must be set in .env file");
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set in .env file");
 
     // Establish database connection pool
     let pool = establish_connection_pool(&database_url)
@@ -41,9 +40,7 @@ async fn main() {
         .parse::<u16>()
         .expect("PORT must be a valid port number");
 
-    let addr: SocketAddr = format!("{}:{}", host, port)
-        .parse()
-        .expect("Invalid HOST or PORT");
+    let addr: SocketAddr = format!("{}:{}", host, port).parse().expect("Invalid HOST or PORT");
     tracing::info!("Listening on {}", addr);
 
     // Start the server

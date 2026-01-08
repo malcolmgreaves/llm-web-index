@@ -16,5 +16,3 @@ edition = "2024"
 authors = ["Malcolm Greaves <75upbeats_hybrids@icloud.com>"]
 license = "Mozilla Public License 2.0"
 readme = "README.md"
-
-[workspace.dependencies]

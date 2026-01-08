@@ -1,0 +1,98 @@
+# Sherwin-Williams Global Gateway
+
+> A concise, expert-level summary of the Sherwin-Williams gateway site. It
+> provides an at-a-glance description of the site’s purpose, its key
+> navigational sections, and outbound links useful for quickly locating external
+> resources and third-party tools referenced by the site.
+
+This document presents a structured overview of the site’s main content, its
+navigational elements, and curated outbound links. It is intended to help an LLM
+quickly understand what the site covers, how content is organized, and where to
+fetch additional information beyond the site’s own pages. It focuses on concise
+descriptions and externally hosted resources that may be relevant for
+integration tasks, documentation lookups, or API references, while noting that
+much of the site’s content is accessible through its internal navigation and
+region-aware sections.
+
+ - The website acts as a centralized gateway for Sherwin-Williams content,
+   including paint colors, color tools, inspiration, professional resources,
+   region selection, and store locators. It also provides access points for
+   homeowners, professionals, and industry partners, plus sections for Get
+   Inspired, News, Careers, and Sustainability. The navigation includes
+   categories such as Shop Products & Color, Rooms, Exterior, Stain, Color
+   Tools, Get Inspired, Architects, Homeowner Paints, Stains & Supplies,
+   Resources, and Our Company.
+ - The site includes regional selection, a store locator, and a Sign In option,
+   along with a region modal to switch locales. It also loads a variety of
+   third-party scripts and trackers to support analytics, personalization, and
+   social features (e.g., Ensighten, Google Tag Manager, Adobe Tag Manager,
+   Gigya). The content is delivered via a mix of HTML, Experience Fragments, and
+   dynamic components (carousels, linklists, and megamenus) designed for
+   large-scale product and content navigation.
+ - Outbound resources are interspersed throughout the page (scripts and external
+   content providers) and include third-party services used for analytics,
+   marketing, and social integration, as well as external content sources such
+   as sample providers and partner sites. The site also points to external
+   content for color inspiration, product demonstrations, and partner
+   information.
+
+## Outbound links (primary)
+
+ - [Ensighten Bootstrap.js](https://nexus.ensighten.com/sherwin/Bootstrap.js):
+   Ensighten tag management script loaded by the site.
+ - [Adobe Launch
+   script](https://assets.adobedtm.com/17713f378cbf/07f3e400ceb0/launch-3c0eb47f22e7.min.js):
+   Adobe Tag Manager launch script used for analytics and personalization.
+ - [Google Tag Manager](https://www.googletagmanager.com/gtm.js?id=GTM-PHG9GCP):
+   GTM loader script for analytics.
+ - [Glassbox detector script](https://cdn.gbqofs.com/swp/p/detector-dom.min.js):
+   Glassbox detector script for client-side monitoring.
+ - [Gigya
+   Script](https://cdns.gigya.com/js/gigya.js?apikey=3_J0C-p-U2nvXytymS5LeNbnD6JFk5mpK3Lncp1HjMKbA8XxTHoIcR3tKHAFoAVxhn):
+   Gigya script for identity and social features.
+ - [External sample ordering site](https://samples.sherwin-williams.com/):
+   Sample order portal referenced by Color Tools / Color Tools content.
+ - [Scott Living Collection
+   (FlipBuilder)](https://online.flipbuilder.com/vcji/vgvy/): Example external
+   content used by a collection within the “Get Inspired” area.
+ - [YouTube Sherwin-Williams
+   channel](https://www.youtube.com/user/sherwinwilliams): Official YouTube
+   channel for Sherwin-Williams content.
+ - [Facebook Sherwin-Williams for Your
+   Home](https://www.facebook.com/SherwinWilliamsforYourHome): Sherwin-Williams
+   social presence.
+ - [Pinterest Sherwin-Williams](https://www.pinterest.com/SherwinWilliams/):
+   Sherwin-Williams Pinterest profile.
+ - [Houzz Sherwin-Williams
+   profile](https://www.houzz.com/professionals/paint-and-wall-covering-dealers/sherwin-williams-pfvwus-pf~1006762013?):
+   Sherwin-Williams presence on Houzz.
+ - [FlipBuilder/Scott Living Collection (additional external
+   content)](https://online.flipbuilder.com/vcji/vgvy/): Alternate externally
+   hosted collection example.
+
+Optional (additional links, skippable in context)
+
+ - [Color to Go — Color visualization
+   content](https://www.sherwin-williams.com/homeowners/products/color-to-go):
+   External tool referenced by the News/Content sections for color
+   visualization.
+ - [Mercedes-AMG PETRONAS Formula One Team partnership
+   article](https://industrial.sherwin-williams.com/na/us/en/automotive/media-center/news/mercedes-partnership-formula-one-press.html):
+   Example of external press content linked from the Automotive/Performance
+   Coatings area.
+ - [Mercedes-AMG PETRONAS Formula One Team press content (external
+   article)](https://www.sherwin-williams.com/painting-contractors/pro-plus/webinars):
+   Related external media references.
+
+Notes
+
+ - The site includes numerous internal Sherwin-Williams pages (e.g.,
+   sherwin-williams.com, industrial.sherwin-williams.com) that expand on product
+   families, color tools, and industry-specific coatings. For outbound
+   navigation or data gathering, focus on the external domains listed above and
+   any external media or partner sites that are linked from the gateway.
+ - The links listed here reflect outbound resources that are visibly referenced
+   by the HTML source (scripts, third-party providers, and external content
+   sources). The site’s internal navigation remains the primary path to content
+   such as color families, color collections, rooms, exterior colors, stain
+   colors, and professional tools.

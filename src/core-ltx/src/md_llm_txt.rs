@@ -1,23 +1,8 @@
 use markdown_ppp::ast::{self};
 use markdown_ppp::parser::{MarkdownParserState, parse_markdown};
+use markdown_ppp::printer::{config::Config, render_markdown};
 
-/// Failures that can occur while parsing the markdown-formatted llms.txt file.
-#[derive(Debug)]
-pub enum Error {
-    InvalidMarkdown(nom::Err<nom::error::Error<String>>),
-    InvalidLlmsTxtFormat(String),
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::InvalidMarkdown(err) => write!(f, "Not valid Markdown: {}", err),
-            Error::InvalidLlmsTxtFormat(msg) => write!(f, "Not valid llms.txt Format: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for Error {}
+use crate::Error;
 
 /// A markdown document, represented as an abstract syntax tree (AST) of markdown blocks.
 pub type Markdown = ast::Document;
@@ -48,6 +33,11 @@ impl LlmsTxt {
     pub fn extract(self) -> Markdown {
         self.0
     }
+
+    /// Gets the Markdown content as a string.
+    pub fn md_content(&self) -> String {
+        render_markdown(&self.0, Config::default())
+    }
 }
 
 /// Determines whether or not the markdown document adheres to the llms.txt specification.
@@ -62,8 +52,8 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
         LookingForSummaryBlockquote,
         LookingForOptionalDetails,
         // LookingForFileListSections,
-        LookingForFileListSections_NeedList,
-        LookingForFileListSections_NeedListOrH2,
+        LookingForFileListSectionsNeedList,
+        LookingForFileListSectionsNeedListOrH2,
     }
 
     impl std::fmt::Display for Stage {
@@ -74,13 +64,13 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
                 Stage::LookingForOptionalDetails => {
                     write!(f, "Looking for Optional Detail Section(s)")
                 }
-                Stage::LookingForFileListSections_NeedList => {
+                Stage::LookingForFileListSectionsNeedList => {
                     write!(
                         f,
                         "Looking for Optional File List Section(s): Need to find a List element"
                     )
                 }
-                Stage::LookingForFileListSections_NeedListOrH2 => {
+                Stage::LookingForFileListSectionsNeedListOrH2 => {
                     write!(
                         f,
                         "Looking for Optional File List Section(s): Need to continue a list or start a new section"
@@ -153,11 +143,10 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
 
         fn accept_other_header(&mut self) -> Step {
             match self.stage {
-                Stage::LookingForFileListSections_NeedListOrH2
-                | Stage::LookingForOptionalDetails => {
+                Stage::LookingForFileListSectionsNeedListOrH2 | Stage::LookingForOptionalDetails => {
                     // accept: make sure we stay in the file list stage (we could skip over the optional details)
                     // we just saw the H2, so we need to see a list element
-                    self.stage = Stage::LookingForFileListSections_NeedList;
+                    self.stage = Stage::LookingForFileListSectionsNeedList;
                     Ok(())
                 }
                 wrong_stage => Err(Error::InvalidLlmsTxtFormat(format!(
@@ -198,8 +187,7 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
                         LineBreak => {
                             if state.stage != Stage::LookingForOptionalDetails {
                                 return Err(Error::InvalidLlmsTxtFormat(
-                                    "Found a line break outside of the optional details section."
-                                        .into(),
+                                    "Found a line break outside of the optional details section.".into(),
                                 ));
                             }
                         }
@@ -345,9 +333,8 @@ pub fn validate_is_llm_txt(doc: Markdown) -> Result<LlmsTxt, Error> {
                     Stage::LookingForOptionalDetails => {
                         // ok to have here
                     }
-                    Stage::LookingForFileListSections_NeedList
-                    | Stage::LookingForFileListSections_NeedListOrH2 => {
-                        state.stage = Stage::LookingForFileListSections_NeedListOrH2;
+                    Stage::LookingForFileListSectionsNeedList | Stage::LookingForFileListSectionsNeedListOrH2 => {
+                        state.stage = Stage::LookingForFileListSectionsNeedListOrH2;
                     }
                     wrong_stage => {
                         return Err(Error::InvalidLlmsTxtFormat(format!(
@@ -480,16 +467,16 @@ mod tests {
             x => panic!("unexpected block type: {:?}", x),
         }
 
-        assert!(is_valid_markdown("# Title\n- a list\n-with more\n-than one element\n```hello world!\nhow are you?\n```\n").is_ok())
+        assert!(
+            is_valid_markdown("# Title\n- a list\n-with more\n-than one element\n```hello world!\nhow are you?\n```\n")
+                .is_ok()
+        )
     }
 
     #[test]
     fn llm_txt_validation() {
         // minimally ok
-        assert!(
-            validate_is_llm_txt(is_valid_markdown("# a title\n>>>> blockquote section").unwrap())
-                .is_ok()
-        );
+        assert!(validate_is_llm_txt(is_valid_markdown("# a title\n>>>> blockquote section").unwrap()).is_ok());
 
         // maxmimal example
         assert!(

@@ -1,7 +1,7 @@
-use std::path::PathBuf;
+use std::{fmt::Debug, path::PathBuf};
 
-use clap::{Args, Parser, Subcommand};
-use core_ltx::{is_valid_markdown, validate_is_llm_txt};
+use clap::{Args, Parser, Subcommand, ValueEnum};
+use core_ltx::{is_valid_markdown, llms::LlmProvider, validate_is_llm_txt};
 
 #[derive(Parser)]
 #[command(name = "core-llmstxt")]
@@ -9,9 +9,25 @@ use core_ltx::{is_valid_markdown, validate_is_llm_txt};
 struct CoreCli {
     #[command(subcommand)]
     command: Commands,
-    /// Output file path for the generated llms.txt
-    #[arg(short, long, value_parser = validate_output_file)]
-    output: PathBuf,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+#[value(rename_all = "lowercase")]
+enum LlmProviders {
+    ChatGpt,
+    Claude,
+}
+
+impl LlmProviders {
+    pub fn provider(&self, model_name: &Option<String>) -> Box<dyn LlmProvider> {
+        Box::new(match self {
+            LlmProviders::ChatGpt => match model_name {
+                Some(model_name) => core_ltx::llms::ChatGpt::new(model_name),
+                None => core_ltx::llms::ChatGpt::default(),
+            },
+            LlmProviders::Claude => unimplemented!("implement Claude LLM provider"),
+        })
+    }
 }
 
 #[derive(Subcommand)]
@@ -30,16 +46,45 @@ enum Commands {
     },
 
     /// Generate a new llms.txt from a website
-    Generate(Website),
+    Generate {
+        /// The website to generate an llms.txt file for.
+        #[command(flatten)]
+        website: Website,
+
+        /// The LLM provider to use for generation
+        #[arg(short, long)]
+        provider: LlmProviders,
+
+        /// The model to use for generation. Otherwise uses default for the provider.
+        #[arg(short, long)]
+        model: Option<String>,
+
+        /// Output file path for the generated llms.txt
+        #[arg(short, long, value_parser = validate_output_file)]
+        output: PathBuf,
+    },
 
     /// Update an existing llms.txt
     Update {
-        // The website to generate an updated llms.txt file for.
+        /// The website to generate an updated llms.txt file for.
         #[command(flatten)]
         website: Website,
+
         /// The prior existing llms.txt file.
         #[arg(short, long, value_parser = validate_input_file)]
         llms_txt: PathBuf,
+
+        /// The LLM provider to use for generation
+        #[arg(short, long)]
+        provider: LlmProviders,
+
+        /// The model to use for generation. Otherwise uses default for the provider.
+        #[arg(short, long)]
+        model: Option<String>,
+
+        /// Output file path for the updated llms.txt
+        #[arg(short, long, value_parser = validate_output_file)]
+        output: PathBuf,
     },
 }
 
@@ -54,12 +99,6 @@ struct Website {
     file: Option<PathBuf>,
 }
 
-fn validate_url(s: &str) -> Result<String, String> {
-    url::Url::parse(s)
-        .map(|_| s.to_string())
-        .map_err(|e| format!("Invalid URL: {}", e))
-}
-
 fn validate_input_file(s: &str) -> Result<PathBuf, String> {
     let path = PathBuf::from(s);
 
@@ -71,8 +110,7 @@ fn validate_input_file(s: &str) -> Result<PathBuf, String> {
         return Err(format!("Input path is not a file: {}", path.display()));
     }
 
-    let metadata =
-        std::fs::metadata(&path).map_err(|e| format!("Cannot read update file metadata: {}", e))?;
+    let metadata = std::fs::metadata(&path).map_err(|e| format!("Cannot read update file metadata: {}", e))?;
 
     if metadata.len() == 0 {
         return Err(format!("Input file is empty: {}", path.display()));
@@ -84,84 +122,121 @@ fn validate_input_file(s: &str) -> Result<PathBuf, String> {
 fn validate_output_file(s: &str) -> Result<PathBuf, String> {
     let path = PathBuf::from(s);
 
-    if path.exists() && path.is_dir() {
+    if path.is_dir() {
         return Err(format!("Output path is a directory: {}", path.display()));
     }
 
-    if let Some(parent) = path.parent()
-        && !parent.exists()
-    {
-        return Err(format!(
-            "Output file parent directory does not exist: {}",
-            parent.display()
-        ));
-    }
+    // let path = path
+    //     .canonicalize()
+    //     .map_err(|e| format!("Cannot canonicalize output path: {}", e))?;
+
+    // if let Some(parent) = path.parent()
+    //     && !parent.exists()
+    // {
+    //     return Err(format!(
+    //         "Output file parent directory does not exist: {}",
+    //         parent.display()
+    //     ));
+    // }
 
     Ok(path)
 }
 
-fn main() {
+struct MainError(String);
+
+impl Debug for MainError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::fmt::Display for MainError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::error::Error for MainError {}
+
+impl From<core_ltx::Error> for MainError {
+    fn from(e: core_ltx::Error) -> Self {
+        Self(e.to_string())
+    }
+}
+
+impl From<std::io::Error> for MainError {
+    fn from(e: std::io::Error) -> Self {
+        Self(e.to_string())
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<(), MainError> {
     let cli = CoreCli::parse();
 
     match &cli.command {
         Commands::Markdown { file } => match std::fs::read_to_string(file) {
             Ok(content) => match is_valid_markdown(&content) {
                 Ok(_doc) => println!("Valid markdown file: {file:?}"),
-                Err(e) => println!("Invalid markdown file ({file:?}):\n{e:?}"),
+                Err(e) => println!("[ERROR] Invalid markdown file ({file:?}):\n{e:?}"),
             },
-            Err(e) => println!("Cannot read file ({file:?}) due to: {e:?}"),
+            Err(e) => return Err(MainError(format!("Cannot read file ({file:?}) due to: {e:?}"))),
         },
 
         Commands::Validate { file } => match std::fs::read_to_string(file) {
             Ok(content) => match is_valid_markdown(&content) {
                 Ok(doc) => match validate_is_llm_txt(doc) {
                     Ok(_llms_txt) => println!("Valid llms.txt file: {file:?}"),
-                    Err(e) => println!("Invalid llms.txt file ({file:?}): {e:?}"),
+                    Err(e) => println!("[ERROR] Invalid llms.txt file ({file:?}): {e:?}"),
                 },
-                Err(e) => println!(
-                    "Invalid llms.txt file because it's an invalid markdown file ({file:?}):\n{e:?}"
-                ),
+                Err(e) => {
+                    println!("[ERROR] Invalid llms.txt file because it's an invalid markdown file ({file:?}):\n{e:?}")
+                }
             },
             Err(e) => {
-                println!("Cannot read file ({file:?}) due to: {e:?}");
-                std::process::exit(1)
+                return Err(MainError(format!("Cannot read file ({file:?}) due to: {e:?}")));
             }
         },
 
-        Commands::Generate(website) => {
-            let web_content = website_content(website);
-            unimplemented!("generate llms.txt from website content:\n{web_content}")
+        Commands::Generate {
+            website,
+            provider,
+            model,
+            output,
+        } => {
+            let html = website_content(website).await?;
+            let llm_provider = provider.provider(model);
+            let llms_txt = core_ltx::llms::generate_llms_txt(&*llm_provider, &html).await?;
+            let as_markdown = llms_txt.md_content();
+            std::fs::write(output, &as_markdown)?;
         }
 
-        Commands::Update { website, llms_txt } => {
-            let web_content = website_content(website);
-
-            let llms_txt_content = match std::fs::read_to_string(llms_txt) {
-                Ok(x) => x,
-                Err(e) => {
-                    println!("ERROR: Cannot read file ({llms_txt:?}) due to: {e:?}");
-                    std::process::exit(1)
-                }
-            };
-
-            unimplemented!(
-                "update llms.txt [1] with website [2]:\n[1]\n{llms_txt_content}\n[2]\n{web_content}"
-            );
+        Commands::Update {
+            website,
+            llms_txt,
+            provider,
+            model,
+            output,
+        } => {
+            let html = website_content(website).await?;
+            let llms_txt_content = std::fs::read_to_string(llms_txt)?;
+            let llm_provider = provider.provider(model);
+            let updated_llms_txt = core_ltx::llms::update_llms_txt(&*llm_provider, &llms_txt_content, &html).await?;
+            let as_markdown = updated_llms_txt.md_content();
+            std::fs::write(output, &as_markdown)?;
         }
     }
+    Ok(())
 }
 
-fn website_content(website: &Website) -> String {
+async fn website_content(website: &Website) -> Result<String, MainError> {
     if let Some(file) = &website.file {
-        match std::fs::read_to_string(file) {
-            Ok(content) => content,
-            Err(e) => {
-                println!("ERROR: Cannot read file ({file:?}) due to: {e:?}");
-                std::process::exit(1)
-            }
-        }
+        let content = std::fs::read_to_string(file)?;
+        Ok(content)
     } else if let Some(url) = &website.url {
-        unimplemented!("download URL ({url}) as file")
+        let validated_url = core_ltx::is_valid_url(url.as_str())?;
+        let html = core_ltx::download(&validated_url).await?;
+        Ok(html)
     } else {
         unreachable!("Clap should enforce that exactly one option is provided")
     }

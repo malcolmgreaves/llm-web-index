@@ -10,13 +10,18 @@ readme = "README.md"
 
 [dependencies]
 async-openai = "0.28"
-tokio = { version = "1.42", features = ["rt", "macros"] }
+tokio = { version = "1.42", features = ["rt", "macros", "rt-multi-thread"] }
 common-ltx = { path = "../common-ltx" }
 clap = { version = "4.5", features = ["derive"] }
 url = "2.5"
 markdown-ppp = "2.8.1"
 indoc = "2.0.7"
 nom = "8.0.0"
+reqwest = "0.13.1"
+html5ever = "0.36.1"
+markup5ever_rcdom = "0.36.0"
+async-trait = "0.1.89"
+subst = "0.3.8"
 
 [dev-dependencies]
 tokio = { version = "1.42", features = ["rt", "macros", "rt-multi-thread"] }

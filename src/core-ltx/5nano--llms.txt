@@ -1,0 +1,85 @@
+# FastHTML
+
+> FastHTML is a Python-based framework for building modern web applications
+> using pure Python and HTML+HTMX. The homepage showcases a live demo app, a
+> technology stack with deployment targets, samples, FAQs, and testimonials, and
+> provides numerous outbound links to docs, GitHub repos, hosting providers, and
+> community resources.
+
+FastHTML’s home page highlights a live, component-based demo, a concise tech
+stack, deployment options, and self-contained samples. This llms.txt summarizes
+the main content and lists outbound links to help you quickly understand the
+site structure and where to find related resources.
+
+## Core navigation and content
+
+ - [Home](https://fastht.ml/)
+ - [Docs](https://fastht.ml/docs)
+ - [Learn more](https://fastht.ml/about)
+ - [Vision](https://fastht.ml/about/vision)
+ - [Foundation](https://fastht.ml/about/foundation)
+ - [Tech](https://fastht.ml/about/tech)
+ - [Components](https://fastht.ml/about/components)
+
+## Hosting, deployment, and external resources
+
+ - [Railway](https://railway.app/)
+ - [Vercel](https://vercel.com/templates/python/fasthtml-python-boilerplate)
+ - [Hugging Face](https://huggingface.co/)
+ - [PythonAnywhere](https://www.pythonanywhere.com/)
+
+## Community, media, and project references
+
+ - [Discord](https://discord.gg/qcXvcxMhdP)
+ - [GitHub - fasthtml](https://github.com/AnswerDotAI/fasthtml)
+ - [Intro video
+   (YouTube)](https://www.youtube.com/embed/QqZUzkPcU7A?si=lTtHuMT5HPC66-49)
+ - [Twitter post by Guillermo
+   Rauch](https://x.com/rauchg/status/1807965785585078773)
+ - [Tinloof site design](https://tinloof.com/)
+
+## Samples and demos
+
+ - [Game of Life
+   sample](https://github.com/AnswerDotAI/fasthtml-example/tree/main/00_game_of_life)
+ - [To-do
+   sample](https://github.com/AnswerDotAI/fasthtml-example/tree/main/01_todo_app)
+ - [Chat bot
+   sample](https://github.com/AnswerDotAI/fasthtml-example/tree/main/02_chatbot)
+ - [Pictionary AI
+   sample](https://github.com/AnswerDotAI/fasthtml-example/tree/main/03_pictionary)
+ - [Discover all
+   samples](https://github.com/AnswerDotAI/fasthtml-example/tree/main)
+
+## Additional references and site-wide links
+
+ - [GitHub - fasthtml](https://github.com/AnswerDotAI/fasthtml)
+ - [Docs home](https://fastht.ml/docs)
+ - [ASGI](https://fastht.ml/about/foundation#sec1)
+ - [HTMX, HTML, HTTP references](https://fastht.ml/about/foundation#sec1) /
+   [https://fastht.ml/about/components](https://fastht.ml/about/components)
+ - [Python](https://fastht.ml/about/tech#sec1)
+ - [Uvicorn](https://fastht.ml/about/tech#sec3)
+ - [Starlette](https://fastht.ml/about/tech#sec4)
+ - [SQLite](https://fastht.ml/about/tech#sec5)
+
+ - [Railway deployment](https://railway.app/) (again)
+ - [Vercel
+   deployment](https://vercel.com/templates/python/fasthtml-python-boilerplate)
+   (again)
+ - [Hugging Face](https://huggingface.co/)
+ - [PythonAnywhere](https://www.pythonanywhere.com/)
+
+ - [Game of Life sample on
+   GitHub](https://github.com/AnswerDotAI/fasthtml-example/tree/main/00_game_of_life)
+ - [To-do sample on
+   GitHub](https://github.com/AnswerDotAI/fasthtml-example/tree/main/01_todo_app)
+ - [Chat bot sample on
+   GitHub](https://github.com/AnswerDotAI/fasthtml-example/tree/main/02_chatbot)
+ - [Pictionary AI sample on
+   GitHub](https://github.com/AnswerDotAI/fasthtml-example/tree/main/03_pictionary)
+ - [Discover all samples on
+   GitHub](https://github.com/AnswerDotAI/fasthtml-example/tree/main)
+
+ - [Intro video
+   (YouTube)](https://www.youtube.com/embed/QqZUzkPcU7A?si=lTtHuMT5HPC66-49)

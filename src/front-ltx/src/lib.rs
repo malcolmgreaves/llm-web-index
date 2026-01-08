@@ -3,9 +3,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{
-    Document, HtmlElement, HtmlInputElement, Request, RequestInit, RequestMode, Response, console,
-};
+use web_sys::{Document, HtmlElement, HtmlInputElement, Request, RequestInit, RequestMode, Response, console};
 
 // ============================================================================
 // Data Models
@@ -161,10 +159,7 @@ fn create_main_page(document: &Document, container: &web_sys::Element) -> Result
 // Page 1: Get LLMs.txt for a Website
 // ============================================================================
 
-fn create_get_llmstxt_page(
-    document: &Document,
-    container: &web_sys::Element,
-) -> Result<(), JsValue> {
+fn create_get_llmstxt_page(document: &Document, container: &web_sys::Element) -> Result<(), JsValue> {
     container.append_child(&create_back_button(document)?.into())?;
 
     let heading = document.create_element("h1")?;
@@ -217,13 +212,8 @@ fn create_get_llmstxt_page(
             match fetch_llm_txt(&url).await {
                 Ok(data) => display_text_result(&data.content),
                 Err(e) => {
-                    console::error_1(
-                        &format!("Could not retrieve llms.txt file due to: {:?}", e).into(),
-                    );
-                    display_text_result(&format!(
-                        "Could not retrieve llms.txt file due to: {:?}",
-                        e
-                    ));
+                    console::error_1(&format!("Could not retrieve llms.txt file due to: {:?}", e).into());
+                    display_text_result(&format!("Could not retrieve llms.txt file due to: {:?}", e));
                 }
             }
         });
@@ -243,10 +233,7 @@ fn create_get_llmstxt_page(
 // Page 2: Generate or Update LLMs.txt
 // ============================================================================
 
-fn create_generate_or_update_page(
-    document: &Document,
-    container: &web_sys::Element,
-) -> Result<(), JsValue> {
+fn create_generate_or_update_page(document: &Document, container: &web_sys::Element) -> Result<(), JsValue> {
     container.append_child(&create_back_button(document)?.into())?;
 
     let heading = document.create_element("h1")?;
@@ -355,10 +342,7 @@ fn create_list_all_page(document: &Document, container: &web_sys::Element) -> Re
 // Page 4: List All In-Progress Jobs
 // ============================================================================
 
-fn create_list_in_progress_page(
-    document: &Document,
-    container: &web_sys::Element,
-) -> Result<(), JsValue> {
+fn create_list_in_progress_page(document: &Document, container: &web_sys::Element) -> Result<(), JsValue> {
     container.append_child(&create_back_button(document)?.into())?;
 
     let heading = document.create_element("h1")?;
@@ -393,10 +377,7 @@ fn create_list_in_progress_page(
 // Page 5: Inspect Job by UUID
 // ============================================================================
 
-fn create_inspect_job_page(
-    document: &Document,
-    container: &web_sys::Element,
-) -> Result<(), JsValue> {
+fn create_inspect_job_page(document: &Document, container: &web_sys::Element) -> Result<(), JsValue> {
     container.append_child(&create_back_button(document)?.into())?;
 
     let heading = document.create_element("h1")?;
@@ -478,13 +459,10 @@ async fn fetch_llm_txt(url: &str) -> Result<LlmTxtResponse, JsValue> {
 }
 
 async fn put_llm_txt(url: &str) -> Result<String, JsValue> {
-    let payload = UrlPayload {
-        url: url.to_string(),
-    };
+    let payload = UrlPayload { url: url.to_string() };
     let payload_json = serde_json::to_string(&payload).unwrap();
 
-    let response: serde_json::Value =
-        api_request("/api/llm_txt", "PUT", Some(&payload_json)).await?;
+    let response: serde_json::Value = api_request("/api/llm_txt", "PUT", Some(&payload_json)).await?;
     Ok(serde_json::to_string_pretty(&response).unwrap())
 }
 
@@ -526,9 +504,7 @@ async fn api_request<T: for<'de> Deserialize<'de>>(
     // Check if the response status is OK (200-299)
     if !resp.ok() {
         let text = JsFuture::from(resp.text()?).await?;
-        let error_text = text
-            .as_string()
-            .unwrap_or_else(|| "Unknown error".to_string());
+        let error_text = text.as_string().unwrap_or_else(|| "Unknown error".to_string());
         return Err(JsValue::from_str(&error_text));
     }
 
@@ -546,9 +522,7 @@ fn display_text_result(text: &str) {
     let window = web_sys::window().expect("no global window exists");
     let document = window.document().expect("should have a document on window");
 
-    let results_div = document
-        .get_element_by_id("results")
-        .expect("results div should exist");
+    let results_div = document.get_element_by_id("results").expect("results div should exist");
 
     let pre = document.create_element("pre").unwrap();
     pre.set_class_name("result-text");
@@ -562,9 +536,7 @@ fn display_list_results(data: &LlmsTxtListResponse) {
     let window = web_sys::window().expect("no global window exists");
     let document = window.document().expect("should have a document on window");
 
-    let results_div = document
-        .get_element_by_id("results")
-        .expect("results div should exist");
+    let results_div = document.get_element_by_id("results").expect("results div should exist");
 
     results_div.set_inner_html("");
 
@@ -589,9 +561,7 @@ fn display_jobs_results(jobs: &[JobState]) {
     let window = web_sys::window().expect("no global window exists");
     let document = window.document().expect("should have a document on window");
 
-    let results_div = document
-        .get_element_by_id("results")
-        .expect("results div should exist");
+    let results_div = document.get_element_by_id("results").expect("results div should exist");
 
     results_div.set_inner_html("");
 
@@ -616,9 +586,7 @@ fn display_job_details(job: &JobState) {
     let window = web_sys::window().expect("no global window exists");
     let document = window.document().expect("should have a document on window");
 
-    let results_div = document
-        .get_element_by_id("results")
-        .expect("results div should exist");
+    let results_div = document.get_element_by_id("results").expect("results div should exist");
 
     results_div.set_inner_html("");
 

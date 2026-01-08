@@ -1,99 +1,58 @@
 use async_openai::{
     Client,
-    types::{
-        ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs,
-        CreateChatCompletionRequestArgs,
-    },
+    config::OpenAIConfig,
+    types::{ChatCompletionRequestSystemMessage, ChatCompletionRequestUserMessage, CreateChatCompletionRequestArgs},
 };
+use async_trait::async_trait;
 
-#[derive(Debug)]
-pub enum ChatGptError {
-    ApiError(async_openai::error::OpenAIError),
-    NoResponse,
+use crate::{Error, llms::LlmProvider};
+
+#[derive(Debug, Clone)]
+pub struct ChatGpt {
+    pub client: Client<OpenAIConfig>,
+    pub model_name: String,
 }
 
-impl std::fmt::Display for ChatGptError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ChatGptError::ApiError(e) => write!(f, "OpenAI API error: {}", e),
-            ChatGptError::NoResponse => write!(f, "No response from ChatGPT"),
+impl ChatGpt {
+    pub fn new(model_name: &str) -> Self {
+        Self {
+            client: Client::new(),
+            model_name: model_name.to_string(),
         }
     }
 }
 
-impl std::error::Error for ChatGptError {}
-
-impl From<async_openai::error::OpenAIError> for ChatGptError {
-    fn from(err: async_openai::error::OpenAIError) -> Self {
-        ChatGptError::ApiError(err)
+impl Default for ChatGpt {
+    fn default() -> Self {
+        Self {
+            client: Client::new(),
+            model_name: "gpt-5-mini".to_string(),
+        }
     }
 }
 
-/// Sends a simple prompt to ChatGPT and returns the response.
-///
-/// This function uses the OpenAI API to send a static prompt "Tell me a one-liner joke."
-/// and returns the response text.
-///
-/// # Errors
-///
-/// Returns `ChatGptError` if:
-/// - The OpenAI API call fails
-/// - No response is received from the API
-///
-/// # Environment Variables
-///
-/// Requires `OPENAI_API_KEY` to be set in the environment.
-pub async fn send_simple_prompt() -> Result<String, ChatGptError> {
-    let client = Client::new();
+#[async_trait]
+impl LlmProvider for ChatGpt {
+    async fn complete_prompt(&self, prompt: &str) -> Result<String, Error> {
+        let request = CreateChatCompletionRequestArgs::default()
+            // .max_tokens(512u32)
+            .model(&self.model_name)
+            .messages([
+                // Can also use ChatCompletionRequest<Role>MessageArgs for builder pattern
+                ChatCompletionRequestSystemMessage::from("You are a helpful assistant. You produce summaries of websites formatted in Markdown according to the llms.txt specification.").into(),
+                ChatCompletionRequestUserMessage::from(prompt).into(),
+            ])
+            .build()?;
 
-    let request = CreateChatCompletionRequestArgs::default()
-        .model("gpt-3.5-turbo")
-        .messages([
-            ChatCompletionRequestSystemMessageArgs::default()
-                .content("You are a helpful assistant.")
-                .build()?
-                .into(),
-            ChatCompletionRequestUserMessageArgs::default()
-                .content("Tell me a one-liner joke.")
-                .build()?
-                .into(),
-        ])
-        .build()?;
+        let response = self.client.chat().create(request).await?;
 
-    let response = client.chat().create(request).await?;
+        let llm_text_response = response
+            .choices
+            .iter()
+            .flat_map(|choice| choice.message.content.clone())
+            .take(1)
+            .fold("".to_string(), |_, item| item);
 
-    response
-        .choices
-        .first()
-        .and_then(|choice| choice.message.content.clone())
-        .ok_or(ChatGptError::NoResponse)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use common_ltx::is_env_set;
-
-    #[tokio::test]
-    async fn test_send_simple_prompt() {
-        if is_env_set("OPENAI_API_KEY") {
-            let result = send_simple_prompt().await;
-
-            match result {
-                Ok(response) => {
-                    println!("ChatGPT response: {}", response);
-                    assert!(!response.is_empty(), "Response should not be empty");
-                }
-                Err(ChatGptError::ApiError(e)) => {
-                    panic!("API error: {}", e);
-                }
-                Err(ChatGptError::NoResponse) => {
-                    panic!("Unexpected NoResponse error");
-                }
-            }
-        } else {
-            println!("[SKIP] OPENAI_API_KEY is not set");
-        }
+        Ok(llm_text_response)
     }
 }

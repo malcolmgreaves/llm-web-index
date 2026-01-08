@@ -1,0 +1,411 @@
+# Sherwin-Williams Paints, Stains, Supplies and Coating Solutions
+
+> Sherwin-Williams’ main public gateway site for paint colors, painting tools,
+> DIY inspiration, professional products/resources, industrial coatings portals,
+> and corporate/investor/careers information. Primary audiences include
+> homeowners/DIYers, painting contractors & pros, designers/architects, and
+> industrial customers. The page is navigation-heavy (mega menu + carousels) and
+> links out to multiple Sherwin-Williams sub-sites (industrial, corporate,
+> investors, careers, privacy/accessibility, suppliers) and major social
+> channels.
+
+This page is a global “hub”/gateway with:
+
+ - A **region selector modal** (country/region selection; content varies by
+   locale).
+ - A **utility bar** (Find a Store, Select Region, Sign In).
+ - A large **mega-navigation** grouping content into: “Shop Products & Color”,
+   “Services & Resources”, “Industrial Coatings”, and “Our Company”.
+ - Multiple **content carousels** (marketing hero carousel, top colors carousel,
+   performance coatings carousel, news cards).
+ - Structured data present: **schema.org Organization** (includes brand
+   relationships and social profiles).
+
+Structured elements & how to interpret them:
+
+ - **Primary tasks**: explore colors, order samples, use color tools, locate
+   stores, sign in to PRO+.
+ - **Color content hierarchy** is organized by families, collections, rooms,
+   exterior areas, and tools.
+ - **Professional content** includes product categories, specifications, data
+   sheets, calculators, PRO+ program, and business tools.
+ - **Industrial coatings** content is largely hosted on
+   `industrial.sherwin-williams.com` and subdivided by industry vertical.
+ - **Corporate/company** content is hosted on `corporate.sherwin-williams.com`,
+   `investors.sherwin-williams.com`, and `careers.sherwin-williams.com`.
+
+Outbound links below include **all external domains referenced** plus key
+first-party deep links shown in navigation/carousels.
+
+## Main entry points
+
+ - [Home (global gateway)](https://www.sherwin-williams.com/): Primary hub
+ - [Store Locator](https://www.sherwin-williams.com/store-locator): Find a store
+ - [Login](https://www.sherwin-williams.com/login): Sign in
+
+## Color (explore, families, collections, rooms, exterior)
+
+ - [Explore Color](https://www.sherwin-williams.com/en-us/color)
+ - [Color Families:
+   Reds](https://www.sherwin-williams.com/en-us/color/color-family/red-paint-colors)
+ - [Color Families:
+   Oranges](https://www.sherwin-williams.com/en-us/color/color-family/orange-paint-colors)
+ - [Color Families:
+   Yellows](https://www.sherwin-williams.com/en-us/color/color-family/yellow-paint-colors)
+ - [Color Families:
+   Greens](https://www.sherwin-williams.com/en-us/color/color-family/green-paint-colors)
+ - [Color Families:
+   Blues](https://www.sherwin-williams.com/en-us/color/color-family/blue-paint-colors)
+ - [Color Families:
+   Purples](https://www.sherwin-williams.com/en-us/color/color-family/purple-paint-colors)
+ - [Color Families:
+   Neutrals](https://www.sherwin-williams.com/en-us/color/color-family/neutral-paint-colors)
+ - [Color Families:
+   Whites](https://www.sherwin-williams.com/en-us/color/color-family/white-paint-colors)
+ - [All Paint Colors (by
+   family)](https://www.sherwin-williams.com/homeowners/color/find-and-explore-colors/paint-colors-by-family)
+
+ - [Color Collections: Top 50
+   Colors](https://www.sherwin-williams.com/en-us/color/color-collections/top-50-colors)
+ - [Color Collections: Colormix
+   Forecast](https://www.sherwin-williams.com/en-us/color/color-collections/colormix-forecast)
+ - [Color Collections: Color
+   ID](https://www.sherwin-williams.com/en-us/color/color-collections/color-id)
+ - [Color Collections: Historic Paint
+   Colors](https://www.sherwin-williams.com/en-us/color/color-collections/historic-paint-colors)
+ - [Color Collections: Living
+   Well](https://www.sherwin-williams.com/en-us/color/color-collections/living-well)
+ - [Color Collections: Designer Color
+   Collection](https://www.sherwin-williams.com/en-us/color/color-collections/designer-color-collection)
+ - [Color Collections: Finest Whites &
+   Neutrals](https://www.sherwin-williams.com/en-us/color/color-collections/finest-whites-neutrals)
+ - [All Color
+   Collections](https://www.sherwin-williams.com/en-us/color/color-collections)
+
+ - [Room Colors:
+   Bedroom](https://www.sherwin-williams.com/en-us/color/room-paint-colors/bedroom-paint-colors)
+ - [Room Colors: Living
+   Room](https://www.sherwin-williams.com/en-us/color/room-paint-colors/living-room-paint-colors)
+ - [Room Colors:
+   Kitchen](https://www.sherwin-williams.com/en-us/color/room-paint-colors/kitchen-paint-colors)
+ - [Room Colors:
+   Bathroom](https://www.sherwin-williams.com/en-us/color/room-paint-colors/bathroom-paint-colors)
+ - [Room Colors: Dining
+   Room](https://www.sherwin-williams.com/en-us/color/room-paint-colors/dining-room-paint-colors)
+ - [Room Colors:
+   Office](https://www.sherwin-williams.com/en-us/color/room-paint-colors/office-paint-colors)
+ - [Room Colors:
+   Hallways](https://www.sherwin-williams.com/en-us/color/room-paint-colors/hallway-paint-colors)
+ - [Room Colors:
+   Nursery](https://www.sherwin-williams.com/en-us/color/room-paint-colors/nursery-colors)
+ - [Room Colors: Teen
+   Bedroom](https://www.sherwin-williams.com/en-us/color/room-paint-colors/teen-bedroom-colors)
+ - [Room Colors: Kids
+   Bedroom](https://www.sherwin-williams.com/en-us/color/room-paint-colors/kids-bedroom-colors)
+ - [Room Colors:
+   Stairway](https://www.sherwin-williams.com/en-us/color/room-paint-colors/stairway-colors)
+ - [All Room Paint
+   Colors](https://www.sherwin-williams.com/en-us/color/room-paint-colors)
+
+ - [Exterior Colors: Exterior House Colors (Main
+   Body)](https://www.sherwin-williams.com/en-us/color/exterior-paint-colors/exterior-house-colors)
+ - [Exterior Colors: Front
+   Door](https://www.sherwin-williams.com/en-us/color/exterior-paint-colors/front-door-paint-colors)
+ - [Exterior Colors: Garage
+   Door](https://www.sherwin-williams.com/en-us/color/exterior-paint-colors/garage-door-colors)
+ - [Exterior Colors: Accent
+   Colors](https://www.sherwin-williams.com/en-us/color/exterior-paint-colors/exterior-accent-colors)
+ - [All Exterior Paint
+   Colors](https://www.sherwin-williams.com/en-us/color/exterior-paint-colors)
+
+ - [Stain Colors: Interior
+   Stains](https://www.sherwin-williams.com/homeowners/color/find-and-explore-colors/stain-colors/interior-stains)
+ - [Stain Colors: Exterior
+   Stains](https://www.sherwin-williams.com/homeowners/color/find-and-explore-colors/stain-colors/exterior-stains)
+
+## Color tools & sampling
+
+ - [Color Tools](https://www.sherwin-williams.com/en-us/color/color-tools)
+ - [Visualize
+   Color](https://www.sherwin-williams.com/en-us/color/color-tools/color-visualizer)
+ - [Color Expert App (AI
+   recommendations)](https://www.sherwin-williams.com/en-us/color/color-tools/color-expert)
+ - [Color
+   Services](https://www.sherwin-williams.com/en-us/color/color-tools/color-services)
+ - [Paint Calculator
+   (consumer)](https://www.sherwin-williams.com/en-us/color/color-tools/paint-calculator)
+ - [Order Paint Samples (external
+   subdomain)](https://samples.sherwin-williams.com/)
+
+## Homeowners (products, inspiration, resources)
+
+ - [Homeowners hub](https://www.sherwin-williams.com/homeowners)
+ - [Homeowner Products
+   (all)](https://www.sherwin-williams.com/homeowners/products)
+ - [Interior
+   Paint](https://www.sherwin-williams.com/homeowners/products/interior-paint-coatings/interior-paint)
+ - [Interior
+   Primers](https://www.sherwin-williams.com/homeowners/products/interior-paint-coatings/interior-primers)
+ - [Interior Wood Stains/Sealers/Clear
+   Topcoats](https://www.sherwin-williams.com/homeowners/products/interior-paint-coatings/interior-wood-stains-sealers-clear-topcoats)
+ - [Interior Concrete &
+   Masonry](https://www.sherwin-williams.com/homeowners/products/interior-paint-coatings/interior-masonry-concrete-products)
+ - [Interior
+   Aerosols](https://www.sherwin-williams.com/homeowners/products/interior-paint-coatings/interior-aerosols)
+
+ - [Exterior
+   Paint](https://www.sherwin-williams.com/homeowners/products/exterior-paint-coatings/exterior-paint)
+ - [Exterior
+   Primers](https://www.sherwin-williams.com/homeowners/products/exterior-paint-coatings/exterior-primers)
+ - [Deck
+   Products](https://www.sherwin-williams.com/homeowners/products/exterior-paint-coatings/deck-products)
+ - [Exterior Concrete &
+   Masonry](https://www.sherwin-williams.com/homeowners/products/exterior-paint-coatings/exterior-masonry-concrete-products)
+ - [Exterior
+   Aerosols](https://www.sherwin-williams.com/homeowners/products/exterior-paint-coatings/exterior-aerosols)
+ - [Exterior Wood Stains/Sealers/Clear
+   Topcoats](https://www.sherwin-williams.com/homeowners/products/exterior-paint-coatings/exterior-wood-stains-sealers-clear-topcoats)
+
+ - [Wallpaper
+   Essentials](https://www.sherwin-williams.com/homeowners/products/wallpaper/wallpaper-essentials)
+ - [Scott Living Collection
+   (external)](https://online.flipbuilder.com/vcji/vgvy/)
+ - [Magnolia Home
+   Wallpaper](https://www.sherwin-williams.com/homeowners/products/wallpaper/wallpaper-magnolia-home)
+ - [HGTV Wallpaper
+   Collection](https://www.sherwin-williams.com/homeowners/products/wallpaper/hgtv-collection)
+ - [York Peel &
+   Stick](https://www.sherwin-williams.com/homeowners/products/wallpaper/wallpaper-york-peel-stick)
+ - [All
+   Wallpaper](https://www.sherwin-williams.com/homeowners/products/wallpaper)
+
+ - [Inspiration hub](https://www.sherwin-williams.com/homeowners/inspiration)
+ - [Project
+   Center](https://www.sherwin-williams.com/homeowners/inspiration/project-center)
+ - [Inspiration
+   Gallery](https://www.sherwin-williams.com/homeowners/inspiration/gallery)
+ - [DIY
+   Influencers](https://www.sherwin-williams.com/homeowners/inspiration/diy-influencers)
+ - [Inspiration
+   Videos](https://www.sherwin-williams.com/homeowners/inspiration/inspiration-videos)
+ - [How-To
+   Videos](https://www.sherwin-williams.com/homeowners/inspiration/inspiration-videos/how-to-videos)
+
+ - [Project Center (site
+   section)](https://www.sherwin-williams.com/en-us/project-center)
+ - [FAQs](https://www.sherwin-williams.com/en-us/project-center/faqs)
+ - [Maintenance &
+   Repair](https://www.sherwin-williams.com/en-us/project-center/maintenance-repair)
+
+ - [Special Offers](https://www.sherwin-williams.com/en-us/special-offers)
+ - [PaintPerks](https://www.sherwin-williams.com/homeowners/special-offers/preferred-customer)
+
+## Professional (contractors, PRO+, specs, data)
+
+ - [Painting Contractors
+   hub](https://www.sherwin-williams.com/painting-contractors)
+ - [Professional
+   Products](https://www.sherwin-williams.com/painting-contractors/products)
+ - [Product
+   Specifications](https://www.sherwin-williams.com/painting-contractors/specifications)
+ - [Professional
+   Color](https://www.sherwin-williams.com/painting-contractors/color)
+ - [Project
+   Solutions](https://www.sherwin-williams.com/painting-contractors/project-solutions)
+ - [PRO+
+   Program](https://www.sherwin-williams.com/painting-contractors/pro-plus)
+ - [PRO+ Mobile
+   App](https://www.sherwin-williams.com/painting-contractors/pro-plus/pro-app)
+ - [Professional Paint
+   Calculator](https://www.sherwin-williams.com/painting-contractors/color/color-tools/paint-calculator#/home)
+ - [Product Data
+   Sheets](https://www.sherwin-williams.com/painting-contractors/products/data-sheets)
+ - [Professional
+   Services](https://www.sherwin-williams.com/painting-contractors/services)
+ - [Business
+   Builders](https://www.sherwin-williams.com/painting-contractors/business-builders)
+ - [Customizable Marketing
+   Materials](https://www.sherwin-williams.com/painting-contractors/business-builders/customizable-marketing-materials)
+ - [Professional Business
+   Tools](https://www.sherwin-williams.com/painting-contractors/pro-plus/business-tools)
+ - [QuickBooks
+   (PRO+)](https://www.sherwin-williams.com/painting-contractors/pro-plus/quickbooks)
+ - [Project
+   Bids](https://www.sherwin-williams.com/painting-contractors/project-solutions/project-bids)
+ - [Scheduled
+   Delivery](https://www.sherwin-williams.com/painting-contractors/pro-plus/free-delivery)
+ - [Learning &
+   Development](https://www.sherwin-williams.com/painting-contractors/pro-plus/learning-and-development)
+ - [Learning
+   Pathway](https://www.sherwin-williams.com/painting-contractors/pro-plus/learning-and-development/learning-pathway)
+ - [Painter Skills
+   Program](https://www.sherwin-williams.com/painting-contractors/pro-plus/learning-and-development/painter-skills-program)
+ - [PRO+
+   Webinars](https://www.sherwin-williams.com/painting-contractors/pro-plus/webinars)
+ - [Careers in Painting (external)](https://jobs.paintprotraining.com/)
+ - [Contact a Rep](https://www.sherwin-williams.com/SalesInquiryView)
+
+## Architects, specifiers, designers (selected)
+
+ - [Architects/Specifiers/Designers
+   hub](https://www.sherwin-williams.com/architects-specifiers-designers)
+ - [Inspiration
+   (A&D)](https://www.sherwin-williams.com/architects-specifiers-designers/inspiration)
+ - [Project Case
+   Studies](https://www.sherwin-williams.com/architects-specifiers-designers/inspiration/inspiration-project-profiles)
+ - [AIA Continuing
+   Education](https://www.sherwin-williams.com/architects-specifiers-designers/education)
+ - [Designer Account
+   Executives](https://www.sherwin-williams.com/architects-specifiers-designers/color/designer-account-executives)
+ - [Architectural Account
+   Executive](https://www.sherwin-williams.com/architects-specifiers-designers/specifications/architectural-account-executive)
+ - [Color Forecast
+   (A&D)](https://www.sherwin-williams.com/architects-specifiers-designers/inspiration/color-forecast)
+ - [Styles &
+   Techniques](https://www.sherwin-williams.com/architects-specifiers-designers/inspiration/styles-and-techniques)
+ - [Color
+   Conversation](https://www.sherwin-williams.com/architects-specifiers-designers/inspiration/color-conversation)
+ - [Design
+   Council](https://www.sherwin-williams.com/architects-specifiers-designers/inspiration/design-council)
+ - [STIR
+   eNewsletter](https://www.sherwin-williams.com/architects-specifiers-designers/inspiration/stir)
+
+## Property / facility managers & home builders
+
+ - [Property & Facility Managers
+   hub](https://www.sherwin-williams.com/property-facility-managers)
+ - [Floor
+   Products](https://www.sherwin-williams.com/property-facility-managers/floorcovering/floor-products)
+ - [Floorcovering
+   Services](https://www.sherwin-williams.com/property-facility-managers/floorcovering/floorcovering-services)
+ - [Floorcovering
+   Education](https://www.sherwin-williams.com/property-facility-managers/floorcovering/floorcovering-education)
+ - [Specialty Flooring
+   Programs](https://www.sherwin-williams.com/property-facility-managers/floorcovering/specialty-flooring-programs)
+ - [National Account
+   Services](https://www.sherwin-williams.com/property-facility-managers/project-solutions/national-account-services)
+ - [Home Builders hub](https://www.sherwin-williams.com/home-builders)
+ - [Market Colors (home
+   builders)](https://www.sherwin-williams.com/home-builders/color/2020-marketcolors)
+
+## Industrial coatings (external portal)
+
+ - [Industrial Coatings
+   home](https://industrial.sherwin-williams.com/na/us/en/home.html)
+ - [Aerospace](https://industrial.sherwin-williams.com/na/us/en/aerospace.html)
+ - [Automotive](https://industrial.sherwin-williams.com/na/us/en/automotive.html)
+ - [Coil &
+   Extrusion](https://industrial.sherwin-williams.com/na/us/en/coil-extrusion.html)
+ - [General
+   Industrial](https://industrial.sherwin-williams.com/na/us/en/general-industrial.html)
+ - [Industrial
+   Wood](https://industrial.sherwin-williams.com/na/us/en/industrial-wood.html)
+ - [Packaging](https://industrial.sherwin-williams.com/na/us/en/packaging.html)
+ - [Protective &
+   Marine](https://industrial.sherwin-williams.com/na/us/en/protective-marine.html)
+ - [Resin Flooring (High Performance
+   Flooring)](https://industrial.sherwin-williams.com/na/us/en/resin-flooring.html)
+
+## Marketing highlights referenced on page
+
+ - [Color of the Month: January 2026 “Garden
+   Gate”](https://www.sherwin-williams.com/en-us/color/color-of-the-month/2026-january-garden-gate)
+ - [Color of the Year
+   2026](https://www.sherwin-williams.com/en-us/color/color-of-the-year/2026)
+ - [Colormix Forecast
+   2026](https://www.sherwin-williams.com/en-us/color/color-collections/colormix-forecast/2026)
+ - [Color to Go
+   (samples)](https://www.sherwin-williams.com/homeowners/products/color-to-go)
+
+## Our company / corporate / investors / careers
+
+ - [About (site)](https://www.sherwin-williams.com/about)
+ - [Corporate: Our
+   Company](https://corporate.sherwin-williams.com/our-company.html)
+ - [Corporate: Media
+   Center](https://corporate.sherwin-williams.com/media-center.html)
+ - [Corporate: Media
+   Contacts](https://corporate.sherwin-williams.com/media-center/media-contacts.html)
+ - [Corporate: Contact
+   Us](https://corporate.sherwin-williams.com/us/en/contact-us.html)
+ - [Corporate:
+   Sustainability](https://corporate.sherwin-williams.com/sustainability.html)
+ - [Corporate: Sustainability
+   Goals](https://corporate.sherwin-williams.com/sustainability/goals.html)
+ - [Corporate: Sustainability Focus
+   Areas](https://corporate.sherwin-williams.com/sustainability/focus-areas.html)
+ - [Corporate: Environmental
+   Footprint](https://corporate.sherwin-williams.com/sustainability/focus-areas/environmental-footprint.html)
+ - [Corporate: Product
+   Blueprint](https://corporate.sherwin-williams.com/sustainability/focus-areas/product-blueprint.html)
+ - [Corporate: Social
+   Imprint](https://corporate.sherwin-williams.com/sustainability/focus-areas/social-imprint.html)
+ - [Corporate: Governance &
+   Ethics](https://corporate.sherwin-williams.com/sustainability/focus-areas/governance.html)
+ - [Corporate: Sustainability Reports &
+   Downloads](https://corporate.sherwin-williams.com/sustainability/reports-and-downloads.html)
+
+ - [Investors: Investor
+   Home](https://investors.sherwin-williams.com/investor-home/default.aspx)
+ - [Investors:
+   Contact](https://investors.sherwin-williams.com/investor-resources/contact-us/default.aspx)
+ - [Investors: Quarterly
+   Results](https://investors.sherwin-williams.com/financials/quarterly-results/default.aspx)
+ - [Investors: Annual Reports & Proxy
+   Statements](https://investors.sherwin-williams.com/financials/annual-reports-and-proxy-statements/default.aspx)
+ - [Investors: SEC
+   Filings](https://investors.sherwin-williams.com/financials/sec-filings/default.aspx)
+ - [Investors: Press
+   Releases](https://investors.sherwin-williams.com/press-releases/default.aspx)
+ - [Investors: Stock Quote &
+   Chart](https://investors.sherwin-williams.com/stock-information/stock-quote-and-chart/default.aspx)
+ - [Investors: Events &
+   Presentations](https://investors.sherwin-williams.com/events-and-presentations/default.aspx)
+ - [Investors: Corporate Governance (Executive
+   Officers)](https://investors.sherwin-williams.com/corporate-governance/executive-officers/default.aspx)
+ - [Investors:
+   ESG](https://investors.sherwin-williams.com/environmental-social-and-governance/default.aspx)
+
+ - [Careers: Home](https://careers.sherwin-williams.com/home)
+ - [Careers: Work With Us](https://careers.sherwin-williams.com/work-with-us)
+ - [Careers: Our
+   Locations](https://careers.sherwin-williams.com/home&map=na#maps)
+ - [Job Search (external subdomain)](https://jobsearch.sherwin.com/)
+ - [Careers: Fraud
+   Alert](https://careers.sherwin-williams.com/us/en/recruiting-scam-awareness-alert.html)
+
+## Policies & compliance (external)
+
+ - [Privacy Policy](https://privacy.sherwin-williams.com/privacy-policy)
+ - [Accessibility Statement](https://accessibility.sherwin-williams.com/)
+ - [Terms of Use](https://www.sherwin-williams.com/terms-of-use)
+ - [Forced Labor and Human Trafficking
+   (PDF)](https://images.sherwin-williams.com/content_images/sw-pdf-2023-ye-forced-labor-report-sherwin-williams.pdf)
+ - [Suppliers: Doing Business with Us](https://suppliers.sherwin-williams.com/)
+
+## Social profiles (external)
+
+ - [Facebook](https://www.facebook.com/SherwinWilliamsforYourHome)
+ - [X / Twitter](https://twitter.com/SherwinWilliams)
+ - [Pinterest](https://www.pinterest.com/SherwinWilliams/)
+ - [Houzz](https://www.houzz.com/professionals/paint-and-wall-covering-dealers/sherwin-williams-pfvwus-pf~1006762013?)
+ - [YouTube](https://www.youtube.com/user/sherwinwilliams)
+
+## Optional
+
+ - [Purdy](https://www.purdy.com/): Brand site referenced in structured data
+ - [Krylon](https://www.krylon.com/): Brand site referenced in structured data
+ - [Thompson’s WaterSeal](https://www.thompsonswaterseal.com/): Brand site
+   referenced in structured data
+ - [Cabot](https://www.cabotstain.com/en): Brand site referenced in structured
+   data
+ - [Dutch Boy](https://www.dutchboy.com/): Brand site referenced in structured
+   data
+ - [Dupli-Color](https://www.duplicolor.com/): Brand site referenced in
+   structured data
+ - [Wikipedia: Paint](https://en.wikipedia.org/wiki/Paint): Topic reference in
+   structured data
+ - [Wikipedia: Interior design](https://en.wikipedia.org/wiki/Interior_design):
+   Topic reference in structured data
+ - [Wikipedia: Color](https://en.wikipedia.org/wiki/Color): Topic reference in
+   structured data

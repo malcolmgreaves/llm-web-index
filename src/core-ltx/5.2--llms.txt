@@ -1,0 +1,123 @@
+# FastHTML (fastht.ml)
+
+> FastHTML is a Python library for building modern web applications in pure
+> Python, emphasizing solid web foundations (HTTP/HTML/CSS/JS) and
+> hypermedia-style interactivity (often via HTMX) rather than heavy JS
+> frameworks. This site is the product homepage and includes an intro video,
+> interactive component demos, a tech stack overview, sample projects, FAQs, and
+> links to documentation and community resources.
+
+The homepage itself is implemented as a FastHTML app and demonstrates:
+
+ - **Isolated components** with scoped CSS/JS (e.g., a 3D hover card).
+ - **Dynamic server-generated HTML** (e.g., real-time weather table).
+ - **Reusable UI components** (e.g., an accordion).
+ - **Database-backed rendering** via an object `__ft__` render method (example
+   uses `fastlite`).
+
+Structured elements present on the page:
+
+ - Primary navigation: logo link to home, and a prominent **Docs** link.
+ - Hero section: positioning statement + CTAs (**Learn more**, **Watch intro**).
+ - Interactive tabbed demo section: “Components”, “Dynamic”, “Reusable”,
+   “Databases”.
+ - “Get started in minutes” feature cards: speed, flexibility, scale.
+ - Tech stack section linking to deeper “about” pages for foundations and
+   technology choices.
+ - Samples section linking to a GitHub examples repository and specific example
+   folders.
+ - FAQ accordion section answering common product questions (deployment,
+   relation to FastAPI, SPA support, JS usage, performance).
+ - Testimonials carousel including one link to an external tweet.
+ - Footer links to GitHub, Discord, Docs, and site design credit.
+
+Outbound links include third-party hosting/deploy platforms, GitHub
+repositories, Discord invite, YouTube embed, and attribution sources. The page
+also loads external JS/CSS libraries via CDNs (jsDelivr, cdnjs) and embeds
+images hosted on ucarecdn.
+
+## Main pages (onsite)
+
+ - [Home](https://fastht.ml/): Product overview; interactive demos; tech stack;
+   samples; FAQ; testimonials; footer resources.
+ - [Docs](https://fastht.ml/docs): Documentation entry point (linked from header
+   and footer).
+ - [About](https://fastht.ml/about): “Learn more” page linked from hero CTA.
+ - [Design philosophy / vision](https://fastht.ml/about/vision): Linked from
+   “Tech stack” intro text.
+ - [Foundations](https://fastht.ml/about/foundation#sec1): Linked from stack
+   badges (ASGI, HTMX).
+ - [Foundations (HTTP section)](https://fastht.ml/about/foundation#sec3): Linked
+   from stack badge (HTTP).
+ - [Components](https://fastht.ml/about/components): Linked from stack badge
+   (HTML).
+ - [Tech stack details](https://fastht.ml/about/tech#sec1): Linked from stack
+   badge (Python).
+ - [Tech stack details (Uvicorn)](https://fastht.ml/about/tech#sec3): Linked
+   from stack badge (Uvicorn).
+ - [Tech stack details (Starlette)](https://fastht.ml/about/tech#sec4): Linked
+   from stack badge (Starlette).
+ - [Tech stack details (SQLite)](https://fastht.ml/about/tech#sec5): Linked from
+   stack badge (SQLite).
+
+## Examples / sample projects (external)
+
+ - [FastHTML examples (repo
+   root)](https://github.com/AnswerDotAI/fasthtml-example/tree/main): Collection
+   of small self-contained FastHTML sample apps.
+ - [Game of Life
+   example](https://github.com/AnswerDotAI/fasthtml-example/tree/main/00_game_of_life):
+   Collaborative/interactive sample.
+ - [To-do app
+   example](https://github.com/AnswerDotAI/fasthtml-example/tree/main/01_todo_app):
+   CRUD-style sample.
+ - [Chatbot
+   example](https://github.com/AnswerDotAI/fasthtml-example/tree/main/02_chatbot):
+   Chat UI sample.
+ - [Pictionary AI
+   example](https://github.com/AnswerDotAI/fasthtml-example/tree/main/03_pictionary):
+   Multimodal/drawing + AI sample.
+
+## Community and source (external)
+
+ - [FastHTML GitHub repository](https://github.com/AnswerDotAI/fasthtml): Source
+   code and project home on GitHub.
+ - [Discord invite](https://discord.gg/qcXvcxMhdP): Community chat/support.
+ - [AnswerDotAI on X
+   (Twitter)](https://x.com/rauchg/status/1807965785585078773): Testimonial
+   source link (“From twitter”).
+ - [Site design credit (Tinloof)](https://tinloof.com/): External agency
+   credited in footer.
+
+## Deployment platforms referenced (external)
+
+ - [Railway](https://railway.app/): Suggested 1-click deploy target.
+ - [Vercel template for FastHTML Python
+   boilerplate](https://vercel.com/templates/python/fasthtml-python-boilerplate):
+   Suggested 1-click deploy template.
+ - [Hugging Face](https://huggingface.co/): Suggested deploy target (Spaces
+   implied by FAQ text).
+ - [PythonAnywhere](https://www.pythonanywhere.com/): Suggested deploy target.
+
+## Optional (embedded media, third-party assets, and CDNs)
+
+ - [YouTube intro video
+   (embed)](https://www.youtube.com/embed/QqZUzkPcU7A?si=lTtHuMT5HPC66-49):
+   “Watch intro” video displayed in an overlay iframe.
+ - [Surreal.js
+   (jsDelivr)](https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js):
+   Client-side helper loaded by the homepage.
+ - [css-scope-inline script
+   (jsDelivr)](https://cdn.jsdelivr.net/gh/gnat/css-scope-inline@main/script.js):
+   Client-side CSS scoping helper.
+ - [highlight.js
+   (cdnjs)](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js):
+   Syntax highlighting library for code blocks.
+ - [highlightjs-line-numbers.js
+   (cdnjs)](https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js):
+   Line numbering plugin for highlighted code.
+ - [Background image asset
+   (ucarecdn)](https://ucarecdn.com/35a0e8a7-fcc5-48af-8a3f-70bb96ff5c48/-/preview/750x1000/):
+   Used in the live “card 3D” demo styling.
+ - [3D card demo attribution (CodePen)](https://codepen.io/markmiro/pen/wbqMPa):
+   Design credit referenced in the code snippet comments.
