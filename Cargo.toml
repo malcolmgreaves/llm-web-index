@@ -18,22 +18,36 @@ license = "Mozilla Public License 2.0"
 readme = "README.md"
 
 [workspace.dependencies]
+# Web framework & server
 axum = "0.8.8"
-tokio = { version = "1", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["trace", "fs"] }
+
+# Async runtime
+tokio = { version = "1.42", features = ["full"] }
+
+# Database
 diesel = { version = "2.2", features = ["postgres", "uuid", "chrono"] }
 diesel-async = { version = "0.7", features = ["postgres", "deadpool"] }
 deadpool = { version = "0.12", features = ["rt_tokio_1"] }
-chrono = { version = "0.4", features = ["serde"] }
-dotenvy = "0.15"
+
+# Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tower = "0.5"
-tower-http = { version = "0.6", features = ["trace", "fs"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utilities
+chrono = { version = "0.4", features = ["serde"] }
+dotenvy = "0.15"
 anyhow = "1.0"
 uuid = { version = "1.0", features = ["serde", "v4"] }
+
+# Logging & tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# WASM
 wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
 web-sys = { version = "0.3", features = [
     "console",
@@ -49,5 +63,21 @@ web-sys = { version = "0.3", features = [
     "Response",
     "Headers",
 ] }
-wasm-bindgen-futures = "0.4"
 serde-wasm-bindgen = "0.6"
+
+# Core-ltx specific dependencies
+async-openai = "0.28"
+clap = { version = "4.5", features = ["derive"] }
+url = "2.5"
+markdown-ppp = "2.8.1"
+indoc = "2.0.7"
+nom = "8.0.0"
+reqwest = "0.13.1"
+html5ever = "0.36.1"
+markup5ever_rcdom = "0.36.0"
+async-trait = "0.1.89"
+subst = "0.3.8"
+
+# Test dependencies
+test-with = { version = "*", features = ["runtime"] }
+libtest-with = "0.8.1-12"

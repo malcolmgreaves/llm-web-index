@@ -9,21 +9,21 @@ build = "build.rs"
 readme = "README.md"
 
 [dependencies]
-async-openai = "0.28"
-tokio = { version = "1.42", features = ["rt", "macros", "rt-multi-thread"] }
+async-openai = { workspace = true }
+tokio = { workspace = true }
 common-ltx = { path = "../common-ltx" }
-clap = { version = "4.5", features = ["derive"] }
-url = "2.5"
-markdown-ppp = "2.8.1"
-indoc = "2.0.7"
-nom = "8.0.0"
-reqwest = "0.13.1"
-html5ever = "0.36.1"
-markup5ever_rcdom = "0.36.0"
-async-trait = "0.1.89"
-subst = "0.3.8"
+clap = { workspace = true }
+url = { workspace = true }
+markdown-ppp = { workspace = true }
+indoc = { workspace = true }
+nom = { workspace = true }
+reqwest = { workspace = true }
+html5ever = { workspace = true }
+markup5ever_rcdom = { workspace = true }
+async-trait = { workspace = true }
+subst = { workspace = true }
 
 [dev-dependencies]
-tokio = { version = "1.42", features = ["rt", "macros", "rt-multi-thread"] }
-test-with = { version = "*", features = ["runtime"] }
-libtest-with = "0.8.1-12"
+tokio = { workspace = true }
+test-with = { workspace = true }
+libtest-with = { workspace = true }
