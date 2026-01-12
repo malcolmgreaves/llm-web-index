@@ -152,11 +152,13 @@ struct JobIdResponse {
 async fn send_generate_request(client: &reqwest::Client, api_base_url: &str, url: &str) -> Result<uuid::Uuid, Error> {
     let endpoint = format!("{}/api/llm_txt", api_base_url);
 
+    tracing::debug!("API request: {}", endpoint);
     let response = client
         .post(&endpoint)
         .json(&UrlPayload { url: url.to_string() })
         .send()
         .await?;
+    tracing::debug!("received response from API server");
 
     // if response.status() == reqwest::StatusCode::CONFLICT {
     //     tracing::info!("Job already in progress for '{}'", url);
@@ -172,11 +174,13 @@ async fn send_generate_request(client: &reqwest::Client, api_base_url: &str, url
 async fn send_update_request(client: &reqwest::Client, api_base_url: &str, url: &str) -> Result<uuid::Uuid, Error> {
     let endpoint = format!("{}/api/update", api_base_url);
 
+    tracing::debug!("API request: {}", endpoint);
     let response = client
         .post(&endpoint)
         .json(&UrlPayload { url: url.to_string() })
         .send()
         .await?;
+    tracing::debug!("received response from API server");
 
     let job_response: JobIdResponse = response.error_for_status()?.json().await?;
     tracing::info!("Created update job {} for '{}'", job_response.job_id, url);

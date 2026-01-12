@@ -48,7 +48,7 @@ services:
       DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
       HOST: 0.0.0.0
       PORT: 3000
-      RUST_LOG: info
+      RUST_LOG: debug
     ports:
       - "3000:3000"
     depends_on:
@@ -116,7 +116,7 @@ services:
     environment:
       DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
       CRON_POLL_INTERVAL_S: 300  # every 5 minutes
-      RUST_LOG: info
+      RUST_LOG: debug
       HOST: 0.0.0.0
       PORT: 3000
     depends_on:
