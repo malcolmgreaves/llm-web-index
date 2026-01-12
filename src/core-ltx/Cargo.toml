@@ -21,6 +21,10 @@ html5ever = { workspace = true }
 markup5ever_rcdom = { workspace = true }
 async-trait = { workspace = true }
 subst = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+# internal
+data-model-ltx = { path = "../data-model-ltx" }
 
 [dev-dependencies]
 test-with = { workspace = true }

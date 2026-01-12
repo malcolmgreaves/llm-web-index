@@ -1,45 +1,21 @@
-use std::net::SocketAddr;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use core_ltx::{get_api_base_url, get_db_pool, setup_logging};
 
 use api_ltx::routes;
-use data_model_ltx::db::establish_connection_pool;
 
 #[tokio::main]
 async fn main() {
-    // Initialize tracing
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "api_ltx=debug,tower_http=debug".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-
     // Load environment variables from .env file
     dotenvy::dotenv().ok();
 
-    // Get database URL from environment
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set in .env file");
+    setup_logging("api_ltx=debug,tower_http=debug");
 
-    // Establish database connection pool
-    let pool = establish_connection_pool(&database_url)
-        .unwrap_or_else(|_| panic!("Couldn't connect to database: {}", database_url));
-
-    // Build the router
+    let pool = get_db_pool();
     let app = routes::router().with_state(pool);
 
-    // Define the address to listen on
-    // Use HOST and PORT environment variables, defaulting to 127.0.0.1:3000
-    let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port = std::env::var("PORT")
-        .unwrap_or_else(|_| "3000".to_string())
-        .parse::<u16>()
-        .expect("PORT must be a valid port number");
+    let addr = get_api_base_url();
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .expect(format!("Failed to bind to address: {}", addr).as_str());
 
-    let addr: SocketAddr = format!("{}:{}", host, port).parse().expect("Invalid HOST or PORT");
-    tracing::info!("Listening on {}", addr);
-
-    // Start the server
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
