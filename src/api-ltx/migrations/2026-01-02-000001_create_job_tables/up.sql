@@ -32,7 +32,8 @@ CREATE TABLE llms_txt (
     url TEXT NOT NULL,
     result_data TEXT NOT NULL,
     result_status result_status NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC')
+    created_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    html TEXT NOT NULL
 );
 
 -- Create GIN index for full-text search on url column

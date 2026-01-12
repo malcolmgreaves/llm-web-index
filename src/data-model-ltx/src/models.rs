@@ -215,6 +215,7 @@ pub struct LlmsTxt {
     pub result_data: String,
     pub result_status: ResultStatus,
     pub created_at: DateTime<Utc>,
+    pub html: String,
 }
 
 // LlmsTxtResult - ergonomic Rust enum for the result
@@ -242,7 +243,7 @@ impl LlmsTxt {
     }
 
     /// Create database representation from ergonomic Result enum
-    pub fn from_result(job_id: Uuid, url: String, result: LlmsTxtResult) -> Self {
+    pub fn from_result(job_id: Uuid, url: String, result: LlmsTxtResult, html: String) -> Self {
         let created_at = Utc::now();
         match result {
             LlmsTxtResult::Ok { llms_txt } => LlmsTxt {
@@ -251,6 +252,7 @@ impl LlmsTxt {
                 result_data: llms_txt,
                 result_status: ResultStatus::Ok,
                 created_at,
+                html,
             },
             LlmsTxtResult::Error { failure_reason } => LlmsTxt {
                 job_id,
@@ -258,6 +260,7 @@ impl LlmsTxt {
                 result_data: failure_reason,
                 result_status: ResultStatus::Error,
                 created_at,
+                html,
             },
         }
     }
@@ -569,35 +572,40 @@ mod tests {
             result_data: "# Example LLMs.txt content".to_string(),
             result_status: ResultStatus::Ok,
             created_at: Utc::now(),
+            html: "<html><body>Test</body></html>".to_string(),
         };
 
         assert!(!llms_txt.url.is_empty());
         assert!(!llms_txt.result_data.is_empty());
         assert!(llms_txt.result_data.starts_with("# Example"));
         assert_eq!(llms_txt.result_status, ResultStatus::Ok);
+        assert!(!llms_txt.html.is_empty());
     }
 
     #[test]
     fn test_llms_txt_result_conversion() {
         let job_id = Uuid::new_v4();
         let url = "https://example.com/llms.txt".to_string();
+        let html = "<html><body>Test</body></html>".to_string();
 
         // Test Ok variant
         let ok_result = LlmsTxtResult::Ok {
             llms_txt: "content".to_string(),
         };
-        let db_model = LlmsTxt::from_result(job_id, url.clone(), ok_result.clone());
+        let db_model = LlmsTxt::from_result(job_id, url.clone(), ok_result.clone(), html.clone());
         assert_eq!(db_model.result_status, ResultStatus::Ok);
         assert_eq!(db_model.result_data, "content");
+        assert_eq!(db_model.html, html);
         assert_eq!(db_model.to_result(), ok_result);
 
         // Test Error variant
         let error_result = LlmsTxtResult::Error {
             failure_reason: "network timeout".to_string(),
         };
-        let db_model = LlmsTxt::from_result(job_id, url.clone(), error_result.clone());
+        let db_model = LlmsTxt::from_result(job_id, url.clone(), error_result.clone(), html.clone());
         assert_eq!(db_model.result_status, ResultStatus::Error);
         assert_eq!(db_model.result_data, "network timeout");
+        assert_eq!(db_model.html, html);
         assert_eq!(db_model.to_result(), error_result);
     }
 }
