@@ -237,3 +237,142 @@ async fn send_update_request(client: &reqwest::Client, api_base_url: &str, url: 
     tracing::info!("Created update job {} for {}", job_response.job_id, url);
     Ok(job_response.job_id)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+
+    fn create_test_record(
+        url: &str,
+        created_at: chrono::DateTime<Utc>,
+        result_status: ResultStatus,
+        kind: JobKind,
+    ) -> LlmsTxtWithKind {
+        LlmsTxtWithKind {
+            job_id: uuid::Uuid::new_v4(),
+            url: url.to_string(),
+            result_data: "test data".to_string(),
+            result_status,
+            created_at,
+            html: "<html>test</html>".to_string(),
+            kind,
+        }
+    }
+
+    #[test]
+    fn test_deduplicate_by_url_keeps_most_recent() {
+        let now = Utc::now();
+        let one_hour_ago = now - chrono::Duration::hours(1);
+        let two_hours_ago = now - chrono::Duration::hours(2);
+
+        let records = vec![
+            create_test_record("https://example.com", now, ResultStatus::Ok, JobKind::New),
+            create_test_record("https://example.com", one_hour_ago, ResultStatus::Ok, JobKind::Update),
+            create_test_record("https://example.com", two_hours_ago, ResultStatus::Error, JobKind::New),
+        ];
+
+        let result = deduplicate_by_url(records);
+
+        assert_eq!(result.len(), 1);
+        let record = result.get("https://example.com").unwrap();
+        assert_eq!(record.created_at, now);
+        assert_eq!(record.result_status, ResultStatus::Ok);
+        assert_eq!(record.kind, JobKind::New);
+    }
+
+    #[test]
+    fn test_deduplicate_by_url_different_urls() {
+        let now = Utc::now();
+
+        let records = vec![
+            create_test_record("https://example.com", now, ResultStatus::Ok, JobKind::New),
+            create_test_record("https://test.com", now, ResultStatus::Ok, JobKind::New),
+            create_test_record("https://other.com", now, ResultStatus::Error, JobKind::Update),
+        ];
+
+        let result = deduplicate_by_url(records);
+
+        assert_eq!(result.len(), 3);
+        assert!(result.contains_key("https://example.com"));
+        assert!(result.contains_key("https://test.com"));
+        assert!(result.contains_key("https://other.com"));
+    }
+
+    #[test]
+    fn test_deduplicate_by_url_empty_input() {
+        let records = vec![];
+        let result = deduplicate_by_url(records);
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn test_deduplicate_by_url_single_record() {
+        let now = Utc::now();
+        let records = vec![create_test_record(
+            "https://example.com",
+            now,
+            ResultStatus::Ok,
+            JobKind::New,
+        )];
+
+        let result = deduplicate_by_url(records);
+
+        assert_eq!(result.len(), 1);
+        assert!(result.contains_key("https://example.com"));
+    }
+
+    #[test]
+    fn test_deduplicate_by_url_multiple_urls_with_duplicates() {
+        let now = Utc::now();
+        let one_hour_ago = now - chrono::Duration::hours(1);
+
+        let records = vec![
+            create_test_record("https://example.com", now, ResultStatus::Ok, JobKind::New),
+            create_test_record("https://example.com", one_hour_ago, ResultStatus::Error, JobKind::New),
+            create_test_record("https://test.com", now, ResultStatus::Ok, JobKind::Update),
+            create_test_record("https://test.com", one_hour_ago, ResultStatus::Ok, JobKind::New),
+        ];
+
+        let result = deduplicate_by_url(records);
+
+        assert_eq!(result.len(), 2);
+
+        let example_record = result.get("https://example.com").unwrap();
+        assert_eq!(example_record.created_at, now);
+        assert_eq!(example_record.result_status, ResultStatus::Ok);
+
+        let test_record = result.get("https://test.com").unwrap();
+        assert_eq!(test_record.created_at, now);
+        assert_eq!(test_record.kind, JobKind::Update);
+    }
+
+    #[test]
+    fn test_error_display() {
+        let error = Error::RecordNotFound;
+        assert_eq!(error.to_string(), "Record not found in database");
+
+        let error = Error::JobInProgress;
+        assert_eq!(error.to_string(), "Job already in progress");
+
+        let error = Error::DbPoolError("connection failed".to_string());
+        assert_eq!(error.to_string(), "Database pool error: connection failed");
+    }
+
+    #[test]
+    fn test_error_from_diesel_not_found() {
+        let diesel_error = diesel::result::Error::NotFound;
+        let error: Error = diesel_error.into();
+        assert!(matches!(error, Error::RecordNotFound));
+    }
+
+    #[test]
+    fn test_error_from_url_parse_error() {
+        let url_result = url::Url::parse("not a valid url");
+        assert!(url_result.is_err());
+
+        let url_error = url_result.unwrap_err();
+        let error: Error = url_error.into();
+        assert!(matches!(error, Error::InvalidUrl(_)));
+    }
+}
