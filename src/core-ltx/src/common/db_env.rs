@@ -6,8 +6,10 @@ use data_model_ltx::db::{DbPool, establish_connection_pool};
 /// WARNING: Panics if DATABASE_URL is not set or if the connection fails!
 pub fn get_db_pool() -> DbPool {
     let database_url = get_database_url().expect("DATABASE_URL must be set in .env file or present as an env var");
-    let pool = make_db_pool(&database_url)
-        .expect(format!("Couldn't connect to the database ({}): {}", database_url, e).as_str());
+    let pool = match establish_connection_pool(&database_url) {
+        Ok(p) => p,
+        Err(e) => panic!("Couldn't connect to the database ({}): {}", database_url, e),
+    };
     pool
 }
 
