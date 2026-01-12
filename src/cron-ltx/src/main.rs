@@ -1,56 +1,34 @@
 use std::time::Duration;
 
-use data_model_ltx::db;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use core_ltx::{TimeUnit, get_api_base_url, get_db_pool, get_poll_interval, setup_logging};
+use data_model_ltx::db::DbPool;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "cron_ltx=debug".into()))
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-
     // Load environment variables from .env file., if it exists
     dotenvy::dotenv().ok();
 
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set in .env file");
+    setup_logging("cron_ltx=debug");
 
-    let pool = db::establish_connection_pool(&database_url)
-        .unwrap_or_else(|_| panic!("Couldn't connect to database: {}", database_url));
+    let pool = get_db_pool();
 
-    let poll_interval = {
-        let poll_interval_s = std::env::var("CRON_POLL_INTERVAL_S")
-            .unwrap_or_else(|_| "300".to_string())
-            .parse::<u64>()
-            .expect("CRON_POLL_INTERVAL_S must be a valid number");
-
-        tracing::info!(
-            "Cron updater service started, polling every {} seconds",
-            poll_interval_s
-        );
-        Duration::from_secs(poll_interval_s)
-    };
+    let poll_interval = get_poll_interval(TimeUnit::Seconds, "CRON_POLL_INTERVAL_S", 300);
+    tracing::info!("Using a {:?} interval for updating.", poll_interval);
 
     let http_client = reqwest::Client::builder()
         .timeout(Duration::from_secs(30))
         .build()
         .expect("Failed to build HTTP client");
 
-    let api_base_url = {
-        let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-        let port = std::env::var("PORT")
-            .unwrap_or_else(|_| "3000".to_string())
-            .parse::<u16>()
-            .expect("PORT must be a valid number");
-        format!("http://{}:{}", host, port)
-    };
-
+    let api_base_url = get_api_base_url().to_string();
     tracing::info!("API server URL: {}", api_base_url);
 
-    // Cron updater polling loop
-    loop {
-        tracing::info!("Starting cron poll cycle");
+    updater_loop(pool, http_client, api_base_url, poll_interval).await;
+}
 
+async fn updater_loop(pool: DbPool, http_client: reqwest::Client, api_base_url: String, poll_interval: Duration) {
+    tracing::info!("Starting llms.txt update loop.");
+    loop {
         match cron_ltx::poll_and_process(&pool, &http_client, &api_base_url).await {
             Ok(num_spawned) => {
                 tracing::info!("Spawned {} tasks for processing", num_spawned);
