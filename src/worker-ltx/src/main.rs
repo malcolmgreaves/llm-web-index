@@ -1,8 +1,9 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use core_ltx::{
-    download, is_valid_url,
+    TimeUnit, download, get_db_pool, get_poll_interval, is_valid_url,
     llms::{ChatGpt, LlmProvider},
+    setup_logging,
 };
 use data_model_ltx::{
     db,
@@ -11,7 +12,6 @@ use data_model_ltx::{
 };
 use diesel::prelude::*;
 use diesel_async::{AsyncConnection, RunQueryDsl};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use worker_ltx::Error;
 
@@ -27,30 +27,17 @@ enum JobResult {
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "worker_ltx=debug".into()))
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-
     // Load environment variables from .env file., if it exists
     dotenvy::dotenv().ok();
 
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set in .env file");
+    setup_logging("worker_ltx=debug");
 
     let provider: Arc<ChatGpt> = Arc::new(ChatGpt::default());
 
-    let pool = db::establish_connection_pool(&database_url)
-        .unwrap_or_else(|_| panic!("Couldn't connect to database: {}", database_url));
+    let pool = get_db_pool();
 
-    let poll_interval = {
-        let poll_interval_ms = std::env::var("WORKER_POLL_INTERVAL_MS")
-            .unwrap_or_else(|_| "600".to_string())
-            .parse::<u64>()
-            .expect("WORKER_POLL_INTERVAL_MS must be a valid number");
-
-        tracing::info!("Worker started, polling every {}ms", poll_interval_ms);
-        Duration::from_millis(poll_interval_ms)
-    };
+    let poll_interval = get_poll_interval(TimeUnit::Milliseconds, "WORKER_POLL_INTERVAL_MS", 600)
+        .expect("WORKER_POLL_INTERVAL_MS must be a valid number");
 
     // Worker polling loop
     loop {
