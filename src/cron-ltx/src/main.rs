@@ -10,7 +10,7 @@ async fn main() {
 
     setup_logging("cron_ltx=debug");
 
-    let pool = get_db_pool();
+    let pool = get_db_pool().await;
 
     let poll_interval = get_poll_interval(TimeUnit::Seconds, "CRON_POLL_INTERVAL_S", 300);
     tracing::info!("Using a {:?} interval for updating.", poll_interval);

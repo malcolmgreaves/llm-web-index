@@ -6,7 +6,21 @@ pub type PoolError = deadpool::managed::PoolError<diesel_async::pooled_connectio
 
 pub type DbPool = Pool<AsyncPgConnection>;
 
-pub fn establish_connection_pool(database_url: &str) -> Result<DbPool, deadpool::managed::BuildError> {
+#[derive(Debug, thiserror::Error)]
+pub enum ConnectionPoolError {
+    #[error("Failed to build connection pool: {0}")]
+    BuildError(#[from] deadpool::managed::BuildError),
+    #[error("Failed to establish initial database connection: {0}")]
+    ConnectionError(#[from] PoolError),
+}
+
+pub async fn establish_connection_pool(database_url: &str) -> Result<DbPool, ConnectionPoolError> {
     let config = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
-    Pool::builder(config).build()
+    let pool = Pool::builder(config).build()?;
+
+    // Force an initial connection to validate the database is reachable
+    // This ensures we fail fast if the DB is unavailable
+    let _conn = pool.get().await?;
+
+    Ok(pool)
 }
