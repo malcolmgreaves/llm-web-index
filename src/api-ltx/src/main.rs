@@ -11,7 +11,7 @@ async fn main() {
 
     setup_logging("api_ltx=debug,tower_http=debug");
 
-    let pool = get_db_pool();
+    let pool = get_db_pool().await;
     let app = routes::router().with_state(pool);
 
     let addr = get_api_base_url()
