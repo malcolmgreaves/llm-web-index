@@ -9,6 +9,7 @@ pub use web_html::{download, is_valid_url, parse_html};
 
 pub use common::db_env::get_db_pool;
 pub use common::hostname::{HostPortError, get_api_base_url};
+pub use common::logging::setup_logging;
 pub use common::poll_interval::{TimeUnit, get_poll_interval};
 
 pub use errors::Error;

@@ -535,6 +535,8 @@ dependencies = [
  "subst",
  "test-with",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
  "url",
 ]
 
