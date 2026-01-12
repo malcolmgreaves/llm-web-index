@@ -15,6 +15,16 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use worker_ltx::Error;
 
+/// Result of job processing that preserves HTML through error paths
+enum JobResult {
+    /// Both HTML download and llms.txt generation succeeded
+    Success { html: String, llms_txt: core_ltx::LlmsTxt },
+    /// HTML downloaded successfully but llms.txt generation failed
+    GenerationFailed { html: String, error: Error },
+    /// HTML download failed (no HTML to store)
+    DownloadFailed { error: Error },
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
@@ -52,7 +62,7 @@ async fn main() {
                     async move {
                         tracing::info!("Received job {} - {:?} on website '{}'", job.job_id, job.kind, job.url);
                         let result = handle_job(provider.as_ref(), &job).await;
-                        let is_ok = result.is_ok();
+                        let is_ok = matches!(result, JobResult::Success { .. });
                         match handle_result(&pool, &job, result).await {
                             Ok(ok) => ok,
                             Err(error) => {
@@ -118,33 +128,48 @@ async fn next_job_in_queue(pool: &db::DbPool) -> Result<JobState, Error> {
 
 use core_ltx::llms::{generate_llms_txt, update_llms_txt};
 
-/// Creates a new llms.txt or updates an old one, depending on the job kind.
-async fn handle_job<P: LlmProvider>(provider: &P, job: &JobState) -> Result<core_ltx::LlmsTxt, Error> {
-    let url = is_valid_url(&job.url)?;
+/// Downloads HTML and attempts to generate llms.txt.
+/// Returns JobResult to preserve HTML even on generation failure.
+async fn handle_job<P: LlmProvider>(provider: &P, job: &JobState) -> JobResult {
+    // Validate URL
+    let url = match is_valid_url(&job.url) {
+        Ok(u) => u,
+        Err(e) => return JobResult::DownloadFailed { error: e.into() },
+    };
     tracing::debug!("[job: {}] Valid URL: {}", job.job_id, url);
 
-    let html = download(&url).await?;
-    tracing::debug!("[job: {}] Downloaded HTML", job.job_id);
-
-    let llms_txt = match job.to_kind_data() {
-        JobKindData::New => generate_llms_txt(provider, &html).await?,
-        JobKindData::Update { llms_txt: old_llms_txt } => update_llms_txt(provider, &old_llms_txt, &html).await?,
+    // Download HTML - if this fails, return immediately
+    let html = match download(&url).await {
+        Ok(h) => h,
+        Err(e) => return JobResult::DownloadFailed { error: e.into() },
     };
-    tracing::debug!("[job: {}] Generated new llms.txt", job.job_id);
+    tracing::debug!("[job: {}] Downloaded HTML ({} bytes)", job.job_id, html.len());
 
-    Ok(llms_txt)
+    // Generate or update llms.txt - if this fails, we still have HTML
+    let llms_txt_result = match job.to_kind_data() {
+        JobKindData::New => generate_llms_txt(provider, &html).await,
+        JobKindData::Update { llms_txt: old_llms_txt } => update_llms_txt(provider, &old_llms_txt, &html).await,
+    };
+
+    match llms_txt_result {
+        Ok(llms_txt) => {
+            tracing::debug!("[job: {}] Generated llms.txt", job.job_id);
+            JobResult::Success { html, llms_txt }
+        }
+        Err(e) => {
+            tracing::warn!("[job: {}] Failed to generate llms.txt: {}", job.job_id, e);
+            JobResult::GenerationFailed { html, error: e.into() }
+        }
+    }
 }
 
-/// Inserts the result (valid or error) into the llms.txt table & updates job_state table appropriately.
-async fn handle_result(
-    pool: &db::DbPool,
-    job: &JobState,
-    result: Result<core_ltx::LlmsTxt, Error>,
-) -> Result<(), Error> {
+/// Inserts the result into the llms_txt table & updates job_state appropriately.
+/// Handles three cases: success, generation failure (with HTML), download failure (no HTML).
+async fn handle_result(pool: &db::DbPool, job: &JobState, result: JobResult) -> Result<(), Error> {
     let mut conn = pool.get().await?;
 
     match result {
-        Ok(llms_txt_content) => {
+        JobResult::Success { html, llms_txt } => {
             tracing::info!(
                 "[job: {}] Successfully produced llms.txt ({:?} - '{}')",
                 job.job_id,
@@ -152,18 +177,19 @@ async fn handle_result(
                 job.url
             );
 
-            let llms_txt = LlmsTxt::from_result(
+            let llms_txt_record = LlmsTxt::from_result(
                 job.job_id,
                 job.url.clone(),
                 LlmsTxtResult::Ok {
-                    llms_txt: llms_txt_content.md_content(),
+                    llms_txt: llms_txt.md_content(),
                 },
+                html,
             );
 
             conn.transaction::<_, diesel::result::Error, _>(|mut conn| {
                 Box::pin(async move {
                     diesel::insert_into(schema::llms_txt::table)
-                        .values(&llms_txt)
+                        .values(&llms_txt_record)
                         .execute(&mut conn)
                         .await?;
 
@@ -178,31 +204,31 @@ async fn handle_result(
             .await?;
 
             tracing::debug!("[job: {}] Updated DB", job.job_id);
-
             Ok(())
         }
 
-        Err(e) => {
+        JobResult::GenerationFailed { html, error } => {
             tracing::error!(
-                "[job: {}] Failed to produce llms.txt ({:?} - '{}') Error: {}",
+                "[job: {}] Failed to generate llms.txt ({:?} - '{}') Error: {}",
                 job.job_id,
                 job.kind,
                 job.url,
-                e
+                error
             );
 
-            let llms_txt = LlmsTxt::from_result(
+            let llms_txt_record = LlmsTxt::from_result(
                 job.job_id,
                 job.url.clone(),
                 LlmsTxtResult::Error {
-                    failure_reason: e.to_string(),
+                    failure_reason: error.to_string(),
                 },
+                html,
             );
 
             conn.transaction::<_, diesel::result::Error, _>(|mut conn| {
                 Box::pin(async move {
                     diesel::insert_into(schema::llms_txt::table)
-                        .values(&llms_txt)
+                        .values(&llms_txt_record)
                         .execute(&mut conn)
                         .await?;
 
@@ -216,8 +242,34 @@ async fn handle_result(
             })
             .await?;
 
-            tracing::debug!("[job: {}] Updated DB", job.job_id);
+            tracing::debug!("[job: {}] Updated DB with failure", job.job_id);
+            Ok(())
+        }
 
+        JobResult::DownloadFailed { error } => {
+            tracing::error!(
+                "[job: {}] Failed to download HTML ({:?} - '{}') Error: {}",
+                job.job_id,
+                job.kind,
+                job.url,
+                error
+            );
+
+            // No llms_txt record - no HTML to store
+            // Only mark job as failed in job_state table
+            conn.transaction::<_, diesel::result::Error, _>(|mut conn| {
+                Box::pin(async move {
+                    diesel::update(schema::job_state::table.find(job.job_id))
+                        .set(schema::job_state::status.eq(JobStatus::Failure))
+                        .execute(&mut conn)
+                        .await?;
+
+                    Ok(())
+                })
+            })
+            .await?;
+
+            tracing::debug!("[job: {}] Marked job as failed (no HTML)", job.job_id);
             Ok(())
         }
     }
