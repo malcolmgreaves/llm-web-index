@@ -21,4 +21,3 @@ reqwest = { workspace = true, features = ["json"] }
 url = { workspace = true }
 core-ltx = { path = "../core-ltx" }
 data-model-ltx = { path = "../data-model-ltx" }
-checksum = { workspace = true }

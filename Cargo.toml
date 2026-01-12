@@ -40,7 +40,6 @@ chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
 anyhow = "1.0"
 uuid = { version = "1.0", features = ["serde", "v4"] }
-checksum = "0.2.1"
 
 # Logging & tracing
 tracing = "0.1"
