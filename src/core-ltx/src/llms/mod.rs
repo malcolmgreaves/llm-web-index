@@ -13,7 +13,7 @@ use crate::{Error, LlmsTxt, download, is_valid_markdown, is_valid_url, validate_
 
 /// Interface to a hosted LLM that lets us complete a prompt and await a response.
 #[async_trait]
-pub trait LlmProvider {
+pub trait LlmProvider: Send + Sync {
     async fn complete_prompt(&self, prompt: &str) -> Result<String, Error>;
 }
 

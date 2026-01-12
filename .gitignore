@@ -1,4 +1,5 @@
 # project specific
+.env
 
 # editor
 .superset

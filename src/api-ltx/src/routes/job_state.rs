@@ -7,9 +7,11 @@ use diesel::prelude::*;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use uuid::Uuid;
 
-use crate::models::{JobIdPayload, JobState, JobStatusResponse, StatusError};
-use crate::schema::job_state;
-use crate::{db::DbPool, models::JobStatus};
+use data_model_ltx::models::{
+    JobDetailsResponse, JobIdPayload, JobState, JobStatusResponse, ResultStatus, StatusError,
+};
+use data_model_ltx::schema::{job_state, llms_txt};
+use data_model_ltx::{db::DbPool, models::JobStatus};
 
 /// Gets all currently running jobs for a given URL.
 ///
@@ -62,7 +64,29 @@ pub async fn get_job(
         .first::<JobState>(&mut conn)
         .await?;
 
-    Ok((StatusCode::OK, Json(job)))
+    // If the job failed, fetch the error message from llms_txt table
+    let error_message = if job.status == JobStatus::Failure {
+        llms_txt::table
+            .filter(llms_txt::job_id.eq(&payload.job_id))
+            .filter(llms_txt::result_status.eq(ResultStatus::Error))
+            .select(llms_txt::result_data)
+            .first::<String>(&mut conn)
+            .await
+            .ok()
+    } else {
+        None
+    };
+
+    let response = JobDetailsResponse {
+        job_id: job.job_id,
+        url: job.url,
+        status: job.status,
+        kind: job.kind,
+        llms_txt: job.llms_txt,
+        error_message,
+    };
+
+    Ok((StatusCode::OK, Json(response)))
 }
 
 // GET /api/jobs/in_progress - List all in-progress jobs

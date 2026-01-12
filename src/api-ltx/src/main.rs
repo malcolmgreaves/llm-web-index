@@ -1,12 +1,8 @@
-mod db;
-mod models;
-mod routes;
-mod schema;
-
 use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use db::establish_connection_pool;
+use api_ltx::routes;
+use data_model_ltx::db::establish_connection_pool;
 
 #[tokio::main]
 async fn main() {
@@ -14,7 +10,7 @@ async fn main() {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "api-ltx=debug,tower_http=debug".into()),
+                .unwrap_or_else(|_| "api_ltx=debug,tower_http=debug".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();

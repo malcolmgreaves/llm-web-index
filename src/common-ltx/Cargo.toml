@@ -1,9 +1,0 @@
-[package]
-name = "common-ltx"
-version = { workspace = true }
-edition = { workspace = true }
-authors = { workspace = true }
-license = { workspace = true }
-description = "Catch-all for utilities common to all crates."
-
-[dependencies]

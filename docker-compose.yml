@@ -38,6 +38,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: api
       # Enable BuildKit cache mounts
       args:
         BUILDKIT_INLINE_CACHE: 1
@@ -47,7 +48,7 @@ services:
       DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
       HOST: 0.0.0.0
       PORT: 3000
-      RUST_LOG: api-ltx=debug,tower_http=debug
+      RUST_LOG: info
     ports:
       - "3000:3000"
     depends_on:
@@ -62,11 +63,43 @@ services:
         - action: rebuild
           path: ./src/api-ltx/
         - action: rebuild
-          path: ./src/common-ltx/
-        - action: rebuild
           path: ./src/core-ltx/
         - action: rebuild
           path: ./src/front-ltx/
+        - action: rebuild
+          path: ./src/data-model-ltx/
+
+  # Worker
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+      # Enable BuildKit cache mounts
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    container_name: ltx_worker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
+      WORKER_POLL_INTERVAL_MS: 600
+      RUST_LOG: info
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ltx_network
+    develop:
+      watch:
+        - action: rebuild
+          path: Cargo.toml
+        - action: rebuild
+          path: ./src/worker-ltx/
+        - action: rebuild
+          path: ./src/core-ltx/
+        - action: rebuild
+          path: ./src/data-model-ltx/
 
 volumes:
   postgres_data:

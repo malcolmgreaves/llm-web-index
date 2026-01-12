@@ -8,19 +8,21 @@ use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
 use std::collections::HashMap;
 
-use crate::models::{
-    GetLlmTxtError, JobIdResponse, JobKindData, JobState, JobStatus as JobStatusEnum, LlmTxtResponse, LlmsTxt,
+use data_model_ltx::db::DbPool;
+use data_model_ltx::models::{
+    AppError, GetLlmTxtError, JobIdResponse, JobKindData, JobState, JobStatus, LlmTxtResponse, LlmsTxt,
     LlmsTxtListItem, LlmsTxtListResponse, PostLlmTxtError, PutLlmTxtError, ResultStatus, UpdateLlmTxtError, UrlPayload,
 };
-use crate::routes::AppError;
-use crate::schema::{job_state, llms_txt};
-use crate::{db::DbPool, routes::job_state::in_progress_jobs};
+use data_model_ltx::schema::{job_state, llms_txt};
+
+use crate::routes::job_state::in_progress_jobs;
 
 /// Gets the most recent llm.txt entry for the website, if available.
 ///
 /// Only returns an Ok result if:
 ///   - There's at least one row with a result of OK
 ///   - There's at least one row that has the url
+///
 /// If there are multiple, the most recent one (using `created_at`) is returned.
 ///
 /// An Error is returned if there are either no matching rows or if there's an internal DB error.
@@ -61,7 +63,7 @@ async fn new_llms_txt_generate_job(
     url: &str,
 ) -> Result<JobIdResponse, diesel::result::Error> {
     let job_id = uuid::Uuid::new_v4();
-    let new_job = JobState::from_kind_data(job_id, url.to_string(), JobStatusEnum::Queued, JobKindData::New);
+    let new_job = JobState::from_kind_data(job_id, url.to_string(), JobStatus::Queued, JobKindData::New);
 
     diesel::insert_into(job_state::table)
         .values(&new_job)
@@ -113,7 +115,7 @@ async fn update_llms_txt_generation(
     let new_job = JobState::from_kind_data(
         job_id,
         url.to_string(),
-        JobStatusEnum::Queued,
+        JobStatus::Queued,
         JobKindData::Update {
             llms_txt: llms_txt.to_string(),
         },

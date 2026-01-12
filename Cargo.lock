@@ -94,6 +94,7 @@ dependencies = [
  "anyhow",
  "axum",
  "chrono",
+ "data-model-ltx",
  "deadpool",
  "diesel",
  "diesel-async",
@@ -490,10 +491,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "common-ltx"
-version = "0.1.0"
-
-[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -526,7 +523,6 @@ dependencies = [
  "async-openai",
  "async-trait",
  "clap",
- "common-ltx",
  "html5ever",
  "indoc",
  "libtest-with",
@@ -631,6 +627,21 @@ dependencies = [
  "darling_core 0.21.3",
  "quote",
  "syn 2.0.112",
+]
+
+[[package]]
+name = "data-model-ltx"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "chrono",
+ "deadpool",
+ "diesel",
+ "diesel-async",
+ "serde",
+ "serde_json",
+ "uuid",
 ]
 
 [[package]]
@@ -4065,6 +4076,20 @@ checksum = "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59"
 [[package]]
 name = "worker-ltx"
 version = "0.1.0"
+dependencies = [
+ "chrono",
+ "core-ltx",
+ "data-model-ltx",
+ "deadpool",
+ "diesel",
+ "diesel-async",
+ "dotenvy",
+ "serde",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
 
 [[package]]
 name = "writeable"

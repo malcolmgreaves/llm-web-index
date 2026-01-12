@@ -2,6 +2,8 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::Pool;
 
+pub type PoolError = deadpool::managed::PoolError<diesel_async::pooled_connection::PoolError>;
+
 pub type DbPool = Pool<AsyncPgConnection>;
 
 pub fn establish_connection_pool(database_url: &str) -> Result<DbPool, deadpool::managed::BuildError> {
