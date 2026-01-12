@@ -1,19 +1,25 @@
 use std::{net::SocketAddr, num::ParseIntError};
 
 /// Same as api_base_url but panics on error.
-pub fn get_api_base_url() -> SocketAddr {
+pub fn get_api_base_url() -> String {
+    //SocketAddr {
     api_base_url().expect("Invalid HOST or PORT")
 }
 
 /// Gets the host:port from the env vars HOST and PORT.
 /// Uses defaults `127.0.0.1:3000` if env vars are empty.
-pub fn api_base_url() -> Result<SocketAddr, HostPortError> {
+pub fn api_base_url() -> Result<String, HostPortError> {
     let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let port = match std::env::var("PORT") {
         Ok(p) => p.parse::<u16>()?,
         Err(_) => 3000,
     };
-    let address = format!("{}:{}", host, port).parse::<SocketAddr>()?;
+    // let address = format!("{}:{}", host, port).parse::<SocketAddr>()?;
+    let address = if host.starts_with("http") {
+        format!("{}:{}", host, port)
+    } else {
+        format!("http://{}:{}", host, port)
+    };
     Ok(address)
 }
 
