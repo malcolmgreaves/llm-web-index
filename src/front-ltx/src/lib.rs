@@ -36,6 +36,7 @@ struct JobState {
     status: String,
     kind: String,
     llms_txt: Option<String>,
+    error_message: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -596,6 +597,13 @@ fn display_job_details(job: &JobState) {
         "Job ID: {}\nURL: {}\nStatus: {}\nKind: {}",
         job.job_id, job.url, job.status, job.kind
     );
+
+    // Display error message if the job failed
+    if job.status == "Failure"
+        && let Some(ref error_msg) = job.error_message
+    {
+        job_info.push_str(&format!("\n\nError Details:\n{}", error_msg));
+    }
 
     if let Some(ref llms_txt) = job.llms_txt {
         job_info.push_str(&format!("\n\nLLMs.txt Content:\n{}", llms_txt));
