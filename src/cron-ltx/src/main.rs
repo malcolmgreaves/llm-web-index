@@ -19,16 +19,16 @@ async fn main() {
         .unwrap_or_else(|_| panic!("Couldn't connect to database: {}", database_url));
 
     let poll_interval = {
-        let poll_interval_m = std::env::var("CRON_POLL_INTERVAL_M")
-            .unwrap_or_else(|_| "1".to_string())
+        let poll_interval_s = std::env::var("CRON_POLL_INTERVAL_S")
+            .unwrap_or_else(|_| "300".to_string())
             .parse::<u64>()
-            .expect("CRON_POLL_INTERVAL_M must be a valid number");
+            .expect("CRON_POLL_INTERVAL_S must be a valid number");
 
         tracing::info!(
-            "Cron updater service started, polling every {} minutes",
-            poll_interval_m
+            "Cron updater service started, polling every {} seconds",
+            poll_interval_s
         );
-        Duration::from_secs(poll_interval_m * 60)
+        Duration::from_secs(poll_interval_s)
     };
 
     let http_client = reqwest::Client::builder()
