@@ -552,6 +552,20 @@ dependencies = [
 [[package]]
 name = "cron-ltx"
 version = "0.1.0"
+dependencies = [
+ "chrono",
+ "core-ltx",
+ "data-model-ltx",
+ "deadpool",
+ "diesel",
+ "diesel-async",
+ "dotenvy",
+ "serde",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
 
 [[package]]
 name = "crypto-common"
