@@ -28,15 +28,7 @@ async fn main() {
     // Build the router
     let app = routes::router().with_state(pool);
 
-    // Define the address to listen on
-    // Use HOST and PORT environment variables, defaulting to 127.0.0.1:3000
-    let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port = std::env::var("PORT")
-        .unwrap_or_else(|_| "3000".to_string())
-        .parse::<u16>()
-        .expect("PORT must be a valid port number");
-
-    let addr: SocketAddr = format!("{}:{}", host, port).parse().expect("Invalid HOST or PORT");
+    let addr = core_ltx::get_api_base_url().expect("Invalid HOST or PORT");
     tracing::info!("Listening on {}", addr);
 
     // Start the server
