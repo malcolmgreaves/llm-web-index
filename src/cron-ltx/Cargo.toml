@@ -17,5 +17,7 @@ tracing-subscriber = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
 serde = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
+url = { workspace = true }
 core-ltx = { path = "../core-ltx" }
 data-model-ltx = { path = "../data-model-ltx" }

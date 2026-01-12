@@ -560,10 +560,12 @@ dependencies = [
  "diesel",
  "diesel-async",
  "dotenvy",
+ "reqwest 0.13.1",
  "serde",
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "url",
  "uuid",
 ]
 
@@ -2383,6 +2385,8 @@ dependencies = [
  "rustls",
  "rustls-pki-types",
  "rustls-platform-verifier",
+ "serde",
+ "serde_json",
  "sync_wrapper",
  "tokio",
  "tokio-rustls",

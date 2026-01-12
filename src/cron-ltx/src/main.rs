@@ -1,19 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
-use core_ltx::{
-    download, is_valid_url,
-    llms::{ChatGpt, LlmProvider},
-};
-use data_model_ltx::{
-    db,
-    models::{JobKindData, JobState, JobStatus, LlmsTxt, LlmsTxtResult},
-    schema,
-};
-use diesel::prelude::*;
-use diesel_async::{AsyncConnection, RunQueryDsl};
+use data_model_ltx::db;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-use cron_ltx::Error;
 
 #[tokio::main]
 async fn main() {
@@ -40,19 +28,39 @@ async fn main() {
             "Cron updater service started, polling every {} minutes",
             poll_interval_m
         );
-        Duration::from_mins(poll_interval_m)
+        Duration::from_secs(poll_interval_m * 60)
     };
+
+    let http_client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .expect("Failed to build HTTP client");
+
+    let api_base_url = {
+        let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+        let port = std::env::var("PORT")
+            .unwrap_or_else(|_| "3000".to_string())
+            .parse::<u16>()
+            .expect("PORT must be a valid number");
+        format!("http://{}:{}", host, port)
+    };
+
+    tracing::info!("API server URL: {}", api_base_url);
 
     // Cron updater polling loop
     loop {
-        // CLAUDE: get all records in the llms_txt table that are either success or failed
-        // CLAUDE: for all failed ones, start tokio::spawn tasks to generate their llms.txt again (1st time)
-        // CLAUDE: for all successful ones, start tokio::spawn tasks to
-        //      (1) download the HTML from the url again
-        //      (2) see if the new HTML matches exactly with the HTML stored in the llms_txt table
-        //      (3) if there's any differences, hit the API server with an update llms.txt request
-        // Once these tasks are spawned, wait for poll_interval duration
-        tracing::info!("Waiting for {:?} until checking again.", poll_interval);
+        tracing::info!("Starting cron poll cycle");
+
+        match cron_ltx::poll_and_process(&pool, &http_client, &api_base_url).await {
+            Ok(num_spawned) => {
+                tracing::info!("Spawned {} tasks for processing", num_spawned);
+            }
+            Err(e) => {
+                tracing::error!("Error during poll cycle: {}", e);
+            }
+        }
+
+        tracing::info!("Sleeping for {:?} until next poll", poll_interval);
         tokio::time::sleep(poll_interval).await;
     }
 }
