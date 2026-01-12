@@ -102,6 +102,41 @@ services:
         - action: rebuild
           path: ./src/data-model-ltx/
 
+  # Cron updater
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: cron
+      # Enable BuildKit cache mounts
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    container_name: ltx_cron
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
+      CRON_POLL_INTERVAL_S: 300  # every 5 minutes
+      RUST_LOG: info
+      HOST: 0.0.0.0
+      PORT: 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      # TODO: depends_on api for condition service_healthy too! but API server needs healthcheck
+      # TODO: depends_on worker for condition service_healthy too! but worker needs healthcheck
+    networks:
+      - ltx_network
+    develop:
+      watch:
+        - action: rebuild
+          path: Cargo.toml
+        - action: rebuild
+          path: ./src/cron-ltx/
+        - action: rebuild
+          path: ./src/core-ltx/
+        - action: rebuild
+          path: ./src/data-model-ltx/
+
 volumes:
   postgres_data:
     driver: local
