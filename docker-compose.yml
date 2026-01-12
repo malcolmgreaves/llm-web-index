@@ -88,7 +88,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      # TODO: depends_on api for condition service_healthy too! but API server needs healthcheck
     networks:
       - ltx_network
     develop:
@@ -101,7 +100,6 @@ services:
           path: ./src/core-ltx/
         - action: rebuild
           path: ./src/data-model-ltx/
-
 
 volumes:
   postgres_data:
