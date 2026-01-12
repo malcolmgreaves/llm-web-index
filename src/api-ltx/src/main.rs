@@ -12,10 +12,10 @@ async fn main() {
     let pool = get_db_pool();
     let app = routes::router().with_state(pool);
 
-    let addr = get_api_base_url().expect("Invalid HOST or PORT");
-
+    let addr = get_api_base_url();
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .expect(format!("Failed to bind to address: {}", addr).as_str());
+
     axum::serve(listener, app).await.unwrap();
 }

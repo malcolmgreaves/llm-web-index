@@ -36,8 +36,7 @@ async fn main() {
 
     let pool = get_db_pool();
 
-    let poll_interval = get_poll_interval(TimeUnit::Milliseconds, "WORKER_POLL_INTERVAL_MS", 600)
-        .expect("WORKER_POLL_INTERVAL_MS must be a valid number");
+    let poll_interval = get_poll_interval(TimeUnit::Milliseconds, "WORKER_POLL_INTERVAL_MS", 600);
 
     // Worker polling loop
     loop {
@@ -66,16 +65,15 @@ async fn main() {
                     }
                 });
             }
-            Err(error) => {
-                match error {
-                    Error::RecordNotFound => {}
-                    _ => {
-                        tracing::error!("[SKIP] Error getting next job from DB queue: {}", error);
-                    }
+            Err(error) => match error {
+                Error::RecordNotFound => {}
+                _ => {
+                    tracing::error!("[SKIP] Error getting next job from DB queue: {}", error);
                 }
-                tokio::time::sleep(poll_interval.clone()).await;
-            }
+            },
         }
+        tracing::debug!("Waiting to poll for next job");
+        tokio::time::sleep(poll_interval.clone()).await;
     }
 }
 
