@@ -53,7 +53,7 @@ COPY src/cron-ltx/Cargo.toml ./src/cron-ltx/
 COPY src/worker-ltx/Cargo.toml ./src/worker-ltx/
 
 # NOTE: Keep up to date! Dummy file for library crates.
-RUN for crate in core-ltx data-model-ltx front-ltx data-model-ltx; do \
+RUN for crate in core-ltx data-model-ltx front-ltx; do \
         mkdir -p src/${crate}/src && \
         echo "" > src/${crate}/src/lib.rs; \
     done
@@ -102,8 +102,7 @@ COPY src/data-model-ltx/src ./src/data-model-ltx/src
 COPY src/api-ltx/src ./src/api-ltx/src
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/app/target \
+    --mount=type=cache,target=/app/target/api-ltx \
     cargo build --release -p api-ltx && \
     cp /app/target/release/api-ltx /app/bin/api-ltx
 
@@ -117,14 +116,12 @@ RUN for crate in core-ltx data-model-ltx worker-ltx; do \
         rm -rf src/${crate}/src; \
     done
 
-
 COPY src/core-ltx/src ./src/core-ltx/src
 COPY src/data-model-ltx/src ./src/data-model-ltx/src
 COPY src/worker-ltx/src ./src/worker-ltx/src
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/app/target \
+    --mount=type=cache,target=/app/target/worker-ltx \
     cargo build --release -p worker-ltx && \
     cp /app/target/release/worker-ltx /app/bin/worker-ltx
 
