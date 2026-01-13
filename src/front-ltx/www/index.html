@@ -275,18 +275,29 @@
         /* Toggle button for markdown/plaintext view */
         .view-toggle {
             display: inline-block;
-            color: #667eea;
-            font-size: 13px;
-            margin-bottom: 8px;
+            background: #667eea;
+            color: white;
+            font-size: 12px;
+            padding: 6px 14px;
+            margin-top: 8px;
+            margin-bottom: 12px;
+            border-radius: 4px;
             cursor: pointer;
             user-select: none;
-            transition: color 0.2s;
+            transition: all 0.2s ease;
             font-weight: 500;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
         }
 
         .view-toggle:hover {
-            color: #5568d3;
-            text-decoration: underline;
+            background: #5568d3;
+            box-shadow: 0 3px 6px rgba(102, 126, 234, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .view-toggle:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(102, 126, 234, 0.2);
         }
 
         /* Plaintext view styling */
@@ -412,26 +423,6 @@
             }
         }
     </style>
-    <script>
-        // Toggle between markdown and plaintext views
-        function toggleView(idSuffix) {
-            const toggle = document.getElementById('toggle-' + idSuffix);
-            const markdown = document.getElementById('markdown-' + idSuffix);
-            const plaintext = document.getElementById('plaintext-' + idSuffix);
-
-            if (markdown.style.display === 'none') {
-                // Currently showing plaintext, switch to markdown
-                markdown.style.display = 'block';
-                plaintext.style.display = 'none';
-                toggle.textContent = 'Show plaintext';
-            } else {
-                // Currently showing markdown, switch to plaintext
-                markdown.style.display = 'none';
-                plaintext.style.display = 'block';
-                toggle.textContent = 'Show markdown';
-            }
-        }
-    </script>
 </head>
 <body>
     <div id="loading">Loading WebAssembly module...</div>

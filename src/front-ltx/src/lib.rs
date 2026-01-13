@@ -583,10 +583,59 @@ fn html_escape(text: &str) -> String {
         .replace('\'', "&#39;")
 }
 
-/// Renders content with a toggle between markdown and plaintext views.
+/// Creates a toggle button DOM element for switching between markdown and plaintext views.
 ///
-/// Creates a container with:
-/// - A toggle button to switch between views
+/// # Arguments
+/// * `document` - The document to create elements in
+/// * `id_suffix` - A unique suffix for element IDs
+///
+/// # Returns
+/// A toggle button element
+fn create_view_toggle(document: &Document, id_suffix: &str) -> Result<web_sys::Element, JsValue> {
+    let toggle = document.create_element("div")?;
+    toggle.set_class_name("view-toggle");
+    toggle.set_id(&format!("toggle-{}", id_suffix));
+    toggle.set_text_content(Some("Show plaintext"));
+
+    let id_suffix_clone = id_suffix.to_string();
+    let closure = Closure::wrap(Box::new(move || {
+        let window = web_sys::window().expect("no global window exists");
+        let document = window.document().expect("should have a document on window");
+
+        let toggle = document
+            .get_element_by_id(&format!("toggle-{}", id_suffix_clone))
+            .unwrap();
+        let markdown = document
+            .get_element_by_id(&format!("markdown-{}", id_suffix_clone))
+            .unwrap();
+        let plaintext = document
+            .get_element_by_id(&format!("plaintext-{}", id_suffix_clone))
+            .unwrap();
+
+        if markdown.get_attribute("style").unwrap_or_default().contains("none") {
+            markdown.set_attribute("style", "display: block;").unwrap();
+            plaintext.set_attribute("style", "display: none;").unwrap();
+            toggle.set_text_content(Some("Show plaintext"));
+        } else {
+            markdown.set_attribute("style", "display: none;").unwrap();
+            plaintext.set_attribute("style", "display: block;").unwrap();
+            toggle.set_text_content(Some("Show markdown"));
+        }
+    }) as Box<dyn Fn()>);
+
+    toggle
+        .dyn_ref::<HtmlElement>()
+        .expect("toggle should be an HtmlElement")
+        .set_onclick(Some(closure.as_ref().unchecked_ref()));
+
+    closure.forget();
+
+    Ok(toggle)
+}
+
+/// Renders content with markdown and plaintext views (without the toggle button).
+///
+/// Creates content divs for both markdown and plaintext:
 /// - Markdown-rendered content (visible by default)
 /// - Plaintext content (hidden by default)
 ///
@@ -595,18 +644,15 @@ fn html_escape(text: &str) -> String {
 /// * `id_suffix` - A unique suffix for element IDs
 ///
 /// # Returns
-/// HTML string with toggle functionality
-fn render_with_toggle(content: &str, id_suffix: &str) -> String {
+/// HTML string with both content views
+fn render_content_views(content: &str, id_suffix: &str) -> String {
     let markdown_html = render_markdown_with_fallback(content);
     let plaintext_html = format!(r#"<pre class="plaintext-content">{}</pre>"#, html_escape(content));
 
     format!(
-        r#"<div class="content-with-toggle">
-            <div class="view-toggle" id="toggle-{}" onclick="toggleView('{}')">Show plaintext</div>
-            <div id="markdown-{}">{}</div>
-            <div id="plaintext-{}" style="display: none;">{}</div>
-        </div>"#,
-        id_suffix, id_suffix, id_suffix, markdown_html, id_suffix, plaintext_html
+        r#"<div id="markdown-{}">{}</div>
+        <div id="plaintext-{}" style="display: none;">{}</div>"#,
+        id_suffix, markdown_html, id_suffix, plaintext_html
     )
 }
 
@@ -616,10 +662,18 @@ fn display_text_result(text: &str) {
 
     let results_div = document.get_element_by_id("results").expect("results div should exist");
 
-    // Render with toggle between markdown and plaintext
-    let rendered_html = render_with_toggle(text, "text-result");
+    // Clear previous content
+    results_div.set_inner_html("");
 
-    results_div.set_inner_html(&rendered_html);
+    // Create and append toggle button
+    let toggle = create_view_toggle(&document, "text-result").unwrap();
+    results_div.append_child(&toggle).unwrap();
+
+    // Create content container and set HTML with both views
+    let content_container = document.create_element("div").unwrap();
+    let content_html = render_content_views(text, "text-result");
+    content_container.set_inner_html(&content_html);
+    results_div.append_child(&content_container).unwrap();
 }
 
 fn display_list_results(data: &LlmsTxtListResponse) {
@@ -646,20 +700,31 @@ fn display_list_results(data: &LlmsTxtListResponse) {
             let preview_content: String = lines.iter().take(preview_lines).copied().collect::<Vec<_>>().join("\n");
             let full_content = item.llm_txt.clone();
 
-            // Render preview with toggle
+            // Add toggle for preview
+            let toggle_preview = create_view_toggle(&document, &format!("list-preview-{}", index)).unwrap();
+            toggle_preview.set_id(&format!("toggle-preview-{}", index));
+            item_div.append_child(&toggle_preview).unwrap();
+
+            // Add toggle for full content (hidden by default)
+            let toggle_full = create_view_toggle(&document, &format!("list-full-{}", index)).unwrap();
+            toggle_full.set_id(&format!("toggle-full-{}", index));
+            toggle_full.set_attribute("style", "display: none;").unwrap();
+            item_div.append_child(&toggle_full).unwrap();
+
+            // Render preview content
             let preview_div = document.create_element("div").unwrap();
             preview_div.set_class_name("llm-txt-content");
             preview_div.set_id(&format!("preview-{}", index));
-            let preview_html = render_with_toggle(&preview_content, &format!("list-preview-{}", index));
+            let preview_html = render_content_views(&preview_content, &format!("list-preview-{}", index));
             preview_div.set_inner_html(&preview_html);
             item_div.append_child(&preview_div).unwrap();
 
-            // Render full content with toggle
+            // Render full content (hidden by default)
             let full_div = document.create_element("div").unwrap();
             full_div.set_class_name("llm-txt-content");
             full_div.set_id(&format!("full-{}", index));
             full_div.set_attribute("style", "display: none;").unwrap();
-            let full_html = render_with_toggle(&full_content, &format!("list-full-{}", index));
+            let full_html = render_content_views(&full_content, &format!("list-full-{}", index));
             full_div.set_inner_html(&full_html);
             item_div.append_child(&full_div).unwrap();
 
@@ -684,11 +749,15 @@ fn display_list_results(data: &LlmsTxtListResponse) {
                     let full = document.get_element_by_id(&format!("full-{}", idx)).unwrap();
                     let expand = document.get_element_by_id(&format!("expand-{}", idx)).unwrap();
                     let collapse = document.get_element_by_id(&format!("collapse-{}", idx)).unwrap();
+                    let toggle_preview = document.get_element_by_id(&format!("toggle-preview-{}", idx)).unwrap();
+                    let toggle_full = document.get_element_by_id(&format!("toggle-full-{}", idx)).unwrap();
 
                     preview.set_attribute("style", "display: none;").unwrap();
                     full.set_attribute("style", "display: block;").unwrap();
                     expand.set_attribute("style", "display: none;").unwrap();
                     collapse.set_attribute("style", "display: block;").unwrap();
+                    toggle_preview.set_attribute("style", "display: none;").unwrap();
+                    toggle_full.set_attribute("style", "display: inline-block;").unwrap();
                 }) as Box<dyn Fn()>)
             };
 
@@ -706,11 +775,15 @@ fn display_list_results(data: &LlmsTxtListResponse) {
                     let full = document.get_element_by_id(&format!("full-{}", idx)).unwrap();
                     let expand = document.get_element_by_id(&format!("expand-{}", idx)).unwrap();
                     let collapse = document.get_element_by_id(&format!("collapse-{}", idx)).unwrap();
+                    let toggle_preview = document.get_element_by_id(&format!("toggle-preview-{}", idx)).unwrap();
+                    let toggle_full = document.get_element_by_id(&format!("toggle-full-{}", idx)).unwrap();
 
                     preview.set_attribute("style", "display: block;").unwrap();
                     full.set_attribute("style", "display: none;").unwrap();
                     expand.set_attribute("style", "display: block;").unwrap();
                     collapse.set_attribute("style", "display: none;").unwrap();
+                    toggle_preview.set_attribute("style", "display: inline-block;").unwrap();
+                    toggle_full.set_attribute("style", "display: none;").unwrap();
                 }) as Box<dyn Fn()>)
             };
 
@@ -720,10 +793,14 @@ fn display_list_results(data: &LlmsTxtListResponse) {
                 .set_onclick(Some(collapse_closure.as_ref().unchecked_ref()));
             collapse_closure.forget();
         } else {
-            // Render short content with toggle
+            // Add toggle for short content
+            let toggle = create_view_toggle(&document, &format!("list-short-{}", index)).unwrap();
+            item_div.append_child(&toggle).unwrap();
+
+            // Render short content
             let content_div = document.create_element("div").unwrap();
             content_div.set_class_name("llm-txt-content");
-            let content_html = render_with_toggle(&item.llm_txt, &format!("list-short-{}", index));
+            let content_html = render_content_views(&item.llm_txt, &format!("list-short-{}", index));
             content_div.set_inner_html(&content_html);
             item_div.append_child(&content_div).unwrap();
         }
@@ -798,9 +875,14 @@ fn display_job_details(job: &JobState) {
         content_heading.set_text_content(Some("LLMs.txt Content:"));
         job_div.append_child(&content_heading).unwrap();
 
+        // Add toggle under the heading
+        let toggle = create_view_toggle(&document, "job-detail").unwrap();
+        job_div.append_child(&toggle).unwrap();
+
+        // Render content
         let content_div = document.create_element("div").unwrap();
         content_div.set_class_name("llm-txt-content");
-        let content_html = render_with_toggle(llms_txt, "job-detail");
+        let content_html = render_content_views(llms_txt, "job-detail");
         content_div.set_inner_html(&content_html);
         job_div.append_child(&content_div).unwrap();
     }
