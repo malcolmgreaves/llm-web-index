@@ -132,15 +132,17 @@ All of the above, plus:
   ```bash
   # macOS
   brew install postgresql@15 libpq pkg-config cmake
-  brew services start postgresql@15
+  
+  # Only run this if you want to run the DB natively.
+  # We strongly recommend that you instead run the DB via docker compose up.
+  # brew services start postgresql@15
 
   # Linux (Ubuntu/Debian)
-  sudo apt update && sudo apt install postgresql postgresql-contrib libpq-dev pkg-config cmake
-  sudo systemctl start postgresql
-
-  # Linux (Arch)
-  sudo pacman -S postgresql libpq-dev pkg-config cmake
-  sudo systemctl start postgresql
+  sudo apt update && sudo apt install -y postgresql postgresql-contrib libpq-dev pkg-config cmake
+  
+  # Only run this if you want to run the DB natively.
+  # We strongly recommend that you instead run the DB via docker compose up.
+  # sudo systemctl start postgresql
   ```
 
 - **diesel_cli**: Database migration tool
@@ -160,7 +162,10 @@ All of the above, plus:
   pre-commit install
   ```
 
-#### Optional but Recommended
+- **wasm-pack**: For building WebAssembly modules
+  ```bash
+  cargo install wasm-pack
+  ```
 
 - **binaryen**: For optimizing WASM in production builds
   ```bash
@@ -169,7 +174,6 @@ All of the above, plus:
 
   # Linux
   sudo apt install binaryen    # Ubuntu/Debian
-  sudo pacman -S binaryen      # Arch
   ```
 
 - **mkcert**: For locally-trusted TLS certificates (avoids browser warnings)
@@ -182,6 +186,7 @@ All of the above, plus:
   # See: https://github.com/FiloSottile/mkcert#installation
   ```
 
+#### Optional, but recommended for developments
 - **cargo-watch**: Auto-rebuild on file changes
   ```bash
   cargo install cargo-watch
