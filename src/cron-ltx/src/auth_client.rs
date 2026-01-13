@@ -66,7 +66,7 @@ impl AuthenticatedClient {
                 .to_str()
                 .map_err(|_| Error::AuthError("Invalid cookie header".to_string()))?;
 
-            // Extract just the cookie value (before the first semicolon)
+            // The cookie value is before the first semicolon (;)
             let cookie = cookie_value
                 .split(';')
                 .next()
@@ -91,7 +91,6 @@ impl AuthenticatedClient {
     pub async fn post<T: Serialize>(&self, path: &str, json_body: &T) -> Result<Response, Error> {
         let url = format!("{}{}", self.api_base_url, path);
 
-        // Try request with current cookie
         let mut request = self.client.post(&url).json(json_body);
 
         if let Ok(cookie_guard) = self.cookie.lock() {
@@ -108,7 +107,6 @@ impl AuthenticatedClient {
 
             self.authenticate().await?;
 
-            // Retry request with new cookie
             let mut retry_request = self.client.post(&url).json(json_body);
 
             if let Ok(cookie_guard) = self.cookie.lock() {

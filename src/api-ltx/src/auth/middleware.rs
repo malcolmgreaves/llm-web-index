@@ -28,13 +28,10 @@ pub async fn require_auth(
         }
     };
 
-    // Extract cookie header
     let cookie_header = request.headers().get(header::COOKIE).and_then(|h| h.to_str().ok());
 
     let is_authenticated = if let Some(cookie_str) = cookie_header {
-        // Parse session cookie
         if let Some(token) = parse_session_cookie(cookie_str) {
-            // Validate token
             validate_session_token(&token, &config.session_secret, config.session_duration_seconds).unwrap_or(false)
         } else {
             false

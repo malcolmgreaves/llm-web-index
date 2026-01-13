@@ -34,12 +34,13 @@ pub enum SessionError {
 pub fn generate_session_token(secret: &str) -> Result<String, SessionError> {
     let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
-    // Generate cryptographically secure random nonce
-    let nonce: [u8; 16] = rand::random();
-    let nonce_b64 = general_purpose::URL_SAFE_NO_PAD.encode(nonce);
+    // Generate cryptographically secure random nonce & base 64 encode it
+    let nonce = {
+        let nonce_bytes: [u8; 16] = rand::random();
+        general_purpose::URL_SAFE_NO_PAD.encode(nonce_bytes)
+    };
 
-    // Create payload: timestamp:nonce
-    let payload = format!("{}:{}", timestamp, nonce_b64);
+    let payload = format!("{}:{}", timestamp, nonce);
 
     // Sign payload with HMAC-SHA256
     let signature = sign_payload(&payload, secret)?;
@@ -61,26 +62,19 @@ pub fn validate_session_token(token: &str, secret: &str, max_age_secs: u64) -> R
     let nonce = parts[1];
     let provided_signature = parts[2];
 
-    // Parse timestamp
     let timestamp: u64 = timestamp_str.parse().map_err(|_| SessionError::InvalidFormat)?;
 
-    // Check expiration
+    // check expiration
     let current_time = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-
     if current_time - timestamp > max_age_secs {
-        return Ok(false); // Expired
+        return Ok(false);
     }
 
-    // Verify signature
+    // verify signature
     let payload = format!("{}:{}", timestamp_str, nonce);
     let expected_signature = sign_payload(&payload, secret)?;
 
-    // Constant-time comparison
-    if provided_signature != expected_signature {
-        return Ok(false); // Invalid signature
-    }
-
-    Ok(true)
+    Ok(provided_signature == expected_signature)
 }
 
 /// Create a session cookie with the token

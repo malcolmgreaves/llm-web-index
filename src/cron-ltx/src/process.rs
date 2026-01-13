@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use data_model_ltx::{
     db::{self},
@@ -9,13 +10,14 @@ use diesel::prelude::*;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 
+use crate::AuthenticatedClient;
 use crate::LlmsTxtWithKind;
 use crate::errors::Error;
 
 /// Gets the most recent llms.txt for each url and spawns a task to determine if the llms.txt should be updated/regenerated.
 pub async fn poll_and_process(
     pool: &db::DbPool,
-    http_client: &std::sync::Arc<crate::AuthenticatedClient>,
+    http_client: &std::sync::Arc<AuthenticatedClient>,
     api_base_url: &str,
 ) -> Result<usize, Error> {
     let url_records = most_recent_completed(pool).await?;
@@ -67,7 +69,7 @@ fn deduplicate_by_url(records: Vec<LlmsTxtWithKind>) -> HashMap<String, LlmsTxtW
 
 /// Handles all llms.txt records by either attempting to regenerate (for a failed row) or update (for a success) the llms.txt.
 async fn handle_record_updates(
-    http_client: &std::sync::Arc<crate::AuthenticatedClient>,
+    http_client: &std::sync::Arc<AuthenticatedClient>,
     api_base_url: &str,
     url_records: HashMap<String, LlmsTxtWithKind>,
 ) {
@@ -95,7 +97,7 @@ async fn handle_record_updates(
 
 /// Sends llms.txt update request to API server if the website's HTML has changed.
 async fn handle_success(
-    client: &std::sync::Arc<crate::AuthenticatedClient>,
+    client: &Arc<AuthenticatedClient>,
     api_base_url: &str,
     url: &str,
     stored_html: &str,
@@ -121,7 +123,7 @@ async fn handle_success(
 
 /// Sends request to API server to regenerate llms.txt since it failed to generate it last time.
 async fn handle_failure(
-    client: &std::sync::Arc<crate::AuthenticatedClient>,
+    client: &Arc<AuthenticatedClient>,
     api_base_url: &str,
     url: &str,
     kind: JobKind,
@@ -155,7 +157,7 @@ struct JobIdResponse {
 
 /// Sends POST /api/llm_txt request to generate new llms.txt
 async fn send_generate_request(
-    client: &std::sync::Arc<crate::AuthenticatedClient>,
+    client: &Arc<AuthenticatedClient>,
     _api_base_url: &str,
     url: &str,
 ) -> Result<uuid::Uuid, Error> {
@@ -176,7 +178,7 @@ async fn send_generate_request(
 
 /// Sends POST /api/update request to update existing llms.txt
 async fn send_update_request(
-    client: &std::sync::Arc<crate::AuthenticatedClient>,
+    client: &Arc<AuthenticatedClient>,
     _api_base_url: &str,
     url: &str,
 ) -> Result<uuid::Uuid, Error> {

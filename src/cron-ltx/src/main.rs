@@ -40,6 +40,8 @@ async fn main() {
     // Authenticate immediately if password is configured
     if http_client.authenticate().await.is_ok() {
         tracing::info!("Initial authentication successful");
+    } else {
+        tracing::error!("Auth enabled but initial authentication failed!");
     }
 
     updater_loop(pool, http_client, api_base_url, poll_interval).await;

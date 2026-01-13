@@ -75,7 +75,6 @@ pub async fn post_login(
         .as_ref()
         .ok_or_else(|| AuthError::SessionError("Auth not configured".to_string()))?;
 
-    // Verify password using bcrypt
     let is_valid = verify_password(&request.password, &config.password_hash)
         .map_err(|e| AuthError::PasswordError(e.to_string()))?;
 
@@ -90,10 +89,8 @@ pub async fn post_login(
         return Err(AuthError::InvalidCredentials);
     }
 
-    // Generate session token
     let token = generate_session_token(&config.session_secret).map_err(|e| AuthError::SessionError(e.to_string()))?;
 
-    // Create session cookie
     let cookie = create_session_cookie(&token, config.session_duration_seconds);
 
     debug!("Successful login");
@@ -109,9 +106,7 @@ pub async fn post_login(
 /// Clears the session cookie
 pub async fn post_logout() -> impl IntoResponse {
     let cookie = create_logout_cookie();
-
     debug!("User logged out");
-
     (
         StatusCode::OK,
         [(header::SET_COOKIE, cookie.to_string())],
@@ -129,20 +124,14 @@ pub async fn get_check(
 
     let authenticated = if let Some(config) = auth_config.as_ref() {
         // Check if valid session cookie exists
-        if let Some(cookie_header) = headers.get(header::COOKIE) {
-            if let Ok(cookie_str) = cookie_header.to_str() {
-                if let Some(token) = parse_session_cookie(cookie_str) {
-                    validate_session_token(&token, &config.session_secret, config.session_duration_seconds)
-                        .unwrap_or(false)
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        } else {
-            false
-        }
+        headers
+            .get(header::COOKIE)
+            .and_then(|cookie_header| cookie_header.to_str().ok())
+            .and_then(|cookie_str| parse_session_cookie(cookie_str))
+            .and_then(|token| {
+                validate_session_token(&token, &config.session_secret, config.session_duration_seconds).ok()
+            })
+            .unwrap_or(false)
     } else {
         // Auth not enabled, so user is implicitly authenticated
         true
