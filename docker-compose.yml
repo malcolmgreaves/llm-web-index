@@ -93,6 +93,7 @@ services:
       WORKER_POLL_INTERVAL_MS: 600
       RUST_LOG: info
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      WORKER_MAX_CONCURRENCY: ${WORKER_MAX_CONCURRENCY:-1000}
     depends_on:
       postgres:
         condition: service_healthy
