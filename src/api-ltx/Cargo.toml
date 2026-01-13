@@ -9,6 +9,7 @@ description = "API webserver + DB setup."
 [dependencies]
 axum = { workspace = true }
 axum-server = { workspace = true }
+rustls = { workspace = true }
 tokio = { workspace = true }
 diesel = { workspace = true }
 diesel-async = { workspace = true }
