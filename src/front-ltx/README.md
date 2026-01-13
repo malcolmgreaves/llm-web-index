@@ -1,6 +1,20 @@
 # front-ltx
 
-WebAssembly frontend for the llms.txt project, built with Rust.
+WebAssembly frontend for the llms.txt generation system. Provides a web-based user interface for submitting URLs, monitoring job status, and viewing generated llms.txt files. Built entirely in Rust and compiled to WebAssembly.
+
+## Overview
+
+The `front-ltx` crate provides:
+
+- **WASM-based UI**: Browser-native interface compiled from Rust
+- **API integration**: Communicates with the API server for all operations
+- **Authentication flow**: Handles login/logout when authentication is enabled
+- **Job submission**: Form for creating new llms.txt generation jobs
+- **Status monitoring**: Real-time job status display
+- **Result viewing**: Display and download generated llms.txt files
+- **Responsive design**: Works on desktop and mobile browsers
+
+The frontend is served as static files by the API server and runs entirely in the browser.
 
 ## Prerequisites
 
@@ -166,12 +180,197 @@ Make sure you're using an HTTP server to serve the files, not opening `index.htm
 
 Ensure the import path in `index.html` matches the output directory from `wasm-pack build`.
 
-## Next Steps
+## Integration with the API Server
 
-To extend this frontend:
+The frontend is automatically served by the API server when you run:
 
-1. Add more Rust functions and export them with `#[wasm_bindgen]`
-2. Create more complex UI components
-3. Integrate with the API backend (api-ltx)
-4. Add a bundler (webpack, vite, etc.) for more sophisticated builds
-5. Consider using a framework like Yew, Leptos, or Dioxus for larger applications
+```bash
+# Via just command
+just serve
+
+# Via Docker Compose
+docker compose up
+
+# Via cargo directly
+cargo run -p api-ltx
+```
+
+The API server serves:
+- `GET /` - Returns `www/index.html`
+- `GET /pkg/*` - Serves WASM and JS files from `www/pkg/`
+
+When authentication is enabled (`ENABLE_AUTH=1`), the frontend automatically shows the login page first.
+
+## Development Workflow
+
+The recommended development workflow is:
+
+1. **Backend Development**:
+   ```bash
+   # Terminal 1: Run the full stack
+   docker compose up
+   ```
+
+2. **Frontend Development**:
+   ```bash
+   # Terminal 2: Watch for frontend changes and rebuild
+   cd src/front-ltx
+   cargo watch -i www/ -s "cargo build --target wasm32-unknown-unknown --release && \
+     wasm-bindgen ../../target/wasm32-unknown-unknown/release/front_ltx.wasm \
+       --out-dir www/pkg --target web"
+   ```
+
+3. **Access the application**: Open https://localhost:3000 in your browser
+
+Changes to frontend Rust code will automatically rebuild the WASM, and the browser will reload.
+
+## Building for Production
+
+Production builds optimize the WASM for size:
+
+```bash
+# From project root
+just release
+```
+
+This:
+1. Builds the WASM frontend in release mode
+2. Runs `wasm-opt` to optimize the WASM binary
+3. Builds all backend services in release mode
+
+The optimized WASM can be 50-80% smaller than the unoptimized version.
+
+## Architecture
+
+The frontend uses:
+
+- **wasm-bindgen**: JavaScript ↔ Rust interop
+- **web-sys**: Web API bindings (DOM, fetch, etc.)
+- **js-sys**: JavaScript standard library bindings
+- **serde**: JSON serialization for API communication
+
+### API Communication
+
+All API requests use the browser's `fetch` API via `web-sys`:
+
+```rust
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{Request, RequestInit, Response};
+
+// Example: Create a job
+let url = "/api/jobs";
+let body = json!({"url": "https://example.com"});
+
+let request = Request::new_with_str_and_init(
+    url,
+    RequestInit::new().method("POST").body(Some(&body))
+)?;
+
+let response = JsFuture::from(window.fetch_with_request(&request)).await?;
+```
+
+### Session Management
+
+When authentication is enabled:
+- Session cookies are automatically handled by the browser
+- The frontend checks authentication status on load
+- Failed authentication redirects to the login page
+- Logout clears the session cookie
+
+## Testing
+
+Frontend testing options:
+
+```bash
+# Unit tests (runs in Node.js/Deno environment)
+cargo test -p front-ltx
+
+# Browser-based testing (requires wasm-pack test)
+wasm-pack test --headless --firefox
+wasm-pack test --headless --chrome
+```
+
+## Browser Compatibility
+
+Requires modern browser features:
+- **WebAssembly**: All modern browsers (2017+)
+- **ES6 Modules**: Dynamic imports
+- **Async/Await**: Promise handling
+- **Fetch API**: HTTP requests
+
+Supported browsers:
+- Chrome/Edge 61+
+- Firefox 60+
+- Safari 11+
+- Opera 48+
+
+## Deployment Considerations
+
+### Content Security Policy
+
+When deploying, consider adding CSP headers:
+
+```
+Content-Security-Policy: default-src 'self';
+  script-src 'self' 'wasm-unsafe-eval';
+  style-src 'self' 'unsafe-inline';
+```
+
+The `'wasm-unsafe-eval'` is required for WebAssembly.
+
+### HTTPS Requirement
+
+Modern browsers require HTTPS for many web APIs. The API server uses HTTPS by default.
+
+### Caching
+
+Configure appropriate cache headers for:
+- WASM files: Long cache (content-hashed filenames recommended)
+- JS bindings: Long cache (content-hashed filenames recommended)
+- index.html: Short cache or no-cache
+
+## Advanced Development
+
+### Using a UI Framework
+
+For more complex UIs, consider integrating a Rust web framework:
+
+- **Yew**: React-like framework for Rust + WASM
+- **Leptos**: Full-stack Rust framework
+- **Dioxus**: Cross-platform UI framework
+
+Example with Yew:
+
+```bash
+cargo add yew --features csr
+```
+
+### Adding Webpack/Vite
+
+For advanced bundling, asset processing, and hot reload:
+
+```bash
+# Initialize with Vite
+npm init vite@latest
+
+# Configure to use wasm-pack
+npm install vite-plugin-wasm
+```
+
+### Debugging WASM
+
+Enable source maps for better debugging:
+
+```bash
+wasm-pack build --target web --out-dir www/pkg --dev
+```
+
+Then use browser DevTools to debug Rust code directly.
+
+## Related Documentation
+
+- [wasm-bindgen Book](https://rustwasm.github.io/wasm-bindgen/) - Core WASM interop
+- [web-sys Documentation](https://rustwasm.github.io/wasm-bindgen/api/web_sys/) - Web API bindings
+- [Project Root README](../../README.md) - Overall project documentation
+- [api-ltx README](../api-ltx/README.md) - API server that serves this frontend
+- [data-model-ltx README](../data-model-ltx/README.md) - Data models used in API communication
