@@ -63,6 +63,11 @@ RUN for crate in api-ltx cli-ltx cron-ltx worker-ltx core-ltx; do \
         echo "fn main() {}" > src/${crate}/src/main.rs; \
     done
 
+# Create dummy files for api-ltx binaries (defined in [[bin]] sections)
+RUN mkdir -p src/api-ltx/src/bin && \
+    echo "fn main() {}" > src/api-ltx/src/bin/generate-password-hash.rs && \
+    echo "fn main() {}" > src/api-ltx/src/bin/generate-tls-cert.rs
+
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/target \
