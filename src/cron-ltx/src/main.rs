@@ -8,6 +8,9 @@ use data_model_ltx::db::DbPool;
 
 #[tokio::main]
 async fn main() {
+    // Install the default crypto provider for rustls (required for HTTPS)
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+
     // Load environment variables from .env file., if it exists
     dotenvy::dotenv().ok();
 

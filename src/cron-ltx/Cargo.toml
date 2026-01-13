@@ -7,6 +7,7 @@ license = { workspace = true }
 description = "Cron worker service to perodically update websites' llms.txt."
 
 [dependencies]
+rustls = { workspace = true }
 tokio = { workspace = true }
 diesel = { workspace = true }
 diesel-async = { workspace = true }

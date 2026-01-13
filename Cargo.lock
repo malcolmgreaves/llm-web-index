@@ -643,6 +643,7 @@ dependencies = [
  "diesel-async",
  "dotenvy",
  "reqwest 0.13.1",
+ "rustls",
  "serde",
  "tokio",
  "tracing",
