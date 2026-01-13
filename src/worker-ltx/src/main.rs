@@ -17,7 +17,7 @@ async fn main() {
 
     let provider: Arc<ChatGpt> = Arc::new(ChatGpt::default());
 
-    let pool = get_db_pool();
+    let pool = get_db_pool().await;
 
     let poll_interval = get_poll_interval(TimeUnit::Milliseconds, "WORKER_POLL_INTERVAL_MS", 600);
 
