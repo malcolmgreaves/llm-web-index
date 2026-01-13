@@ -47,31 +47,53 @@ pub fn get_auth_config() -> Option<AuthConfig> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    // Use a mutex to ensure tests that modify env vars run serially
+    static TEST_MUTEX: Mutex<()> = Mutex::new(());
 
     #[test]
     fn test_is_auth_enabled_default() {
-        env::remove_var("ENABLE_AUTH");
+        let _guard = TEST_MUTEX.lock().unwrap();
+        unsafe {
+            env::remove_var("ENABLE_AUTH");
+        }
         assert!(!is_auth_enabled());
     }
 
     #[test]
     fn test_is_auth_enabled_true() {
-        env::set_var("ENABLE_AUTH", "true");
+        let _guard = TEST_MUTEX.lock().unwrap();
+        unsafe {
+            env::set_var("ENABLE_AUTH", "true");
+        }
         assert!(is_auth_enabled());
-        env::remove_var("ENABLE_AUTH");
+        unsafe {
+            env::remove_var("ENABLE_AUTH");
+        }
     }
 
     #[test]
     fn test_is_auth_enabled_1() {
-        env::set_var("ENABLE_AUTH", "1");
+        let _guard = TEST_MUTEX.lock().unwrap();
+        unsafe {
+            env::set_var("ENABLE_AUTH", "1");
+        }
         assert!(is_auth_enabled());
-        env::remove_var("ENABLE_AUTH");
+        unsafe {
+            env::remove_var("ENABLE_AUTH");
+        }
     }
 
     #[test]
     fn test_is_auth_enabled_false() {
-        env::set_var("ENABLE_AUTH", "false");
+        let _guard = TEST_MUTEX.lock().unwrap();
+        unsafe {
+            env::set_var("ENABLE_AUTH", "false");
+        }
         assert!(!is_auth_enabled());
-        env::remove_var("ENABLE_AUTH");
+        unsafe {
+            env::remove_var("ENABLE_AUTH");
+        }
     }
 }
