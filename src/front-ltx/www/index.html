@@ -272,6 +272,38 @@
             color: #856404;
         }
 
+        /* Toggle button for markdown/plaintext view */
+        .view-toggle {
+            display: inline-block;
+            color: #667eea;
+            font-size: 13px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.2s;
+            font-weight: 500;
+        }
+
+        .view-toggle:hover {
+            color: #5568d3;
+            text-decoration: underline;
+        }
+
+        /* Plaintext view styling */
+        .plaintext-content {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+
         .expand-link,
         .collapse-link {
             color: #999;
@@ -380,6 +412,26 @@
             }
         }
     </style>
+    <script>
+        // Toggle between markdown and plaintext views
+        function toggleView(idSuffix) {
+            const toggle = document.getElementById('toggle-' + idSuffix);
+            const markdown = document.getElementById('markdown-' + idSuffix);
+            const plaintext = document.getElementById('plaintext-' + idSuffix);
+
+            if (markdown.style.display === 'none') {
+                // Currently showing plaintext, switch to markdown
+                markdown.style.display = 'block';
+                plaintext.style.display = 'none';
+                toggle.textContent = 'Show plaintext';
+            } else {
+                // Currently showing markdown, switch to plaintext
+                markdown.style.display = 'none';
+                plaintext.style.display = 'block';
+                toggle.textContent = 'Show markdown';
+            }
+        }
+    </script>
 </head>
 <body>
     <div id="loading">Loading WebAssembly module...</div>

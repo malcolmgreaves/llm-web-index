@@ -583,14 +583,41 @@ fn html_escape(text: &str) -> String {
         .replace('\'', "&#39;")
 }
 
+/// Renders content with a toggle between markdown and plaintext views.
+///
+/// Creates a container with:
+/// - A toggle button to switch between views
+/// - Markdown-rendered content (visible by default)
+/// - Plaintext content (hidden by default)
+///
+/// # Arguments
+/// * `content` - The content to render
+/// * `id_suffix` - A unique suffix for element IDs
+///
+/// # Returns
+/// HTML string with toggle functionality
+fn render_with_toggle(content: &str, id_suffix: &str) -> String {
+    let markdown_html = render_markdown_with_fallback(content);
+    let plaintext_html = format!(r#"<pre class="plaintext-content">{}</pre>"#, html_escape(content));
+
+    format!(
+        r#"<div class="content-with-toggle">
+            <div class="view-toggle" id="toggle-{}" onclick="toggleView('{}')">Show plaintext</div>
+            <div id="markdown-{}">{}</div>
+            <div id="plaintext-{}" style="display: none;">{}</div>
+        </div>"#,
+        id_suffix, id_suffix, id_suffix, markdown_html, id_suffix, plaintext_html
+    )
+}
+
 fn display_text_result(text: &str) {
     let window = web_sys::window().expect("no global window exists");
     let document = window.document().expect("should have a document on window");
 
     let results_div = document.get_element_by_id("results").expect("results div should exist");
 
-    // Render markdown with fallback to plain text
-    let rendered_html = render_markdown_with_fallback(text);
+    // Render with toggle between markdown and plaintext
+    let rendered_html = render_with_toggle(text, "text-result");
 
     results_div.set_inner_html(&rendered_html);
 }
@@ -619,20 +646,20 @@ fn display_list_results(data: &LlmsTxtListResponse) {
             let preview_content: String = lines.iter().take(preview_lines).copied().collect::<Vec<_>>().join("\n");
             let full_content = item.llm_txt.clone();
 
-            // Render preview as markdown
+            // Render preview with toggle
             let preview_div = document.create_element("div").unwrap();
             preview_div.set_class_name("llm-txt-content");
             preview_div.set_id(&format!("preview-{}", index));
-            let preview_html = render_markdown_with_fallback(&preview_content);
+            let preview_html = render_with_toggle(&preview_content, &format!("list-preview-{}", index));
             preview_div.set_inner_html(&preview_html);
             item_div.append_child(&preview_div).unwrap();
 
-            // Render full content as markdown
+            // Render full content with toggle
             let full_div = document.create_element("div").unwrap();
             full_div.set_class_name("llm-txt-content");
             full_div.set_id(&format!("full-{}", index));
             full_div.set_attribute("style", "display: none;").unwrap();
-            let full_html = render_markdown_with_fallback(&full_content);
+            let full_html = render_with_toggle(&full_content, &format!("list-full-{}", index));
             full_div.set_inner_html(&full_html);
             item_div.append_child(&full_div).unwrap();
 
@@ -693,10 +720,10 @@ fn display_list_results(data: &LlmsTxtListResponse) {
                 .set_onclick(Some(collapse_closure.as_ref().unchecked_ref()));
             collapse_closure.forget();
         } else {
-            // Render short content as markdown
+            // Render short content with toggle
             let content_div = document.create_element("div").unwrap();
             content_div.set_class_name("llm-txt-content");
-            let content_html = render_markdown_with_fallback(&item.llm_txt);
+            let content_html = render_with_toggle(&item.llm_txt, &format!("list-short-{}", index));
             content_div.set_inner_html(&content_html);
             item_div.append_child(&content_div).unwrap();
         }
@@ -765,7 +792,7 @@ fn display_job_details(job: &JobState) {
         job_div.append_child(&error_pre).unwrap();
     }
 
-    // Render LLMs.txt content as markdown with fallback
+    // Render LLMs.txt content with toggle between markdown and plaintext
     if let Some(ref llms_txt) = job.llms_txt {
         let content_heading = document.create_element("h3").unwrap();
         content_heading.set_text_content(Some("LLMs.txt Content:"));
@@ -773,7 +800,7 @@ fn display_job_details(job: &JobState) {
 
         let content_div = document.create_element("div").unwrap();
         content_div.set_class_name("llm-txt-content");
-        let content_html = render_markdown_with_fallback(llms_txt);
+        let content_html = render_with_toggle(llms_txt, "job-detail");
         content_div.set_inner_html(&content_html);
         job_div.append_child(&content_div).unwrap();
     }
