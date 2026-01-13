@@ -20,7 +20,7 @@ async fn main() {
         .build()
         .expect("Failed to build HTTP client");
 
-    let api_base_url = get_api_base_url().to_string();
+    let api_base_url = format!("http://{}", get_api_base_url());
     tracing::info!("API server URL: {}", api_base_url);
 
     updater_loop(pool, http_client, api_base_url, poll_interval).await;

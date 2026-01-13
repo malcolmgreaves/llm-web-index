@@ -117,7 +117,7 @@ services:
       DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
       CRON_POLL_INTERVAL_S: 300  # every 5 minutes
       RUST_LOG: debug
-      HOST: 0.0.0.0
+      HOST: api
       PORT: 3000
     depends_on:
       postgres:
