@@ -84,6 +84,10 @@ COPY src/front-ltx/www ./src/front-ltx/www
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/target \
+    rm -rf /app/target/release/.fingerprint/front-ltx-* \
+           /app/target/release/.fingerprint/front_ltx-* \
+           /app/target/release/deps/libfront_ltx* \
+           /app/target/release/deps/front_ltx* && \
     cd src/front-ltx && \
     wasm-pack build --target web --out-dir www/pkg --release
 
@@ -102,7 +106,17 @@ COPY src/data-model-ltx/src ./src/data-model-ltx/src
 COPY src/api-ltx/src ./src/api-ltx/src
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target/api-ltx \
+    --mount=type=cache,target=/app/target \
+    rm -rf /app/target/release/.fingerprint/core-ltx-* \
+           /app/target/release/.fingerprint/core_ltx-* \
+           /app/target/release/.fingerprint/data-model-ltx-* \
+           /app/target/release/.fingerprint/data_model_ltx-* \
+           /app/target/release/.fingerprint/api-ltx-* \
+           /app/target/release/.fingerprint/api_ltx-* \
+           /app/target/release/deps/libcore_ltx* \
+           /app/target/release/deps/libdata_model_ltx* \
+           /app/target/release/deps/libapi_ltx* \
+           /app/target/release/deps/api_ltx* && \
     cargo build --release -p api-ltx && \
     cp /app/target/release/api-ltx /app/bin/api-ltx
 
@@ -121,7 +135,17 @@ COPY src/data-model-ltx/src ./src/data-model-ltx/src
 COPY src/worker-ltx/src ./src/worker-ltx/src
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target/worker-ltx \
+    --mount=type=cache,target=/app/target \
+    rm -rf /app/target/release/.fingerprint/core-ltx-* \
+           /app/target/release/.fingerprint/core_ltx-* \
+           /app/target/release/.fingerprint/data-model-ltx-* \
+           /app/target/release/.fingerprint/data_model_ltx-* \
+           /app/target/release/.fingerprint/worker-ltx-* \
+           /app/target/release/.fingerprint/worker_ltx-* \
+           /app/target/release/deps/libcore_ltx* \
+           /app/target/release/deps/libdata_model_ltx* \
+           /app/target/release/deps/libworker_ltx* \
+           /app/target/release/deps/worker_ltx* && \
     cargo build --release -p worker-ltx && \
     cp /app/target/release/worker-ltx /app/bin/worker-ltx
 
@@ -140,7 +164,17 @@ COPY src/data-model-ltx/src ./src/data-model-ltx/src
 COPY src/cron-ltx/src ./src/cron-ltx/src
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target/cron-ltx \
+    --mount=type=cache,target=/app/target \
+    rm -rf /app/target/release/.fingerprint/core-ltx-* \
+           /app/target/release/.fingerprint/core_ltx-* \
+           /app/target/release/.fingerprint/data-model-ltx-* \
+           /app/target/release/.fingerprint/data_model_ltx-* \
+           /app/target/release/.fingerprint/cron-ltx-* \
+           /app/target/release/.fingerprint/cron_ltx-* \
+           /app/target/release/deps/libcore_ltx* \
+           /app/target/release/deps/libdata_model_ltx* \
+           /app/target/release/deps/libcron_ltx* \
+           /app/target/release/deps/cron_ltx* && \
     cargo build --release -p cron-ltx && \
     cp /app/target/release/cron-ltx /app/bin/cron-ltx
 
