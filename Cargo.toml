@@ -3,7 +3,6 @@ resolver = "2"
 members = [
     "src/core-ltx",       # Functional core: all llms.txt generation logic + CLI program for one-offs (generation + update).
     "src/api-ltx",        # API webserver + DB setup.
-    "src/cli-ltx",        # CLI client for users: interfaces with API.
     "src/front-ltx",      # Webapp frontend for users: interfaces with API.
     "src/worker-ltx",     # Backend worker executing logic (generation + update) from API sever into database.
     "src/cron-ltx",       # Cron worker service to perodically update websites' llms.txt.

@@ -1,16 +1,24 @@
 # llm-web-index
 A system for generating llms.txt files from websites and keeping them up-to-date.
 
+Contains a full web application, 100% implemented in Rust:
+- WASM frontend
+- API server
+- backend worker service to generate llms.txt files
+- cron-like updater service
+- production-grade authentication (_simple: no users, single password_)
+
+The [llms.txt](http://llmstxt.org) file generation is performed via prompting to OpenAI's GPT 5.2 model.
+This application requires a valid `OPENAI_API_KEY` set as an environment variable at runtime (_specifically within the worker service_).
 
 ## Organization
 
-- [`core-ltx`](src/core-ltx): Functional core: all llms.txt generation logic + CLI program for one-offs (generation + update).
 - [`api-ltx`](src/api-ltx): API webserver + DB setup.
-- [`cli-ltx`](src/cli-ltx): CLI client for users: interfaces with API.
+- [`core-ltx`](src/core-ltx): Functional core: all llms.txt generation logic + CLI program for one-offs (generation + update). Also includes common utilities shared amongst the other crates.
+- [`cron-ltx`](src/cron-ltx): Updater service to periodically update websites' llms.txt.
+- [`data-model-ltx`](src/data-model-ltx): Catch-all for utilities common to all crates.
 - [`front-ltx`](src/front-ltx): Webapp frontend for users: interfaces with API.
-- [`worker-ltx`](src/worker-ltx): Backend worker executing logic (generation + update) from API server into database.
-- [`cron-ltx`](src/cron-ltx): Cron worker service to periodically update websites' llms.txt.
-- [`common-ltx`](src/common-ltx): Catch-all for utilities common to all crates.
+- [`worker-ltx`](src/worker-ltx): The application's data model.
 
 
 ## Quick Start
@@ -22,6 +30,7 @@ The fastest way to get started is using Docker Compose:
 ```bash
 # Enable BuildKit for faster builds (recommended)
 export DOCKER_BUILDKIT=1
+export OPENAI_API_KEY='<your open AI API key here>'
 
 # Start the API server and PostgreSQL database
 docker compose up
@@ -33,6 +42,11 @@ docker compose up -d
 The API server will be available at `http://localhost:3000`. BuildKit enables cache mounts that significantly speed up Rust compilation.
 
 See [src/api-ltx/SETUP.md](src/api-ltx/SETUP.md) for detailed setup instructions and API testing examples.
+
+### Production Deployment
+Set the `ENABLE_AUTH` environment variable to `1` in order to enable password-based authentication.
+The application will serve up a simple password login screen as the first page.
+Additionally, all API routes will require a hashed password to authenticate.
 
 ## Development
 
@@ -61,6 +75,3 @@ Use `Result` types and use clear `Error` enum variants whenever an operation cou
 Only use `Option` if `None` naturally maps to the domain.
 
 **Never use `.unwrap()` nor `.expect()`** except in tests.
-
-
-
