@@ -689,7 +689,12 @@ fn display_list_results(data: &LlmsTxtListResponse) {
         item_div.set_class_name("list-item");
 
         let url_heading = document.create_element("h3").unwrap();
-        url_heading.set_text_content(Some(&item.url));
+        let url_link = document.create_element("a").unwrap();
+        url_link.set_attribute("href", &item.url).unwrap();
+        url_link.set_attribute("target", "_blank").unwrap();
+        url_link.set_attribute("rel", "noopener noreferrer").unwrap();
+        url_link.set_text_content(Some(&item.url));
+        url_heading.append_child(&url_link).unwrap();
         item_div.append_child(&url_heading).unwrap();
 
         let lines: Vec<&str> = item.llm_txt.lines().collect();
