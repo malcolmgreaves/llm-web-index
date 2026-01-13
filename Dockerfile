@@ -48,7 +48,6 @@ COPY src/core-ltx/build.rs ./src/core-ltx/
 COPY src/data-model-ltx/Cargo.toml ./src/data-model-ltx/
 COPY src/front-ltx/Cargo.toml ./src/front-ltx/
 COPY src/api-ltx/Cargo.toml ./src/api-ltx/
-COPY src/cli-ltx/Cargo.toml ./src/cli-ltx/
 COPY src/cron-ltx/Cargo.toml ./src/cron-ltx/
 COPY src/worker-ltx/Cargo.toml ./src/worker-ltx/
 
