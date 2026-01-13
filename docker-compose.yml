@@ -124,7 +124,7 @@ services:
     environment:
       DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
       CRON_POLL_INTERVAL_S: 300  # every 5 minutes
-      RUST_LOG: debug
+      RUST_LOG: info
       HOST: api
       PORT: 3000
       ENABLE_AUTH: ${ENABLE_AUTH}
