@@ -127,7 +127,7 @@ pub async fn get_check(
         headers
             .get(header::COOKIE)
             .and_then(|cookie_header| cookie_header.to_str().ok())
-            .and_then(|cookie_str| parse_session_cookie(cookie_str))
+            .and_then(parse_session_cookie)
             .and_then(|token| {
                 validate_session_token(&token, &config.session_secret, config.session_duration_seconds).ok()
             })

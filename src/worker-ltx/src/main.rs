@@ -63,6 +63,6 @@ where
             },
         }
         tracing::debug!("Waiting to poll for next job");
-        tokio::time::sleep(poll_interval.clone()).await;
+        tokio::time::sleep(poll_interval).await;
     }
 }

@@ -2,7 +2,7 @@ use std::{num::ParseIntError, time::Duration};
 
 /// Same as poll_interval but panics on error.
 pub fn get_poll_interval(units: TimeUnit, env_var_name: &str, default: u64) -> Duration {
-    poll_interval(units, env_var_name, default).expect(format!("{} must be a valid number", env_var_name).as_str())
+    poll_interval(units, env_var_name, default).unwrap_or_else(|_| panic!("{} must be a valid number", env_var_name))
 }
 
 #[derive(Debug, PartialEq, Eq)]

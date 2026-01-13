@@ -28,7 +28,7 @@ async fn main() {
         .expect("Expected a socket address!");
     let listener = tokio::net::TcpListener::bind(addr)
         .await
-        .expect(format!("Failed to bind to address: {}", addr).as_str());
+        .unwrap_or_else(|_| panic!("Failed to bind to address: {}", addr));
 
     axum::serve(listener, app).await.unwrap();
 }

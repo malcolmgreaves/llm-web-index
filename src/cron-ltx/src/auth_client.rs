@@ -1,5 +1,5 @@
 use reqwest::{Client, Response, StatusCode};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::sync::{Arc, Mutex};
 use tracing::{debug, warn};
 
@@ -8,11 +8,6 @@ use crate::errors::Error;
 #[derive(Debug, Serialize)]
 struct LoginRequest {
     password: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct LoginResponse {
-    success: bool,
 }
 
 /// HTTP client with automatic authentication support
@@ -54,7 +49,7 @@ impl AuthenticatedClient {
             .json(&login_request)
             .send()
             .await
-            .map_err(|e| Error::HttpError(e))?;
+            .map_err(Error::HttpError)?;
 
         if !response.status().is_success() {
             return Err(Error::AuthError("Authentication failed".to_string()));
@@ -93,13 +88,13 @@ impl AuthenticatedClient {
 
         let mut request = self.client.post(&url).json(json_body);
 
-        if let Ok(cookie_guard) = self.cookie.lock() {
-            if let Some(cookie) = cookie_guard.as_ref() {
-                request = request.header("Cookie", cookie);
-            }
+        if let Ok(cookie_guard) = self.cookie.lock()
+            && let Some(cookie) = cookie_guard.as_ref()
+        {
+            request = request.header("Cookie", cookie);
         }
 
-        let response = request.send().await.map_err(|e| Error::HttpError(e))?;
+        let response = request.send().await.map_err(Error::HttpError)?;
 
         // If 401 and password is configured, try to re-authenticate
         if response.status() == StatusCode::UNAUTHORIZED && self.password.is_some() {
@@ -109,13 +104,13 @@ impl AuthenticatedClient {
 
             let mut retry_request = self.client.post(&url).json(json_body);
 
-            if let Ok(cookie_guard) = self.cookie.lock() {
-                if let Some(cookie) = cookie_guard.as_ref() {
-                    retry_request = retry_request.header("Cookie", cookie);
-                }
+            if let Ok(cookie_guard) = self.cookie.lock()
+                && let Some(cookie) = cookie_guard.as_ref()
+            {
+                retry_request = retry_request.header("Cookie", cookie);
             }
 
-            let retry_response = retry_request.send().await.map_err(|e| Error::HttpError(e))?;
+            let retry_response = retry_request.send().await.map_err(Error::HttpError)?;
 
             return Ok(retry_response);
         }
@@ -130,13 +125,13 @@ impl AuthenticatedClient {
         // Try request with current cookie
         let mut request = self.client.get(&url);
 
-        if let Ok(cookie_guard) = self.cookie.lock() {
-            if let Some(cookie) = cookie_guard.as_ref() {
-                request = request.header("Cookie", cookie);
-            }
+        if let Ok(cookie_guard) = self.cookie.lock()
+            && let Some(cookie) = cookie_guard.as_ref()
+        {
+            request = request.header("Cookie", cookie);
         }
 
-        let response = request.send().await.map_err(|e| Error::HttpError(e))?;
+        let response = request.send().await.map_err(Error::HttpError)?;
 
         // If 401 and password is configured, try to re-authenticate
         if response.status() == StatusCode::UNAUTHORIZED && self.password.is_some() {
@@ -147,13 +142,13 @@ impl AuthenticatedClient {
             // Retry request with new cookie
             let mut retry_request = self.client.get(&url);
 
-            if let Ok(cookie_guard) = self.cookie.lock() {
-                if let Some(cookie) = cookie_guard.as_ref() {
-                    retry_request = retry_request.header("Cookie", cookie);
-                }
+            if let Ok(cookie_guard) = self.cookie.lock()
+                && let Some(cookie) = cookie_guard.as_ref()
+            {
+                retry_request = retry_request.header("Cookie", cookie);
             }
 
-            let retry_response = retry_request.send().await.map_err(|e| Error::HttpError(e))?;
+            let retry_response = retry_request.send().await.map_err(Error::HttpError)?;
 
             return Ok(retry_response);
         }

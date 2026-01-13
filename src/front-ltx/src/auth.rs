@@ -23,6 +23,7 @@ struct LoginRequest {
 
 #[derive(Debug, Deserialize)]
 struct LoginResponse {
+    #[allow(dead_code)]
     success: bool,
 }
 
