@@ -1,5 +1,6 @@
 pub mod auth_config;
 pub mod db_env;
+pub mod env_check;
 pub mod health;
 pub mod hostname;
 pub mod logging;

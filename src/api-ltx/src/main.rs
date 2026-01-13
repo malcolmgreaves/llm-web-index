@@ -1,7 +1,9 @@
-use std::env;
 use std::net::SocketAddr;
 
-use core_ltx::{get_api_base_url, get_auth_config, get_db_pool, get_tls_config, is_auth_enabled, setup_logging};
+use core_ltx::{
+    common::env_check::check_non_empty_env_vars, get_api_base_url, get_auth_config, get_db_pool, get_tls_config,
+    is_auth_enabled, setup_logging,
+};
 use tracing::info;
 
 use api_ltx::routes;
@@ -16,34 +18,7 @@ async fn main() {
 
     // Fail-fast check: verify required auth env vars are present if auth is enabled
     if is_auth_enabled() {
-        let required_vars = ["AUTH_PASSWORD_HASH", "SESSION_SECRET"];
-        for var_name in &required_vars {
-            match env::var(var_name) {
-                Ok(value) if !value.trim().is_empty() => {
-                    // Variable is present and non-empty, continue
-                }
-                Ok(_) => {
-                    eprintln!(
-                        "FATAL: {} environment variable is set but empty. \
-                         Authentication is enabled (ENABLE_AUTH=true) but required configuration is invalid.",
-                        var_name
-                    );
-                    std::process::exit(1);
-                }
-                Err(_) => {
-                    eprintln!(
-                        "FATAL: {} environment variable is required when ENABLE_AUTH=true.",
-                        var_name
-                    );
-                    if var_name == &"AUTH_PASSWORD_HASH" {
-                        eprintln!("Generate a hash with: cargo run --bin generate-password-hash -- your_password");
-                    } else if var_name == &"SESSION_SECRET" {
-                        eprintln!("Generate a secret with: openssl rand -base64 32");
-                    }
-                    std::process::exit(1);
-                }
-            }
-        }
+        check_non_empty_env_vars(&["AUTH_PASSWORD_HASH", "SESSION_SECRET"]);
     }
 
     setup_logging("api_ltx=debug,tower_http=debug");
