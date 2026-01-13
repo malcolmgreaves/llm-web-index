@@ -1,8 +1,8 @@
 //! HTTP fetching and sitemap parsing utilities.
 
 use crate::rule_gen::errors::{LlmsGenError, Result};
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 
 /// Represents a sitemap with URLs and optional last modification dates.
 #[derive(Debug, Clone)]
@@ -111,9 +111,7 @@ fn parse_sitemap(xml: &str) -> Result<Sitemap> {
                         if let Ok(Event::Text(text)) = reader.read_event_into(&mut buf) {
                             current_url = Some(
                                 text.unescape()
-                                    .map_err(|e| {
-                                        LlmsGenError::SitemapError(format!("Invalid XML: {}", e))
-                                    })?
+                                    .map_err(|e| LlmsGenError::SitemapError(format!("Invalid XML: {}", e)))?
                                     .to_string(),
                             );
                         }
@@ -123,9 +121,7 @@ fn parse_sitemap(xml: &str) -> Result<Sitemap> {
                         if let Ok(Event::Text(text)) = reader.read_event_into(&mut buf) {
                             current_lastmod = Some(
                                 text.unescape()
-                                    .map_err(|e| {
-                                        LlmsGenError::SitemapError(format!("Invalid XML: {}", e))
-                                    })?
+                                    .map_err(|e| LlmsGenError::SitemapError(format!("Invalid XML: {}", e)))?
                                     .to_string(),
                             );
                         }
@@ -145,21 +141,14 @@ fn parse_sitemap(xml: &str) -> Result<Sitemap> {
                 }
             }
             Ok(Event::Eof) => break,
-            Err(e) => {
-                return Err(LlmsGenError::SitemapError(format!(
-                    "XML parsing error: {}",
-                    e
-                )))
-            }
+            Err(e) => return Err(LlmsGenError::SitemapError(format!("XML parsing error: {}", e))),
             _ => {}
         }
         buf.clear();
     }
 
     if urls.is_empty() {
-        return Err(LlmsGenError::SitemapError(
-            "No URLs found in sitemap".to_string(),
-        ));
+        return Err(LlmsGenError::SitemapError("No URLs found in sitemap".to_string()));
     }
 
     Ok(Sitemap { urls })

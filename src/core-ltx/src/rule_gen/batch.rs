@@ -34,11 +34,7 @@ use std::future::Future;
 /// ).await;
 /// # }
 /// ```
-pub async fn process_in_batches<T, F, Fut, R>(
-    items: Vec<T>,
-    processor: F,
-    concurrency: usize,
-) -> Vec<R>
+pub async fn process_in_batches<T, F, Fut, R>(items: Vec<T>, processor: F, concurrency: usize) -> Vec<R>
 where
     T: Send + 'static,
     F: Fn(T, usize) -> Fut,
@@ -62,12 +58,7 @@ mod tests {
     #[tokio::test]
     async fn test_process_in_batches() {
         let items = vec![1, 2, 3, 4, 5];
-        let results = process_in_batches(
-            items,
-            |item, _index| Box::pin(async move { Some(item * 2) }),
-            2,
-        )
-        .await;
+        let results = process_in_batches(items, |item, _index| Box::pin(async move { Some(item * 2) }), 2).await;
 
         assert_eq!(results.len(), 5);
         // Results might be out of order due to concurrent processing
@@ -81,15 +72,7 @@ mod tests {
         let items = vec![1, 2, 3, 4, 5];
         let results = process_in_batches(
             items,
-            |item, _index| {
-                Box::pin(async move {
-                    if item % 2 == 0 {
-                        Some(item)
-                    } else {
-                        None
-                    }
-                })
-            },
+            |item, _index| Box::pin(async move { if item % 2 == 0 { Some(item) } else { None } }),
             2,
         )
         .await;
@@ -102,8 +85,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_process_in_batches_concurrency() {
-        use std::sync::atomic::{AtomicUsize, Ordering};
         use std::sync::Arc;
+        use std::sync::atomic::{AtomicUsize, Ordering};
 
         let concurrent_count = Arc::new(AtomicUsize::new(0));
         let max_concurrent = Arc::new(AtomicUsize::new(0));

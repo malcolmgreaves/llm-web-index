@@ -69,14 +69,13 @@ struct FullPageInfo {
 /// # Ok(())
 /// # }
 /// ```
-pub async fn gen(sitemap_url: &str, options: GeneratorOptions) -> Result<String> {
+pub async fn generate(sitemap_url: &str, options: GeneratorOptions) -> Result<String> {
     // Fetch sitemap
     let sitemap = fetch_sitemap(sitemap_url).await?;
     let urls = sitemap.sites();
 
     // Build URL filters
-    let (exclude_glob, include_glob) =
-        build_url_filters(&options.include_paths, &options.exclude_paths)?;
+    let (exclude_glob, include_glob) = build_url_filters(&options.include_paths, &options.exclude_paths)?;
 
     // Process URLs in batches
     let pages = process_in_batches(
@@ -125,10 +124,7 @@ pub async fn gen(sitemap_url: &str, options: GeneratorOptions) -> Result<String>
     // Organize pages by section
     let mut sections: HashMap<String, Vec<PageInfo>> = HashMap::new();
     for page in pages {
-        sections
-            .entry(page.section.clone())
-            .or_insert_with(Vec::new)
-            .push(page);
+        sections.entry(page.section.clone()).or_insert_with(Vec::new).push(page);
     }
 
     // Generate output
@@ -235,8 +231,7 @@ pub async fn gen_full(sitemap_url: &str, options: GeneratorOptions) -> Result<St
     let url_strings: Vec<String> = urls.iter().map(|u| u.loc.clone()).collect();
 
     // Build URL filters
-    let (exclude_glob, include_glob) =
-        build_url_filters(&options.include_paths, &options.exclude_paths)?;
+    let (exclude_glob, include_glob) = build_url_filters(&options.include_paths, &options.exclude_paths)?;
 
     // Process URLs in batches
     let pages = process_in_batches(
@@ -302,9 +297,7 @@ pub async fn gen_full(sitemap_url: &str, options: GeneratorOptions) -> Result<St
     let mut output = String::new();
 
     // Document title
-    let doc_title = options
-        .title
-        .unwrap_or_else(|| "Full Documentation".to_string());
+    let doc_title = options.title.unwrap_or_else(|| "Full Documentation".to_string());
     output.push_str(&format!("# {}\n\n", doc_title));
 
     // Build table of contents

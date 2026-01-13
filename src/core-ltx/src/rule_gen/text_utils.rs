@@ -65,12 +65,12 @@ pub fn clean_title(title: &str) -> String {
 /// ```
 pub fn parse_substitution_command(command: &str) -> Result<(Regex, String)> {
     // Match s/pattern/replacement/flags format
-    let re = Regex::new(r"^s/(.*?)/(.*?)/([gimsuy]*)$")
-        .map_err(|e| LlmsGenError::InvalidSubstitution(e.to_string()))?;
+    let re =
+        Regex::new(r"^s/(.*?)/(.*?)/([gimsuy]*)$").map_err(|e| LlmsGenError::InvalidSubstitution(e.to_string()))?;
 
-    let captures = re.captures(command).ok_or_else(|| {
-        LlmsGenError::InvalidSubstitution("Invalid substitution command format".to_string())
-    })?;
+    let captures = re
+        .captures(command)
+        .ok_or_else(|| LlmsGenError::InvalidSubstitution("Invalid substitution command format".to_string()))?;
 
     let pattern = captures.get(1).map(|m| m.as_str()).unwrap_or("");
     let replacement = captures.get(2).map(|m| m.as_str()).unwrap_or("");
@@ -145,14 +145,8 @@ mod tests {
 
     #[test]
     fn test_substitute_title() {
-        assert_eq!(
-            substitute_title("Hello World", "s/World/Rust/").unwrap(),
-            "Hello Rust"
-        );
-        assert_eq!(
-            substitute_title("foo foo", "s/foo/bar/g").unwrap(),
-            "bar bar"
-        );
+        assert_eq!(substitute_title("Hello World", "s/World/Rust/").unwrap(), "Hello Rust");
+        assert_eq!(substitute_title("foo foo", "s/foo/bar/g").unwrap(), "bar bar");
         assert_eq!(substitute_title("Title", "").unwrap(), "Title");
         assert_eq!(substitute_title("Title", "not a command").unwrap(), "Title");
     }

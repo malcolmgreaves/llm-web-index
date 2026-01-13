@@ -67,9 +67,9 @@ mod url_utils;
 // Public API re-exports
 pub use config::{GeneratorOptions, GeneratorOptionsBuilder};
 pub use errors::{LlmsGenError, Result};
-pub use generator::{gen, gen_full};
+pub use generator::{gen_full, generate};
 
 // Additional exports for advanced usage
-pub use fetch::{fetch_html, fetch_sitemap, Sitemap, SitemapUrl};
+pub use fetch::{Sitemap, SitemapUrl, fetch_html, fetch_sitemap};
 pub use html::{extract_main_content, get_description, get_title};
 pub use url_utils::{build_url_filters, is_root_url, parse_section, should_process_url};

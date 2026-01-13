@@ -57,10 +57,7 @@ pub fn is_root_url(uri: &str) -> bool {
 /// # Errors
 ///
 /// Returns an error if any glob pattern is invalid.
-pub fn build_url_filters(
-    include_paths: &[String],
-    exclude_paths: &[String],
-) -> Result<(GlobSet, Option<GlobSet>)> {
+pub fn build_url_filters(include_paths: &[String], exclude_paths: &[String]) -> Result<(GlobSet, Option<GlobSet>)> {
     // Build exclude glob set
     let mut exclude_builder = GlobSetBuilder::new();
     for pattern in exclude_paths {
@@ -99,11 +96,7 @@ pub fn build_url_filters(
 /// 1. If URL matches exclude pattern: exclude
 /// 2. If include patterns exist and URL doesn't match any: exclude
 /// 3. Otherwise: include
-pub fn should_process_url(
-    url: &str,
-    exclude_glob: &GlobSet,
-    include_glob: &Option<GlobSet>,
-) -> bool {
+pub fn should_process_url(url: &str, exclude_glob: &GlobSet, include_glob: &Option<GlobSet>) -> bool {
     // Check if excluded
     if exclude_glob.is_match(url) {
         return false;

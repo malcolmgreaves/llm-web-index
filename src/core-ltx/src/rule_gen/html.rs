@@ -153,21 +153,15 @@ mod tests {
 
     #[test]
     fn test_get_description() {
-        let html =
-            r#"<html><head><meta name="description" content="Example description"></head></html>"#;
-        assert_eq!(
-            get_description(html),
-            Some("Example description".to_string())
-        );
+        let html = r#"<html><head><meta name="description" content="Example description"></head></html>"#;
+        assert_eq!(get_description(html), Some("Example description".to_string()));
 
         let html_og = r#"<html><head><meta property="og:description" content="OG description"></head></html>"#;
         assert_eq!(get_description(html_og), Some("OG description".to_string()));
 
-        let html_twitter = r#"<html><head><meta name="twitter:description" content="Twitter description"></head></html>"#;
-        assert_eq!(
-            get_description(html_twitter),
-            Some("Twitter description".to_string())
-        );
+        let html_twitter =
+            r#"<html><head><meta name="twitter:description" content="Twitter description"></head></html>"#;
+        assert_eq!(get_description(html_twitter), Some("Twitter description".to_string()));
 
         let html_no_desc = r#"<html><head></head></html>"#;
         assert_eq!(get_description(html_no_desc), None);
