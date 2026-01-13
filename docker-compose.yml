@@ -55,6 +55,7 @@ services:
       TLS_CERT_PATH: /app/certs/cert.pem
       TLS_KEY_PATH: /app/certs/key.pem
     ports:
+      - "443:3000"
       - "3000:3000"
     volumes:
       - ./certs:/app/certs:ro
