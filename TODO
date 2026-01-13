@@ -1,0 +1,6 @@
+Not quite working! a code change in core-ltx still causes the others to be rebuilt.
+
+Maybe we should go back to the original claude-suggested idea:
+- dependencies stage
+- buidler stage: all code is compiled here
+- per-service runtime stage (copy relevant binaries from builder stage)
