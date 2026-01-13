@@ -24,6 +24,7 @@ diesel::table! {
         result_status -> Result_status,
         created_at -> Timestamptz,
         html -> Text,
+        html_checksum -> Varchar,
     }
 }
 

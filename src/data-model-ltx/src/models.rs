@@ -15,6 +15,14 @@ use uuid::Uuid;
 
 use crate::db::PoolError;
 
+/// Compute MD5 checksum of normalized HTML content
+fn compute_html_checksum(html: &str) -> Result<String, anyhow::Error> {
+    // Normalize HTML to avoid false positives from whitespace changes
+    let normalized = crate::web_html::parse_html(html)?;
+    let digest = md5::compute(normalized.as_bytes());
+    Ok(format!("{:x}", digest))
+}
+
 // SQL type definitions for custom enums
 // Note: These types use snake_case to match PostgreSQL type names
 #[allow(non_camel_case_types)]
@@ -216,6 +224,7 @@ pub struct LlmsTxt {
     pub result_status: ResultStatus,
     pub created_at: DateTime<Utc>,
     pub html: String,
+    pub html_checksum: String,
 }
 
 impl PartialEq for LlmsTxt {
@@ -255,6 +264,13 @@ impl LlmsTxt {
     /// Create database representation from ergonomic Result enum
     pub fn from_result(job_id: Uuid, url: String, result: LlmsTxtResult, html: String) -> Self {
         let created_at = Utc::now();
+
+        // Compute checksum - if normalization fails, use raw HTML
+        let html_checksum = compute_html_checksum(&html).unwrap_or_else(|_| {
+            let digest = md5::compute(html.as_bytes());
+            format!("{:x}", digest)
+        });
+
         match result {
             LlmsTxtResult::Ok { llms_txt } => LlmsTxt {
                 job_id,
@@ -263,6 +279,7 @@ impl LlmsTxt {
                 result_status: ResultStatus::Ok,
                 created_at,
                 html,
+                html_checksum,
             },
             LlmsTxtResult::Error { failure_reason } => LlmsTxt {
                 job_id,
@@ -271,6 +288,7 @@ impl LlmsTxt {
                 result_status: ResultStatus::Error,
                 created_at,
                 html,
+                html_checksum,
             },
         }
     }
@@ -576,13 +594,20 @@ mod tests {
 
     #[test]
     fn test_create_llms_txt() {
+        let html = "<html><body>Test</body></html>".to_string();
+        let html_checksum = compute_html_checksum(&html).unwrap_or_else(|_| {
+            let digest = md5::compute(html.as_bytes());
+            format!("{:x}", digest)
+        });
+
         let llms_txt = LlmsTxt {
             job_id: Uuid::new_v4(),
             url: "https://example.com/llms.txt".to_string(),
             result_data: "# Example LLMs.txt content".to_string(),
             result_status: ResultStatus::Ok,
             created_at: Utc::now(),
-            html: "<html><body>Test</body></html>".to_string(),
+            html: html.clone(),
+            html_checksum: html_checksum.clone(),
         };
 
         assert!(!llms_txt.url.is_empty());
@@ -590,6 +615,8 @@ mod tests {
         assert!(llms_txt.result_data.starts_with("# Example"));
         assert_eq!(llms_txt.result_status, ResultStatus::Ok);
         assert!(!llms_txt.html.is_empty());
+        assert!(!llms_txt.html_checksum.is_empty());
+        assert_eq!(llms_txt.html_checksum.len(), 32); // MD5 hex is always 32 chars
     }
 
     #[test]

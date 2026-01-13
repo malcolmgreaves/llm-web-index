@@ -25,3 +25,6 @@ libc = { version = "0.2", optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
+md5 = {workspace = true}
+html5ever = {workspace = true}
+markup5ever_rcdom = {workspace = true}

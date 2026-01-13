@@ -18,5 +18,6 @@ pub struct LlmsTxtWithKind {
     pub result_status: ResultStatus,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub html: String,
+    pub html_checksum: String,
     pub kind: JobKind,
 }
