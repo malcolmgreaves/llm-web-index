@@ -38,7 +38,7 @@ where
 {
     loop {
         match next_job_in_queue(&pool, semaphore.clone()).await {
-            Ok(job) => {
+            Ok((job, permit)) => {
                 #[allow(clippy::let_underscore_future)]
                 let _ = tokio::spawn({
                     let pool = pool.clone();
@@ -59,7 +59,13 @@ where
                                     error
                                 );
                             }
-                        }
+                        };
+                        // We need to:
+                        //   (1) make sure this task owns the semaphore permit
+                        //   (2) release this semaphore permit when the task ends
+                        // It just needs to be owned by the task, so a `let _permit = permit;` would work too,
+                        // but we just explicitly drop it here to move it into the task and make it clear that we release it at the end.
+                        drop(permit);
                     }
                 });
             }
