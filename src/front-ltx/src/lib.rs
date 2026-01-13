@@ -754,6 +754,34 @@ fn display_list_results(data: &LlmsTxtListResponse) {
                         .get_element_by_id(&format!("toggle-list-full-{}", idx))
                         .unwrap();
 
+                    // Check current view state (markdown or plaintext) from preview
+                    let preview_markdown = document
+                        .get_element_by_id(&format!("markdown-list-preview-{}", idx))
+                        .unwrap();
+                    let is_showing_plaintext = preview_markdown
+                        .get_attribute("style")
+                        .unwrap_or_default()
+                        .contains("none");
+
+                    // Apply same view state to full content
+                    let full_markdown = document
+                        .get_element_by_id(&format!("markdown-list-full-{}", idx))
+                        .unwrap();
+                    let full_plaintext = document
+                        .get_element_by_id(&format!("plaintext-list-full-{}", idx))
+                        .unwrap();
+
+                    if is_showing_plaintext {
+                        full_markdown.set_attribute("style", "display: none;").unwrap();
+                        full_plaintext.set_attribute("style", "display: block;").unwrap();
+                        toggle_full.set_text_content(Some("Show markdown"));
+                    } else {
+                        full_markdown.set_attribute("style", "display: block;").unwrap();
+                        full_plaintext.set_attribute("style", "display: none;").unwrap();
+                        toggle_full.set_text_content(Some("Show plaintext"));
+                    }
+
+                    // Show full content and hide preview
                     preview.set_attribute("style", "display: none;").unwrap();
                     full.set_attribute("style", "display: block;").unwrap();
                     expand.set_attribute("style", "display: none;").unwrap();
@@ -784,6 +812,34 @@ fn display_list_results(data: &LlmsTxtListResponse) {
                         .get_element_by_id(&format!("toggle-list-full-{}", idx))
                         .unwrap();
 
+                    // Check current view state (markdown or plaintext) from full content
+                    let full_markdown = document
+                        .get_element_by_id(&format!("markdown-list-full-{}", idx))
+                        .unwrap();
+                    let is_showing_plaintext = full_markdown
+                        .get_attribute("style")
+                        .unwrap_or_default()
+                        .contains("none");
+
+                    // Apply same view state to preview content
+                    let preview_markdown = document
+                        .get_element_by_id(&format!("markdown-list-preview-{}", idx))
+                        .unwrap();
+                    let preview_plaintext = document
+                        .get_element_by_id(&format!("plaintext-list-preview-{}", idx))
+                        .unwrap();
+
+                    if is_showing_plaintext {
+                        preview_markdown.set_attribute("style", "display: none;").unwrap();
+                        preview_plaintext.set_attribute("style", "display: block;").unwrap();
+                        toggle_preview.set_text_content(Some("Show markdown"));
+                    } else {
+                        preview_markdown.set_attribute("style", "display: block;").unwrap();
+                        preview_plaintext.set_attribute("style", "display: none;").unwrap();
+                        toggle_preview.set_text_content(Some("Show plaintext"));
+                    }
+
+                    // Show preview content and hide full
                     preview.set_attribute("style", "display: block;").unwrap();
                     full.set_attribute("style", "display: none;").unwrap();
                     expand.set_attribute("style", "display: block;").unwrap();
