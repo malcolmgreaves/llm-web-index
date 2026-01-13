@@ -41,6 +41,7 @@ where
             Ok(job) => {
                 // Acquire a permit before spawning the task.
                 // This will block if we've reached max_concurrency, effectively queuing tasks.
+                tracing::debug!("[job {}] Acquiring semaphore", job.job_id);
                 let permit = semaphore.clone().acquire_owned().await.unwrap();
 
                 #[allow(clippy::let_underscore_future)]
