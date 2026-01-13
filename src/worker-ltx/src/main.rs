@@ -1,11 +1,12 @@
 use std::{sync::Arc, time::Duration};
 
 use core_ltx::{
-    TimeUnit, get_db_pool, get_poll_interval,
+    TimeUnit, get_db_pool, get_max_concurrency, get_poll_interval,
     llms::{ChatGpt, LlmProvider},
     setup_logging,
 };
 use data_model_ltx::db::DbPool;
+use tokio::sync::Semaphore;
 use worker_ltx::{Error, JobResult, handle_job, handle_result, next_job_in_queue};
 
 #[tokio::main]
@@ -21,21 +22,36 @@ async fn main() {
 
     let poll_interval = get_poll_interval(TimeUnit::Milliseconds, "WORKER_POLL_INTERVAL_MS", 600);
 
-    worker_polling_loop(pool, provider, poll_interval).await;
+    let max_concurrency = get_max_concurrency("WORKER_MAX_CONCURRENCY", 10);
+    tracing::info!("Worker configured with max concurrency: {}", max_concurrency);
+
+    let semaphore = Arc::new(Semaphore::new(max_concurrency));
+
+    worker_polling_loop(pool, provider, poll_interval, semaphore).await;
 }
 
 /// Continuously polls the DB for new jobs and spawns tasks to work on them.
-async fn worker_polling_loop<P: LlmProvider>(pool: DbPool, provider: Arc<P>, poll_interval: Duration)
+/// Uses a semaphore to limit the maximum number of concurrent tasks.
+async fn worker_polling_loop<P>(pool: DbPool, provider: Arc<P>, poll_interval: Duration, semaphore: Arc<Semaphore>)
 where
-    P: 'static,
+    P: LlmProvider + 'static,
 {
     loop {
         match next_job_in_queue(&pool).await {
             Ok(job) => {
+                // Acquire a permit before spawning the task.
+                // This will block if we've reached max_concurrency, effectively queuing tasks.
+                let permit = semaphore.clone().acquire_owned().await.unwrap();
+
+                #[allow(clippy::let_underscore_future)]
                 let _ = tokio::spawn({
                     let pool = pool.clone();
                     let provider = provider.clone();
                     async move {
+                        // Permit will be automatically dropped when this task completes,
+                        // releasing the slot for the next task.
+                        let _permit = permit;
+
                         tracing::info!("Received job {} ({:?}) on website '{}'", job.job_id, job.kind, job.url);
                         let result = handle_job(provider.as_ref(), &job).await;
                         let is_ok = matches!(result, JobResult::Success { .. });
