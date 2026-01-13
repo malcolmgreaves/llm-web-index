@@ -49,6 +49,9 @@ services:
       HOST: 0.0.0.0
       PORT: 3000
       RUST_LOG: debug
+      ENABLE_AUTH: ${ENABLE_AUTH}
+      AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH}
+      SESSION_SECRET: ${SESSION_SECRET}
     ports:
       - "3000:3000"
     depends_on:
@@ -119,6 +122,9 @@ services:
       RUST_LOG: debug
       HOST: api
       PORT: 3000
+      ENABLE_AUTH: ${ENABLE_AUTH}
+      AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH}
+      SESSION_SECRET: ${SESSION_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
