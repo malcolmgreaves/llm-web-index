@@ -22,7 +22,7 @@ async fn main() {
 
     let poll_interval = get_poll_interval(TimeUnit::Milliseconds, "WORKER_POLL_INTERVAL_MS", 600);
 
-    let max_concurrency = get_max_concurrency("WORKER_MAX_CONCURRENCY", 10);
+    let max_concurrency = get_max_concurrency(None);
     tracing::info!("Worker configured with max concurrency: {}", max_concurrency);
 
     let semaphore = Arc::new(Semaphore::new(max_concurrency));
