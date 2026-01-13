@@ -189,6 +189,11 @@ All of the above, plus:
   cargo install cargo-watch
   ```
 
+- **cargo-chef**: Used in the docker build to cache dependencies. Not strictly needed for native development.
+```bash
+cargo install cargo-chef
+```
+
 ### Running with Docker Compose (Recommended for First-Time Users)
 
 This is the fastest way to get the entire system running:

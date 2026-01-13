@@ -19,167 +19,108 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     cargo install wasm-pack --root /tools
 
+# Install cargo-chef for dependency caching
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    cargo install cargo-chef --locked --root /tools
+
 ###
-### Project build: all dependencies
+### Planner - Analyze dependencies
 ###
-FROM rust:1.92-slim-bookworm AS builder
+FROM rust:1.92-slim-bookworm AS planner
 
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-RUN mkdir ./bin
 
-COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
+COPY --from=tools /tools/bin/cargo-chef /usr/local/bin/cargo-chef
 
-# Ensure that the first layers of builder image contain all of the Rust
-# dependencies for the project. By keeping dependencies first, then
-# project code, we can reuse layers when making code changes.
-#
-# NOTE: Keep up to date! Include **ALL** crates referenced in the top-level Cargo.toml!
-#       All crates **MUST** have:
-#         - a Cargo.toml file
-#         - either a lib.rs or a main.rs file (depending on what its Cargo says)
-#           + a "dummy" file ("" or "fn main(){}", respectively) works
+# Copy entire source to analyze dependencies
+COPY . .
 
-COPY src/core-ltx/Cargo.toml ./src/core-ltx/
-COPY src/core-ltx/build.rs ./src/core-ltx/
-COPY src/data-model-ltx/Cargo.toml ./src/data-model-ltx/
-COPY src/front-ltx/Cargo.toml ./src/front-ltx/
-COPY src/api-ltx/Cargo.toml ./src/api-ltx/
-COPY src/cron-ltx/Cargo.toml ./src/cron-ltx/
-COPY src/worker-ltx/Cargo.toml ./src/worker-ltx/
+# Generate recipe.json with all dependency information
+RUN cargo chef prepare --recipe-path recipe.json
 
-# NOTE: Keep up to date! Dummy file for library crates.
-RUN for crate in core-ltx data-model-ltx front-ltx; do \
-        mkdir -p src/${crate}/src && \
-        echo "" > src/${crate}/src/lib.rs; \
-    done
+###
+### Dependencies - Build all workspace dependencies
+###
+FROM rust:1.92-slim-bookworm AS dependencies
 
-# NOTE: Keep up to date! Dummy file for binary crates.
-RUN for crate in api-ltx cli-ltx cron-ltx worker-ltx core-ltx; do \
-        mkdir -p src/${crate}/src && \
-        echo "fn main() {}" > src/${crate}/src/main.rs; \
-    done
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create dummy files for api-ltx binaries (defined in [[bin]] sections)
-RUN mkdir -p src/api-ltx/src/bin && \
-    echo "fn main() {}" > src/api-ltx/src/bin/generate-password-hash.rs && \
-    echo "fn main() {}" > src/api-ltx/src/bin/generate-tls-cert.rs
+WORKDIR /app
 
+COPY --from=tools /tools/bin/cargo-chef /usr/local/bin/cargo-chef
+
+# Copy the recipe
+COPY --from=planner /app/recipe.json recipe.json
+
+# Build dependencies - this is the cached layer
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/target \
-    cargo build --release
+    cargo chef cook --release --recipe-path recipe.json
 
 ###
 ### WASM frontend
 ###
-FROM builder AS frontend
+FROM dependencies AS frontend
 
 COPY --from=tools /tools/bin/wasm-pack /usr/local/bin/wasm-pack
 
-# NOTE: Keep up to date! Remove dummy files from crates that **ARE** used.
-RUN rm -rf src/front-ltx/src
+# Copy entire source
+COPY . .
 
-COPY src/front-ltx/src ./src/front-ltx/src
-COPY src/front-ltx/www ./src/front-ltx/www
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/target \
-    rm -rf /app/target/release/.fingerprint/front-ltx-* \
-           /app/target/release/.fingerprint/front_ltx-* \
-           /app/target/release/deps/libfront_ltx* \
-           /app/target/release/deps/front_ltx* && \
     cd src/front-ltx && \
     wasm-pack build --target web --out-dir www/pkg --release
 
 ###
 ### Builder - API server
 ###
-FROM builder AS api-build
+FROM dependencies AS api-build
 
-# NOTE: Keep up to date! Remove dummy files from crates that **ARE** used.
-RUN for crate in core-ltx data-model-ltx api-ltx ; do \
-        rm -rf src/${crate}/src; \
-    done
-
-COPY src/core-ltx/src ./src/core-ltx/src
-COPY src/data-model-ltx/src ./src/data-model-ltx/src
-COPY src/api-ltx/src ./src/api-ltx/src
+# Copy entire source (cargo needs workspace structure)
+COPY . .
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
-    rm -rf /app/target/release/.fingerprint/core-ltx-* \
-           /app/target/release/.fingerprint/core_ltx-* \
-           /app/target/release/.fingerprint/data-model-ltx-* \
-           /app/target/release/.fingerprint/data_model_ltx-* \
-           /app/target/release/.fingerprint/api-ltx-* \
-           /app/target/release/.fingerprint/api_ltx-* \
-           /app/target/release/deps/libcore_ltx* \
-           /app/target/release/deps/libdata_model_ltx* \
-           /app/target/release/deps/libapi_ltx* \
-           /app/target/release/deps/api_ltx* && \
     cargo build --release -p api-ltx && \
+    mkdir -p ./bin && \
     cp /app/target/release/api-ltx /app/bin/api-ltx
 
 ###
 ### Builder - Worker
 ###
-FROM builder AS worker-build
+FROM dependencies AS worker-build
 
-# NOTE: Keep up to date! Remove dummy files from crates that **ARE** used.
-RUN for crate in core-ltx data-model-ltx worker-ltx; do \
-        rm -rf src/${crate}/src; \
-    done
-
-COPY src/core-ltx/src ./src/core-ltx/src
-COPY src/data-model-ltx/src ./src/data-model-ltx/src
-COPY src/worker-ltx/src ./src/worker-ltx/src
+# Copy entire source
+COPY . .
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
-    rm -rf /app/target/release/.fingerprint/core-ltx-* \
-           /app/target/release/.fingerprint/core_ltx-* \
-           /app/target/release/.fingerprint/data-model-ltx-* \
-           /app/target/release/.fingerprint/data_model_ltx-* \
-           /app/target/release/.fingerprint/worker-ltx-* \
-           /app/target/release/.fingerprint/worker_ltx-* \
-           /app/target/release/deps/libcore_ltx* \
-           /app/target/release/deps/libdata_model_ltx* \
-           /app/target/release/deps/libworker_ltx* \
-           /app/target/release/deps/worker_ltx* && \
     cargo build --release -p worker-ltx && \
+    mkdir -p ./bin && \
     cp /app/target/release/worker-ltx /app/bin/worker-ltx
 
 ###
 ### Builder - Cron Updater
 ###
-FROM builder AS cron-build
+FROM dependencies AS cron-build
 
-# NOTE: Keep up to date! Remove dummy files from crates that **ARE** used.
-RUN for crate in core-ltx data-model-ltx cron-ltx; do \
-        rm -rf src/${crate}/src; \
-    done
-
-COPY src/core-ltx/src ./src/core-ltx/src
-COPY src/data-model-ltx/src ./src/data-model-ltx/src
-COPY src/cron-ltx/src ./src/cron-ltx/src
+# Copy entire source
+COPY . .
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
-    rm -rf /app/target/release/.fingerprint/core-ltx-* \
-           /app/target/release/.fingerprint/core_ltx-* \
-           /app/target/release/.fingerprint/data-model-ltx-* \
-           /app/target/release/.fingerprint/data_model_ltx-* \
-           /app/target/release/.fingerprint/cron-ltx-* \
-           /app/target/release/.fingerprint/cron_ltx-* \
-           /app/target/release/deps/libcore_ltx* \
-           /app/target/release/deps/libdata_model_ltx* \
-           /app/target/release/deps/libcron_ltx* \
-           /app/target/release/deps/cron_ltx* && \
     cargo build --release -p cron-ltx && \
+    mkdir -p ./bin && \
     cp /app/target/release/cron-ltx /app/bin/cron-ltx
 
 
