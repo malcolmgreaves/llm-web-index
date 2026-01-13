@@ -42,14 +42,14 @@ if [ -z "$SESSION_SECRET" ]; then
 fi
 
 # Export the environment variables
-export AUTH_PASSWORD="$PASSWORD"
+export AUTH_PASSWORD="${PASSWORD}"
 export AUTH_PASSWORD_HASH
 export SESSION_SECRET
 
 echo ""
 echo "✓ Environment variables set successfully:"
-echo "  AUTH_PASSWORD=$AUTH_PASSWORD"
-echo "  AUTH_PASSWORD_HASH=$AUTH_PASSWORD_HASH"
-echo "  SESSION_SECRET=$SESSION_SECRET"
 echo ""
-echo "These variables are now available in your current shell session."
+echo "AUTH_PASSWORD='${AUTH_PASSWORD}'"
+echo "AUTH_PASSWORD_HASH='${AUTH_PASSWORD_HASH}'"
+echo "SESSION_SECRET='${SESSION_SECRET}'"
+echo ""

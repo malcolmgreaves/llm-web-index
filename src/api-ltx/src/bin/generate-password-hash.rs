@@ -20,12 +20,8 @@ fn main() {
 
     match hash(password, DEFAULT_COST) {
         Ok(hashed) => {
-            println!("Bcrypt hash for password '{}':", password);
-            println!();
             println!("{}", hashed);
-            println!();
-            println!("Add this to your .env file:");
-            println!("AUTH_PASSWORD_HASH={}", hashed);
+            eprintln!("Add this value to env var AUTH_PASSWORD_HASH to your .env file:");
         }
         Err(e) => {
             eprintln!("Error generating hash: {}", e);
