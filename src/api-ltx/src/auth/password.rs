@@ -18,15 +18,16 @@ mod tests {
 
     #[test]
     fn test_verify_password_correct() {
-        // Hash for "test_password" with cost 12
-        let hash = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYWNGZqKzRu";
-        assert!(verify_password("test_password", hash).unwrap());
+        // Generate a hash for "test_password" and verify it
+        let hash = bcrypt::hash("test_password", bcrypt::DEFAULT_COST).unwrap();
+        assert!(verify_password("test_password", &hash).unwrap());
     }
 
     #[test]
     fn test_verify_password_incorrect() {
-        let hash = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYWNGZqKzRu";
-        assert!(!verify_password("wrong_password", hash).unwrap());
+        // Generate a hash for "test_password" but try wrong password
+        let hash = bcrypt::hash("test_password", bcrypt::DEFAULT_COST).unwrap();
+        assert!(!verify_password("wrong_password", &hash).unwrap());
     }
 
     #[test]
