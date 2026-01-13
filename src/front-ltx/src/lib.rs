@@ -1,7 +1,9 @@
+mod auth;
+
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::JsFuture;
+use wasm_bindgen_futures::{JsFuture, spawn_local};
 use web_sys::{Document, HtmlElement, HtmlInputElement, Request, RequestInit, RequestMode, Response, console};
 
 // ============================================================================
@@ -40,7 +42,8 @@ struct JobState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Page {
+pub enum Page {
+    Login,
     Main,
     GetLlmsTxt,
     GenerateOrUpdate,
@@ -60,7 +63,25 @@ pub fn main() -> Result<(), JsValue> {
     let window = web_sys::window().expect("no global window exists");
     let document = window.document().expect("should have a document on window");
 
-    show_page(&document, Page::Main)?;
+    // Check authentication status before deciding which page to show
+    let document_clone = document.clone();
+    spawn_local(async move {
+        match auth::check_auth_status().await {
+            Ok(auth_status) => {
+                if auth_status.auth_enabled && !auth_status.authenticated {
+                    console::log_1(&"Auth required, showing login page".into());
+                    show_page(&document_clone, Page::Login).ok();
+                } else {
+                    console::log_1(&"Auth not required or already authenticated, showing main page".into());
+                    show_page(&document_clone, Page::Main).ok();
+                }
+            }
+            Err(e) => {
+                console::log_1(&format!("Auth check failed: {:?}, showing main page", e).into());
+                show_page(&document_clone, Page::Main).ok();
+            }
+        }
+    });
 
     Ok(())
 }
@@ -69,7 +90,7 @@ pub fn main() -> Result<(), JsValue> {
 // Navigation
 // ============================================================================
 
-fn show_page(document: &Document, page: Page) -> Result<(), JsValue> {
+pub fn show_page(document: &Document, page: Page) -> Result<(), JsValue> {
     let body = document.body().expect("document should have a body");
     body.set_inner_html("");
 
@@ -77,6 +98,7 @@ fn show_page(document: &Document, page: Page) -> Result<(), JsValue> {
     container.set_id("wasm-container");
 
     match page {
+        Page::Login => auth::create_login_page(document, &container)?,
         Page::Main => create_main_page(document, &container)?,
         Page::GetLlmsTxt => create_get_llmstxt_page(document, &container)?,
         Page::GenerateOrUpdate => create_generate_or_update_page(document, &container)?,

@@ -1,6 +1,8 @@
+pub mod auth_client;
 pub mod errors;
 pub mod process;
 
+pub use auth_client::AuthenticatedClient;
 pub use errors::Error;
 pub use process::poll_and_process;
 

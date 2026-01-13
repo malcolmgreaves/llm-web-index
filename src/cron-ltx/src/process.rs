@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use data_model_ltx::{
     db::{self},
@@ -9,13 +10,14 @@ use diesel::prelude::*;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 
+use crate::AuthenticatedClient;
 use crate::LlmsTxtWithKind;
 use crate::errors::Error;
 
 /// Gets the most recent llms.txt for each url and spawns a task to determine if the llms.txt should be updated/regenerated.
 pub async fn poll_and_process(
     pool: &db::DbPool,
-    http_client: &reqwest::Client,
+    http_client: &std::sync::Arc<AuthenticatedClient>,
     api_base_url: &str,
 ) -> Result<usize, Error> {
     let url_records = most_recent_completed(pool).await?;
@@ -67,7 +69,7 @@ fn deduplicate_by_url(records: Vec<LlmsTxtWithKind>) -> HashMap<String, LlmsTxtW
 
 /// Handles all llms.txt records by either attempting to regenerate (for a failed row) or update (for a success) the llms.txt.
 async fn handle_record_updates(
-    http_client: &reqwest::Client,
+    http_client: &std::sync::Arc<AuthenticatedClient>,
     api_base_url: &str,
     url_records: HashMap<String, LlmsTxtWithKind>,
 ) {
@@ -95,7 +97,7 @@ async fn handle_record_updates(
 
 /// Sends llms.txt update request to API server if the website's HTML has changed.
 async fn handle_success(
-    client: &reqwest::Client,
+    client: &Arc<AuthenticatedClient>,
     api_base_url: &str,
     url: &str,
     stored_html: &str,
@@ -120,7 +122,12 @@ async fn handle_success(
 }
 
 /// Sends request to API server to regenerate llms.txt since it failed to generate it last time.
-async fn handle_failure(client: &reqwest::Client, api_base_url: &str, url: &str, kind: JobKind) -> Result<(), Error> {
+async fn handle_failure(
+    client: &Arc<AuthenticatedClient>,
+    api_base_url: &str,
+    url: &str,
+    kind: JobKind,
+) -> Result<(), Error> {
     tracing::debug!("Handling failure for URL: '{}' ({:?})", url, kind);
 
     let job_id = match kind {
@@ -149,15 +156,14 @@ struct JobIdResponse {
 }
 
 /// Sends POST /api/llm_txt request to generate new llms.txt
-async fn send_generate_request(client: &reqwest::Client, api_base_url: &str, url: &str) -> Result<uuid::Uuid, Error> {
-    let endpoint = format!("{}/api/llm_txt", api_base_url);
-
-    tracing::debug!("API request: {}", endpoint);
-    let response = client
-        .post(&endpoint)
-        .json(&UrlPayload { url: url.to_string() })
-        .send()
-        .await?;
+async fn send_generate_request(
+    client: &Arc<AuthenticatedClient>,
+    _api_base_url: &str,
+    url: &str,
+) -> Result<uuid::Uuid, Error> {
+    tracing::debug!("API request: POST /api/llm_txt");
+    let payload = UrlPayload { url: url.to_string() };
+    let response = client.post("/api/llm_txt", &payload).await?;
     tracing::debug!("received response from API server");
 
     // if response.status() == reqwest::StatusCode::CONFLICT {
@@ -171,15 +177,14 @@ async fn send_generate_request(client: &reqwest::Client, api_base_url: &str, url
 }
 
 /// Sends POST /api/update request to update existing llms.txt
-async fn send_update_request(client: &reqwest::Client, api_base_url: &str, url: &str) -> Result<uuid::Uuid, Error> {
-    let endpoint = format!("{}/api/update", api_base_url);
-
-    tracing::debug!("API request: {}", endpoint);
-    let response = client
-        .post(&endpoint)
-        .json(&UrlPayload { url: url.to_string() })
-        .send()
-        .await?;
+async fn send_update_request(
+    client: &Arc<AuthenticatedClient>,
+    _api_base_url: &str,
+    url: &str,
+) -> Result<uuid::Uuid, Error> {
+    tracing::debug!("API request: POST /api/update");
+    let payload = UrlPayload { url: url.to_string() };
+    let response = client.post("/api/update", &payload).await?;
     tracing::debug!("received response from API server");
 
     let job_response: JobIdResponse = response.error_for_status()?.json().await?;
