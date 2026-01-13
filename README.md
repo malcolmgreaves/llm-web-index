@@ -4,6 +4,8 @@ A comprehensive system for generating and maintaining [llms.txt](http://llmstxt.
 
 **If you want to run the entire application locally in development mode, [install the prerequisites](#prerequisites) and [follow these instructions](running-with-docker-compose-recommended-for-first-time-users)**. Keep reading to get deatiled step-by-step instructions.
 
+Want to see a demo of this in action? [Look here!](https://drive.google.com/file/d/1Yh4-HmExwV1UOGzmgSVN-ySFtXElp1dw/view?usp=share_link)
+
 ## Overview
 
 llm-web-index is a complete, production-ready system built entirely in Rust that:
