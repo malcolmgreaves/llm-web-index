@@ -8,6 +8,10 @@ description = "Functional core: all llms.txt generation logic + CLI program for 
 build = "build.rs"
 readme = "README.md"
 
+[features]
+# Feature to enable test helper modules for use in other crates' tests
+test-helpers = []
+
 [dependencies]
 async-openai = { workspace = true }
 axum = { workspace = true }

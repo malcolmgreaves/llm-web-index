@@ -20,3 +20,8 @@ uuid = { workspace = true }
 serde = { workspace = true }
 core-ltx = { path = "../core-ltx" }
 data-model-ltx = { path = "../data-model-ltx" }
+
+[dev-dependencies]
+# Enable test helpers from dependencies for testing
+core-ltx = { path = "../core-ltx", features = ["test-helpers"] }
+data-model-ltx = { path = "../data-model-ltx", features = ["test-helpers"] }
