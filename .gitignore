@@ -1,6 +1,10 @@
 # project specific
 .env
 
+# TLS certificates (generated locally)
+/certs/
+*.pem
+
 # editor
 .superset
 .zed

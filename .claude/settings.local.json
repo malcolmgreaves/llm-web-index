@@ -19,7 +19,10 @@
       "Bash(git mv:*)",
       "Bash(wasm-pack build:*)",
       "Bash(find:*)",
-      "WebFetch(domain:docs.rs)"
+      "WebFetch(domain:docs.rs)",
+      "Bash(ls:*)",
+      "Bash(chmod:*)",
+      "Bash(./make_tls_cert.sh)"
     ]
   }
 }

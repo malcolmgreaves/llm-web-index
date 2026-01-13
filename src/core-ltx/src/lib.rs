@@ -12,5 +12,6 @@ pub use common::db_env::get_db_pool;
 pub use common::hostname::{HostPortError, get_api_base_url};
 pub use common::logging::setup_logging;
 pub use common::poll_interval::{TimeUnit, get_poll_interval};
+pub use common::tls_config::get_tls_config;
 
 pub use errors::Error;

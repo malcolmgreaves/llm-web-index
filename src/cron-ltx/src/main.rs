@@ -1,3 +1,4 @@
+use std::env;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -7,6 +8,9 @@ use data_model_ltx::db::DbPool;
 
 #[tokio::main]
 async fn main() {
+    // Install the default crypto provider for rustls (required for HTTPS)
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+
     // Load environment variables from .env file., if it exists
     dotenvy::dotenv().ok();
 
@@ -27,12 +31,26 @@ async fn main() {
         tracing::info!("Authentication not enabled for cron service");
     }
 
-    let reqwest_client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
-        .build()
-        .expect("Failed to build HTTP client");
+    // Check if we should accept invalid TLS certificates (for development with self-signed certs)
+    let accept_invalid_certs = env::var("ACCEPT_INVALID_CERTS")
+        .map(|v| {
+            let v = v.to_lowercase();
+            v == "true" || v == "1"
+        })
+        .unwrap_or(false);
 
-    let api_base_url = format!("http://{}", get_api_base_url());
+    let reqwest_client = if accept_invalid_certs {
+        tracing::warn!("Accepting invalid TLS certificates (development mode)");
+        reqwest::Client::builder()
+            .danger_accept_invalid_certs(true)
+            .timeout(Duration::from_secs(30))
+            .build()
+    } else {
+        reqwest::Client::builder().timeout(Duration::from_secs(30)).build()
+    }
+    .expect("Failed to build HTTP client");
+
+    let api_base_url = format!("https://{}", get_api_base_url());
     tracing::info!("API server URL: {}", api_base_url);
 
     let http_client = Arc::new(AuthenticatedClient::new(reqwest_client, api_base_url.clone(), password));
