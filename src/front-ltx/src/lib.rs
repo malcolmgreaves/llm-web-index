@@ -562,7 +562,7 @@ fn display_list_results(data: &LlmsTxtListResponse) {
 
     results_div.set_inner_html("");
 
-    for item in &data.items {
+    for (index, item) in data.items.iter().enumerate() {
         let item_div = document.create_element("div").unwrap();
         item_div.set_class_name("list-item");
 
@@ -570,10 +570,89 @@ fn display_list_results(data: &LlmsTxtListResponse) {
         url_heading.set_text_content(Some(&item.url));
         item_div.append_child(&url_heading).unwrap();
 
-        let content_pre = document.create_element("pre").unwrap();
-        content_pre.set_class_name("llm-txt-content");
-        content_pre.set_text_content(Some(&item.llm_txt));
-        item_div.append_child(&content_pre).unwrap();
+        let lines: Vec<&str> = item.llm_txt.lines().collect();
+        let total_lines = lines.len();
+        let preview_lines = 20;
+
+        if total_lines > preview_lines {
+            let preview_content: String = lines.iter().take(preview_lines).copied().collect::<Vec<_>>().join("\n");
+            let full_content = item.llm_txt.clone();
+
+            let preview_pre = document.create_element("pre").unwrap();
+            preview_pre.set_class_name("llm-txt-content");
+            preview_pre.set_id(&format!("preview-{}", index));
+            preview_pre.set_text_content(Some(&preview_content));
+            item_div.append_child(&preview_pre).unwrap();
+
+            let full_pre = document.create_element("pre").unwrap();
+            full_pre.set_class_name("llm-txt-content");
+            full_pre.set_id(&format!("full-{}", index));
+            full_pre.set_attribute("style", "display: none;").unwrap();
+            full_pre.set_text_content(Some(&full_content));
+            item_div.append_child(&full_pre).unwrap();
+
+            let expand_link = document.create_element("div").unwrap();
+            expand_link.set_class_name("expand-link");
+            expand_link.set_id(&format!("expand-{}", index));
+            expand_link.set_text_content(Some("expand to see more"));
+            item_div.append_child(&expand_link).unwrap();
+
+            let collapse_link = document.create_element("div").unwrap();
+            collapse_link.set_class_name("collapse-link");
+            collapse_link.set_id(&format!("collapse-{}", index));
+            collapse_link.set_attribute("style", "display: none;").unwrap();
+            collapse_link.set_text_content(Some("collapse"));
+            item_div.append_child(&collapse_link).unwrap();
+
+            let expand_closure = {
+                let document = document.clone();
+                let idx = index;
+                Closure::wrap(Box::new(move || {
+                    let preview = document.get_element_by_id(&format!("preview-{}", idx)).unwrap();
+                    let full = document.get_element_by_id(&format!("full-{}", idx)).unwrap();
+                    let expand = document.get_element_by_id(&format!("expand-{}", idx)).unwrap();
+                    let collapse = document.get_element_by_id(&format!("collapse-{}", idx)).unwrap();
+
+                    preview.set_attribute("style", "display: none;").unwrap();
+                    full.set_attribute("style", "display: block;").unwrap();
+                    expand.set_attribute("style", "display: none;").unwrap();
+                    collapse.set_attribute("style", "display: block;").unwrap();
+                }) as Box<dyn Fn()>)
+            };
+
+            expand_link
+                .dyn_ref::<HtmlElement>()
+                .unwrap()
+                .set_onclick(Some(expand_closure.as_ref().unchecked_ref()));
+            expand_closure.forget();
+
+            let collapse_closure = {
+                let document = document.clone();
+                let idx = index;
+                Closure::wrap(Box::new(move || {
+                    let preview = document.get_element_by_id(&format!("preview-{}", idx)).unwrap();
+                    let full = document.get_element_by_id(&format!("full-{}", idx)).unwrap();
+                    let expand = document.get_element_by_id(&format!("expand-{}", idx)).unwrap();
+                    let collapse = document.get_element_by_id(&format!("collapse-{}", idx)).unwrap();
+
+                    preview.set_attribute("style", "display: block;").unwrap();
+                    full.set_attribute("style", "display: none;").unwrap();
+                    expand.set_attribute("style", "display: block;").unwrap();
+                    collapse.set_attribute("style", "display: none;").unwrap();
+                }) as Box<dyn Fn()>)
+            };
+
+            collapse_link
+                .dyn_ref::<HtmlElement>()
+                .unwrap()
+                .set_onclick(Some(collapse_closure.as_ref().unchecked_ref()));
+            collapse_closure.forget();
+        } else {
+            let content_pre = document.create_element("pre").unwrap();
+            content_pre.set_class_name("llm-txt-content");
+            content_pre.set_text_content(Some(&item.llm_txt));
+            item_div.append_child(&content_pre).unwrap();
+        }
 
         results_div.append_child(&item_div).unwrap();
     }
