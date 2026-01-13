@@ -203,9 +203,6 @@ export OPENAI_API_KEY='sk-...'
 
 # 3. Start all services
 docker compose up
-
-# Or run in detached mode (background)
-docker compose up -d
 ```
 
 The system will be available at **https://localhost:3000**
@@ -254,12 +251,17 @@ export ENABLE_AUTH=1
 
 # 3. Generate TLS certificates (if not already done)
 ./make_tls_cert.sh ./certs
+export TLS_CERT_PATH="$(pwd)/certs/cert.pem"
+export TLS_KEY_PATH="$(pwd)/certs/key.pem"
+
+export ACCEPT_INVALID_CERTS=true
 
 # 4. Start with authentication enabled
-docker compose up
+docker compose up --build
 ```
 
 Now accessing https://localhost:3000 will show a login page.
+You will need to input the password you set in step 1.
 
 ### Setting Up TLS Certificates
 
