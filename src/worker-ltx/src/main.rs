@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use core_ltx::{
-    TimeUnit, get_db_pool, get_max_concurrency, get_poll_interval,
+    TimeUnit, get_db_pool, get_max_concurrency, get_poll_interval, health_router,
     llms::{ChatGpt, LlmProvider},
     setup_logging,
 };
@@ -22,11 +22,23 @@ async fn main() {
 
     let poll_interval = get_poll_interval(TimeUnit::Milliseconds, "WORKER_POLL_INTERVAL_MS", 600);
 
-    let max_concurrency = get_max_concurrency(None);
-    tracing::info!("Worker configured with max concurrency: {}", max_concurrency);
+    let semaphore = {
+        let max_concurrency = get_max_concurrency(None);
+        tracing::info!("Worker configured with max concurrency: {}", max_concurrency);
+        Arc::new(Semaphore::new(max_concurrency))
+    };
 
-    let semaphore = Arc::new(Semaphore::new(max_concurrency));
+    // Spawn health check HTTP server
+    tokio::spawn(async {
+        let app = health_router();
+        let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
+            .await
+            .expect("Failed to bind health check server to 0.0.0.0:8080");
+        tracing::info!("Health check server listening on 0.0.0.0:8080");
+        axum::serve(listener, app).await.expect("Health check server failed");
+    });
 
+    tracing::info!("Starting worker polling loop");
     worker_polling_loop(pool, provider, poll_interval, semaphore).await;
 }
 

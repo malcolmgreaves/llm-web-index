@@ -2,7 +2,7 @@ use axum::{
     Router, middleware,
     routing::{get, post, put},
 };
-use core_ltx::AuthConfig;
+use core_ltx::{AuthConfig, health_check};
 use std::sync::Arc;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
@@ -45,6 +45,7 @@ pub fn router(auth_config: Option<AuthConfig>) -> Router<DbPool> {
 
     // Combine all routes
     Router::new()
+        .route("/health", get(health_check))
         .merge(auth_routes)
         .merge(protected_routes)
         // Serve static assets from frontend pkg directory (no auth required)

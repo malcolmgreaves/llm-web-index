@@ -194,6 +194,7 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     libc6 \
     ca-certificates \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 ###
@@ -226,6 +227,7 @@ FROM runtime-base AS worker
 WORKDIR /app
 # Worker binary
 COPY --from=worker-build /app/bin/worker-ltx /usr/local/bin/worker-ltx
+EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/worker-ltx"]
 
 ###
