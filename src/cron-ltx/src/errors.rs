@@ -7,6 +7,7 @@ pub enum Error {
     HttpError(reqwest::Error),
     CoreError(core_ltx::Error),
     JobInProgress,
+    AuthError(String),
 }
 
 impl std::fmt::Display for Error {
@@ -19,6 +20,7 @@ impl std::fmt::Display for Error {
             Self::HttpError(e) => write!(f, "HTTP error: {}", e),
             Self::CoreError(e) => write!(f, "Core error: {}", e),
             Self::JobInProgress => write!(f, "Job already in progress"),
+            Self::AuthError(s) => write!(f, "Authentication error: {}", s),
         }
     }
 }

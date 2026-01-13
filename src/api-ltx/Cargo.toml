@@ -22,6 +22,14 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
 uuid = { workspace = true }
+# authentication
+bcrypt = "0.15"
+cookie = "0.18"
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.22"
+rand = "0.8"
+thiserror = "2.0"
 # internal
 data-model-ltx = { path = "../data-model-ltx" }
 core-ltx = { path = "../core-ltx" }
