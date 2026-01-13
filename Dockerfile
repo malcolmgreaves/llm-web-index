@@ -88,7 +88,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     wasm-pack build --target web --out-dir www/pkg --release
 
 ###
-### API server
+### Builder - API server
 ###
 FROM builder AS api-build
 
@@ -107,7 +107,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cp /app/target/release/api-ltx /app/bin/api-ltx
 
 ###
-### Worker
+### Builder - Worker
 ###
 FROM builder AS worker-build
 
@@ -126,9 +126,29 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cp /app/target/release/worker-ltx /app/bin/worker-ltx
 
 ###
-### Runtime - API
+### Builder - Cron Updater
 ###
-FROM debian:bookworm-slim AS api
+FROM builder AS cron-build
+
+# NOTE: Keep up to date! Remove dummy files from crates that **ARE** used.
+RUN for crate in core-ltx data-model-ltx cron-ltx; do \
+        rm -rf src/${crate}/src; \
+    done
+
+COPY src/core-ltx/src ./src/core-ltx/src
+COPY src/data-model-ltx/src ./src/data-model-ltx/src
+COPY src/cron-ltx/src ./src/cron-ltx/src
+
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/app/target/cron-ltx \
+    cargo build --release -p cron-ltx && \
+    cp /app/target/release/cron-ltx /app/bin/cron-ltx
+
+
+###
+### Runtime - Base
+###
+FROM debian:bookworm-slim AS runtime-base
 
 # NOTE: Keep these runtime dependencies in-sync with the system dependencies from the builder image.
 RUN apt-get update && apt-get install -y \
@@ -137,6 +157,11 @@ RUN apt-get update && apt-get install -y \
     libc6 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+###
+### Runtime - API
+###
+FROM runtime-base AS api
 
 COPY --from=tools /tools/bin/diesel /usr/local/bin/diesel
 
@@ -158,19 +183,19 @@ ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 ###
 ### Runtime - Worker
 ###
-FROM debian:bookworm-slim AS worker
-
-# NOTE: Keep these runtime dependencies in-sync with the system dependencies from the builder image.
-RUN apt-get update && apt-get install -y \
-    libpq5 \
-    postgresql-client \
-    libc6 \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+FROM runtime-base AS worker
 
 WORKDIR /app
-
 # Worker binary
 COPY --from=worker-build /app/bin/worker-ltx /usr/local/bin/worker-ltx
-
 ENTRYPOINT ["/usr/local/bin/worker-ltx"]
+
+###
+### Runtime - Cron Updater
+###
+FROM runtime-base AS cron
+
+WORKDIR /app
+# cron updater binary
+COPY --from=cron-build /app/bin/cron-ltx /usr/local/bin/cron-ltx
+ENTRYPOINT ["/usr/local/bin/cron-ltx"]

@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 use core_ltx::{get_api_base_url, get_db_pool, setup_logging};
 
 use api_ltx::routes;
@@ -12,7 +14,9 @@ async fn main() {
     let pool = get_db_pool();
     let app = routes::router().with_state(pool);
 
-    let addr = get_api_base_url();
+    let addr = get_api_base_url()
+        .parse::<SocketAddr>()
+        .expect("Expected a socket address!");
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .expect(format!("Failed to bind to address: {}", addr).as_str());
