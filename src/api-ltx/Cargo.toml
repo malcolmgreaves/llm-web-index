@@ -36,6 +36,12 @@ thiserror = { workspace = true }
 data-model-ltx = { path = "../data-model-ltx" }
 core-ltx = { path = "../core-ltx" }
 
+[dev-dependencies]
+data-model-ltx = { path = "../data-model-ltx", features = ["test-helpers"] }
+http-body-util = "0.1.2"
+hyper = { version = "1.5", features = ["full"] }
+urlencoding = "2.1"
+
 [[bin]]
 name = "generate-password-hash"
 path = "src/bin/generate-password-hash.rs"

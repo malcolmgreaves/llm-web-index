@@ -8,9 +8,7 @@
 
 use data_model_ltx::{
     models::{JobKind, JobKindData, JobState, JobStatus},
-    test_helpers::{
-        clean_test_db, create_test_job, get_job_by_id, test_db_pool, update_job_status,
-    },
+    test_helpers::{clean_test_db, create_test_job, get_job_by_id, test_db_pool, update_job_status},
 };
 use worker_ltx::work::next_job_in_queue;
 
@@ -73,10 +71,7 @@ async fn test_next_job_in_queue_ignores_running_jobs() {
     // Try to claim - should fail since only Running job exists
     let result = next_job_in_queue(&pool).await;
 
-    assert!(
-        result.is_err(),
-        "Should not claim jobs that are already Running"
-    );
+    assert!(result.is_err(), "Should not claim jobs that are already Running");
 }
 
 #[tokio::test]
@@ -91,10 +86,7 @@ async fn test_next_job_in_queue_ignores_completed_jobs() {
     // Try to claim - should fail since only completed jobs exist
     let result = next_job_in_queue(&pool).await;
 
-    assert!(
-        result.is_err(),
-        "Should not claim jobs that are already completed"
-    );
+    assert!(result.is_err(), "Should not claim jobs that are already completed");
 }
 
 #[tokio::test]
@@ -168,25 +160,10 @@ async fn test_next_job_in_queue_concurrent_claiming() {
     assert_ne!(claimed2, claimed3, "Workers should claim different jobs");
 
     // All claimed jobs should be among our created jobs
-    let all_job_ids = vec![
-        job1.job_id,
-        job2.job_id,
-        job3.job_id,
-        job4.job_id,
-        job5.job_id,
-    ];
-    assert!(
-        all_job_ids.contains(&claimed1),
-        "Claimed job should be one we created"
-    );
-    assert!(
-        all_job_ids.contains(&claimed2),
-        "Claimed job should be one we created"
-    );
-    assert!(
-        all_job_ids.contains(&claimed3),
-        "Claimed job should be one we created"
-    );
+    let all_job_ids = vec![job1.job_id, job2.job_id, job3.job_id, job4.job_id, job5.job_id];
+    assert!(all_job_ids.contains(&claimed1), "Claimed job should be one we created");
+    assert!(all_job_ids.contains(&claimed2), "Claimed job should be one we created");
+    assert!(all_job_ids.contains(&claimed3), "Claimed job should be one we created");
 
     // Verify all claimed jobs are now Running
     let status1 = get_job_by_id(&pool, claimed1).await.unwrap().status;
@@ -261,10 +238,7 @@ async fn test_next_job_in_queue_transaction_isolation() {
 
     // Try to claim again - should fail because job is now Running
     let result = next_job_in_queue(&pool).await;
-    assert!(
-        result.is_err(),
-        "Should not be able to claim the same job twice"
-    );
+    assert!(result.is_err(), "Should not be able to claim the same job twice");
 
     // Verify job is indeed Running
     let current_job = get_job_by_id(&pool, job.job_id).await.unwrap();
@@ -300,11 +274,9 @@ async fn test_next_job_in_queue_prefers_started_over_queued() {
 
     // Create jobs in different states
     // Note: The SQL query orders by job_id ASC, so creation order matters
-    let queued_job =
-        create_test_job(&pool, "https://queued.com", JobKind::New, JobStatus::Queued).await;
+    let queued_job = create_test_job(&pool, "https://queued.com", JobKind::New, JobStatus::Queued).await;
 
-    let started_job =
-        create_test_job(&pool, "https://started.com", JobKind::New, JobStatus::Started).await;
+    let started_job = create_test_job(&pool, "https://started.com", JobKind::New, JobStatus::Started).await;
 
     // Both Queued and Started are eligible
     // The query should pick based on job_id order (ASC), not status

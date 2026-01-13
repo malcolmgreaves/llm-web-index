@@ -9,11 +9,9 @@
 use core_ltx::{is_valid_markdown, validate_is_llm_txt};
 use data_model_ltx::{
     models::{JobKind, JobStatus, ResultStatus},
-    test_helpers::{
-        clean_test_db, create_test_job, get_job_by_id, get_llms_txt_by_job_id, test_db_pool,
-    },
+    test_helpers::{clean_test_db, create_test_job, get_job_by_id, get_llms_txt_by_job_id, test_db_pool},
 };
-use worker_ltx::work::{handle_result, JobResult};
+use worker_ltx::work::{JobResult, handle_result};
 
 /// Helper to create a valid LlmsTxt for testing
 fn create_test_llms_txt(content: &str) -> core_ltx::LlmsTxt {
@@ -23,9 +21,7 @@ fn create_test_llms_txt(content: &str) -> core_ltx::LlmsTxt {
 
 /// Helper to create a test error
 fn create_test_error(message: &str) -> worker_ltx::errors::Error {
-    worker_ltx::errors::Error::CoreError(core_ltx::Error::InvalidLlmsTxtFormat(
-        message.to_string(),
-    ))
+    worker_ltx::errors::Error::CoreError(core_ltx::Error::InvalidLlmsTxtFormat(message.to_string()))
 }
 
 #[tokio::test]
@@ -81,9 +77,7 @@ async fn test_handle_result_generation_failed() {
     assert_eq!(llms_txt_record.result_status, ResultStatus::Error);
     assert_eq!(llms_txt_record.html, html, "HTML should be preserved");
     assert!(
-        llms_txt_record
-            .result_data
-            .contains("LLM generation failed"),
+        llms_txt_record.result_data.contains("LLM generation failed"),
         "Error message should be stored"
     );
 }
@@ -288,16 +282,7 @@ async fn test_handle_result_concurrent_results() {
     assert!(handle2.await.unwrap().is_ok());
     assert!(handle3.await.unwrap().is_ok());
 
-    assert_eq!(
-        get_job_by_id(&pool, job1_id).await.unwrap().status,
-        JobStatus::Success
-    );
-    assert_eq!(
-        get_job_by_id(&pool, job2_id).await.unwrap().status,
-        JobStatus::Success
-    );
-    assert_eq!(
-        get_job_by_id(&pool, job3_id).await.unwrap().status,
-        JobStatus::Success
-    );
+    assert_eq!(get_job_by_id(&pool, job1_id).await.unwrap().status, JobStatus::Success);
+    assert_eq!(get_job_by_id(&pool, job2_id).await.unwrap().status, JobStatus::Success);
+    assert_eq!(get_job_by_id(&pool, job3_id).await.unwrap().status, JobStatus::Success);
 }

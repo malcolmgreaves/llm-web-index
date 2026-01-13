@@ -61,6 +61,11 @@ echo ""
 echo -e "${YELLOW}Running All Workspace Unit Tests...${NC}"
 run_test_suite "Workspace Unit Tests" "cargo test --workspace --lib"
 
+# Run API integration tests
+echo ""
+echo -e "${YELLOW}Running API Route Tests...${NC}"
+run_test_suite "API Route Tests" "cargo test --package api-ltx --test routes_test -- --test-threads=1"
+
 # Run worker integration tests separately with single thread for DB tests
 echo ""
 echo -e "${YELLOW}Running Worker Integration Tests...${NC}"
@@ -85,12 +90,13 @@ if [ $TESTS_FAILED -eq 0 ]; then
     echo -e "${GREEN}✓ Worker Job Processing: 11 tests${NC}"
     echo -e "${GREEN}✓ Worker Job Queue: 10-12 tests${NC}"
     echo -e "${GREEN}✓ Worker Result Handling: 8 tests${NC}"
+    echo -e "${GREEN}✓ API Route Handlers: 12 tests${NC}"
     echo -e "${GREEN}✓ API Auth: 11 tests${NC}"
     echo -e "${GREEN}✓ Core LLM: 24 tests${NC}"
     echo -e "${GREEN}✓ Cron: 8 tests${NC}"
     echo -e "${GREEN}✓ Data Model: 4 tests${NC}"
     echo ""
-    echo -e "${GREEN}Total: ~90+ tests passing${NC}"
+    echo -e "${GREEN}Total: ~100+ tests passing${NC}"
 else
     echo -e "${RED}Some test suites failed: $TESTS_FAILED/$TOTAL_SUITES${NC}"
     echo -e "${GREEN}Passed: $TESTS_PASSED${NC}"
