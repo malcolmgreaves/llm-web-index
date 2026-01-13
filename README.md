@@ -43,6 +43,11 @@ The API server will be available at `http://localhost:3000`. BuildKit enables ca
 
 See [src/api-ltx/SETUP.md](src/api-ltx/SETUP.md) for detailed setup instructions and API testing examples.
 
+### Production Deployment
+Set the `ENABLE_AUTH` environment variable to `1` in order to enable password-based authentication.
+The application will serve up a simple password login screen as the first page.
+Additionally, all API routes will require a hashed password to authenticate.
+
 ## Development
 
 #### Pre-reqs
