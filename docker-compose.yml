@@ -48,7 +48,7 @@ services:
       DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
       HOST: 0.0.0.0
       PORT: 3000
-      RUST_LOG: debug
+      RUST_LOG: info
       ENABLE_AUTH: ${ENABLE_AUTH}
       AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH}
       SESSION_SECRET: ${SESSION_SECRET}
