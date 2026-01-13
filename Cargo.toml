@@ -82,6 +82,7 @@ async-openai = "0.28"
 clap = { version = "4.5", features = ["derive"] }
 url = "2.5"
 markdown-ppp = "2.8.1"
+pulldown-cmark = "0.12"
 indoc = "2.0.7"
 nom = "8.0.0"
 reqwest = "0.13.1"
