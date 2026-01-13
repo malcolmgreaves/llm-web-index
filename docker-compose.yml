@@ -131,7 +131,7 @@ services:
       AUTH_PASSWORD: ${AUTH_PASSWORD}
       AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH}
       SESSION_SECRET: ${SESSION_SECRET}
-      ACCEPT_INVALID_CERTS: ${ACCEPT_INVALID_CERTS:-false}
+      ACCEPT_INVALID_CERTS: ${ACCEPT_INVALID_CERTS:-true}
     depends_on:
       postgres:
         condition: service_healthy
