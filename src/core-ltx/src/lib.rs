@@ -4,6 +4,7 @@ pub mod llms;
 pub mod llms_txt_gen;
 pub mod md_llm_txt;
 pub mod web_html;
+pub mod rule_gen;
 
 pub use md_llm_txt::{LlmsTxt, Markdown, is_valid_markdown, validate_is_llm_txt};
 pub use web_html::{download, is_valid_url, parse_html};
