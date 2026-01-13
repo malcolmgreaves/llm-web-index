@@ -604,13 +604,13 @@ fn create_view_toggle(document: &Document, id_suffix: &str) -> Result<web_sys::E
 
         let toggle = document
             .get_element_by_id(&format!("toggle-{}", id_suffix_clone))
-            .unwrap();
+            .expect("toggle element should exist");
         let markdown = document
             .get_element_by_id(&format!("markdown-{}", id_suffix_clone))
-            .unwrap();
+            .expect("markdown element should exist");
         let plaintext = document
             .get_element_by_id(&format!("plaintext-{}", id_suffix_clone))
-            .unwrap();
+            .expect("plaintext element should exist");
 
         if markdown.get_attribute("style").unwrap_or_default().contains("none") {
             markdown.set_attribute("style", "display: block;").unwrap();
@@ -702,12 +702,10 @@ fn display_list_results(data: &LlmsTxtListResponse) {
 
             // Add toggle for preview
             let toggle_preview = create_view_toggle(&document, &format!("list-preview-{}", index)).unwrap();
-            toggle_preview.set_id(&format!("toggle-preview-{}", index));
             item_div.append_child(&toggle_preview).unwrap();
 
             // Add toggle for full content (hidden by default)
             let toggle_full = create_view_toggle(&document, &format!("list-full-{}", index)).unwrap();
-            toggle_full.set_id(&format!("toggle-full-{}", index));
             toggle_full.set_attribute("style", "display: none;").unwrap();
             item_div.append_child(&toggle_full).unwrap();
 
@@ -749,8 +747,12 @@ fn display_list_results(data: &LlmsTxtListResponse) {
                     let full = document.get_element_by_id(&format!("full-{}", idx)).unwrap();
                     let expand = document.get_element_by_id(&format!("expand-{}", idx)).unwrap();
                     let collapse = document.get_element_by_id(&format!("collapse-{}", idx)).unwrap();
-                    let toggle_preview = document.get_element_by_id(&format!("toggle-preview-{}", idx)).unwrap();
-                    let toggle_full = document.get_element_by_id(&format!("toggle-full-{}", idx)).unwrap();
+                    let toggle_preview = document
+                        .get_element_by_id(&format!("toggle-list-preview-{}", idx))
+                        .unwrap();
+                    let toggle_full = document
+                        .get_element_by_id(&format!("toggle-list-full-{}", idx))
+                        .unwrap();
 
                     preview.set_attribute("style", "display: none;").unwrap();
                     full.set_attribute("style", "display: block;").unwrap();
@@ -775,8 +777,12 @@ fn display_list_results(data: &LlmsTxtListResponse) {
                     let full = document.get_element_by_id(&format!("full-{}", idx)).unwrap();
                     let expand = document.get_element_by_id(&format!("expand-{}", idx)).unwrap();
                     let collapse = document.get_element_by_id(&format!("collapse-{}", idx)).unwrap();
-                    let toggle_preview = document.get_element_by_id(&format!("toggle-preview-{}", idx)).unwrap();
-                    let toggle_full = document.get_element_by_id(&format!("toggle-full-{}", idx)).unwrap();
+                    let toggle_preview = document
+                        .get_element_by_id(&format!("toggle-list-preview-{}", idx))
+                        .unwrap();
+                    let toggle_full = document
+                        .get_element_by_id(&format!("toggle-list-full-{}", idx))
+                        .unwrap();
 
                     preview.set_attribute("style", "display: block;").unwrap();
                     full.set_attribute("style", "display: none;").unwrap();
