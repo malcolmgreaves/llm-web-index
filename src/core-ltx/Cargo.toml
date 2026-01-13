@@ -10,6 +10,7 @@ readme = "README.md"
 
 [dependencies]
 async-openai = { workspace = true }
+axum-server = { workspace = true }
 tokio = { workspace = true }
 clap = { workspace = true }
 url = { workspace = true }

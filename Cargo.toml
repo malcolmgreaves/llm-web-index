@@ -19,16 +19,18 @@ readme = "README.md"
 [workspace.dependencies]
 # Web framework & server
 axum = "0.8.8"
+axum-server = { version = "0.8.0", features = ["tls-rustls"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["trace", "fs"] }
 
-# Authentication
+# Authentication & TLS
 bcrypt = "0.15"
 cookie = "0.18"
 hmac = "0.12"
 sha2 = "0.10"
 base64 = "0.22"
 rand = "0.8"
+rcgen = "0.13"
 
 # Async runtime
 tokio = { version = "1.42", features = ["full"] }

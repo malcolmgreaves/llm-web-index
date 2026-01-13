@@ -52,8 +52,12 @@ services:
       ENABLE_AUTH: ${ENABLE_AUTH}
       AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH}
       SESSION_SECRET: ${SESSION_SECRET}
+      TLS_CERT_PATH: /app/certs/cert.pem
+      TLS_KEY_PATH: /app/certs/key.pem
     ports:
       - "3000:3000"
+    volumes:
+      - ./certs:/app/certs:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -126,6 +130,7 @@ services:
       AUTH_PASSWORD: ${AUTH_PASSWORD}
       AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH}
       SESSION_SECRET: ${SESSION_SECRET}
+      ACCEPT_INVALID_CERTS: ${ACCEPT_INVALID_CERTS:-false}
     depends_on:
       postgres:
         condition: service_healthy
