@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use core_ltx::{
     download, is_valid_url,
     llms::{LlmProvider, generate_llms_txt, update_llms_txt},
@@ -10,6 +12,7 @@ use data_model_ltx::{
 };
 use diesel::prelude::*;
 use diesel_async::{AsyncConnection, RunQueryDsl};
+use tokio::sync::Semaphore;
 
 use crate::errors::Error;
 
@@ -24,12 +27,19 @@ pub enum JobResult {
 }
 
 /// Query the DB for a job to be performed.
-pub async fn next_job_in_queue(pool: &db::DbPool) -> Result<JobState, Error> {
+/// The semaphore controls the maximum number of concurrent jobs that the worker can handle.
+pub async fn next_job_in_queue(pool: &db::DbPool, semaphore: Arc<Semaphore>) -> Result<JobState, Error> {
     let mut conn = pool.get().await?;
 
     let job: JobState = conn
-        .transaction::<_, diesel::result::Error, _>(|conn| {
+        .transaction::<_, Error, _>(|conn| {
             Box::pin(async move {
+                // Acquire a permit before spawning the task.
+                // This will block if we've reached max_concurrency, effectively queuing tasks.
+                tracing::debug!("Acquiring semaphore before checking for new job to acquire.");
+                let _permit = semaphore.clone().acquire_owned().await?;
+                tracing::debug!("Semaphore permit acquired. Querying DB for jobs.");
+
                 // Query for a job with status Queued or Started using FOR UPDATE SKIP LOCKED.
                 // => This ensures multiple workers can safely claim jobs without conflicts.
                 let job: JobState = schema::job_state::table
@@ -49,6 +59,10 @@ pub async fn next_job_in_queue(pool: &db::DbPool) -> Result<JobState, Error> {
                     .set(schema::job_state::status.eq(JobStatus::Running))
                     .execute(conn)
                     .await?;
+
+                // release the semaphore permit when this task completes
+                // it will be dropped when the function exits, but we can do it a _bit_ earlier here & not have rustc complain
+                drop(_permit);
 
                 Ok(job)
             })

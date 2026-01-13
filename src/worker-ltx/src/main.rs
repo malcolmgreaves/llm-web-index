@@ -37,22 +37,13 @@ where
     P: LlmProvider + 'static,
 {
     loop {
-        match next_job_in_queue(&pool).await {
+        match next_job_in_queue(&pool, semaphore.clone()).await {
             Ok(job) => {
-                // Acquire a permit before spawning the task.
-                // This will block if we've reached max_concurrency, effectively queuing tasks.
-                tracing::debug!("[job {}] Acquiring semaphore", job.job_id);
-                let permit = semaphore.clone().acquire_owned().await.unwrap();
-
                 #[allow(clippy::let_underscore_future)]
                 let _ = tokio::spawn({
                     let pool = pool.clone();
                     let provider = provider.clone();
                     async move {
-                        // Permit will be automatically dropped when this task completes,
-                        // releasing the slot for the next task.
-                        let _permit = permit;
-
                         tracing::info!("Received job {} ({:?}) on website '{}'", job.job_id, job.kind, job.url);
                         let result = handle_job(provider.as_ref(), &job).await;
                         let is_ok = matches!(result, JobResult::Success { .. });
