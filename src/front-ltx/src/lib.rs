@@ -595,7 +595,7 @@ fn create_view_toggle(document: &Document, id_suffix: &str) -> Result<web_sys::E
     let toggle = document.create_element("div")?;
     toggle.set_class_name("view-toggle");
     toggle.set_id(&format!("toggle-{}", id_suffix));
-    toggle.set_text_content(Some("Show plaintext"));
+    toggle.set_text_content(Some("Show markdown"));
 
     let id_suffix_clone = id_suffix.to_string();
     let closure = Closure::wrap(Box::new(move || {
@@ -612,14 +612,14 @@ fn create_view_toggle(document: &Document, id_suffix: &str) -> Result<web_sys::E
             .get_element_by_id(&format!("plaintext-{}", id_suffix_clone))
             .expect("plaintext element should exist");
 
-        if markdown.get_attribute("style").unwrap_or_default().contains("none") {
-            markdown.set_attribute("style", "display: block;").unwrap();
-            plaintext.set_attribute("style", "display: none;").unwrap();
-            toggle.set_text_content(Some("Show plaintext"));
-        } else {
-            markdown.set_attribute("style", "display: none;").unwrap();
+        if plaintext.get_attribute("style").unwrap_or_default().contains("none") {
             plaintext.set_attribute("style", "display: block;").unwrap();
+            markdown.set_attribute("style", "display: none;").unwrap();
             toggle.set_text_content(Some("Show markdown"));
+        } else {
+            plaintext.set_attribute("style", "display: none;").unwrap();
+            markdown.set_attribute("style", "display: block;").unwrap();
+            toggle.set_text_content(Some("Show plaintext"));
         }
     }) as Box<dyn Fn()>);
 
@@ -636,8 +636,8 @@ fn create_view_toggle(document: &Document, id_suffix: &str) -> Result<web_sys::E
 /// Renders content with markdown and plaintext views (without the toggle button).
 ///
 /// Creates content divs for both markdown and plaintext:
-/// - Markdown-rendered content (visible by default)
-/// - Plaintext content (hidden by default)
+/// - Plaintext content (visible by default)
+/// - Markdown-rendered content (hidden by default)
 ///
 /// # Arguments
 /// * `content` - The content to render
@@ -650,8 +650,8 @@ fn render_content_views(content: &str, id_suffix: &str) -> String {
     let plaintext_html = format!(r#"<pre class="plaintext-content">{}</pre>"#, html_escape(content));
 
     format!(
-        r#"<div id="markdown-{}">{}</div>
-        <div id="plaintext-{}" style="display: none;">{}</div>"#,
+        r#"<div id="markdown-{}" style="display: none;">{}</div>
+        <div id="plaintext-{}">{}</div>"#,
         id_suffix, markdown_html, id_suffix, plaintext_html
     )
 }
