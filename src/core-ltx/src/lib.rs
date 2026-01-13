@@ -1,6 +1,7 @@
 pub mod common;
 pub mod errors;
 pub mod llms;
+pub mod llms_txt_gen;
 pub mod md_llm_txt;
 pub mod web_html;
 
@@ -17,3 +18,5 @@ pub use common::poll_interval::{TimeUnit, get_poll_interval};
 pub use common::tls_config::get_tls_config;
 
 pub use errors::Error;
+
+pub use llms_txt_gen::{GenError, LlmsTxtGenerator, LlmsTxtUpdater};
