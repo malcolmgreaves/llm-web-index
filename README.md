@@ -2,6 +2,8 @@
 
 A comprehensive system for generating and maintaining [llms.txt](http://llmstxt.org) files from websites. Provides automated generation via LLM models with a full-stack web application, periodic updates, and production-grade authentication.
 
+**If you want to run the entire application locally in development mode, [install the prerequisites](#prerequisites) and [follow these instructions](running-with-docker-compose-recommended-for-first-time-users)**. Keep reading to get deatiled step-by-step instructions.
+
 ## Overview
 
 llm-web-index is a complete, production-ready system built entirely in Rust that:
@@ -307,7 +309,11 @@ export TLS_KEY_PATH=./certs/key.pem
 export ACCEPT_INVALID_CERTS=false
 ```
 
-## Development
+## Non-Docker Development
+
+**We strongly recommend running the entire application in docker via `docker compose up`.** 
+
+These instructions are for if you want to run everything without docker.
 
 ### First-Time Setup
 
