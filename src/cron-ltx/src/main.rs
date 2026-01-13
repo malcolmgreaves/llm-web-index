@@ -19,7 +19,7 @@ async fn main() {
 
     // Load auth configuration
     let auth_config = get_auth_config();
-    let password = auth_config.as_ref().map(|cfg| cfg.password_hash.clone());
+    let password = auth_config.as_ref().and_then(|cfg| cfg.password.clone());
 
     if password.is_some() {
         tracing::info!("Authentication enabled for cron service");

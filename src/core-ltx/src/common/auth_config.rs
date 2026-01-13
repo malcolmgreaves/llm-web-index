@@ -5,6 +5,9 @@ pub struct AuthConfig {
     pub password_hash: String,
     pub session_secret: String,
     pub session_duration_seconds: u64,
+    /// Plain text password for programmatic authentication (e.g., cron service)
+    /// Only populated when AUTH_PASSWORD is set
+    pub password: Option<String>,
 }
 
 /// Check if authentication is enabled
@@ -42,10 +45,13 @@ pub fn get_auth_config() -> Option<AuthConfig> {
         .and_then(|v| v.parse::<u64>().ok())
         .unwrap_or(86400); // Default: 24 hours
 
+    let password = env::var("AUTH_PASSWORD").ok();
+
     Some(AuthConfig {
         password_hash,
         session_secret,
         session_duration_seconds,
+        password,
     })
 }
 

@@ -123,6 +123,7 @@ services:
       HOST: api
       PORT: 3000
       ENABLE_AUTH: ${ENABLE_AUTH}
+      AUTH_PASSWORD: ${AUTH_PASSWORD}
       AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH}
       SESSION_SECRET: ${SESSION_SECRET}
     depends_on:
