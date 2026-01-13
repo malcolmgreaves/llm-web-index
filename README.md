@@ -88,10 +88,10 @@ Before you begin, ensure you have these installed:
 - **Docker**: Container runtime
   - macOS: [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/)
   - Linux: [Docker Engine](https://docs.docker.com/engine/install/)
-  - Windows: [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
 
 - **Docker Compose**: Multi-container orchestration (usually included with Docker Desktop)
   - Verify: `docker compose version`
+    + If this fails, it's because you are not using docker v2. Uninstall v1 and install v2.
 
 - **OpenAI API Key**: Required for llms.txt generation
   - Get one at: https://platform.openai.com/api-keys
@@ -106,6 +106,7 @@ All of the above, plus:
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
   ```
   - Verify: `cargo --version` (should be 1.70.0 or higher)
+  - Verify: `rustc --version` (should be exactly 1.92.0 -- if not, use `rustup` to install the 1.92.0 toolchain)
 
 - **WASM Target**: For compiling the frontend
   ```bash
@@ -123,12 +124,9 @@ All of the above, plus:
   brew install just
 
   # Linux
-  cargo install just
-
-  # Windows
-  cargo install just
+  cargo install just # or for debian based systems: apt install just
   ```
-  - Verify: `just --version`
+  - Verify: `just --version` should be 1.21.0 or later
 
 - **PostgreSQL 15+**: Database server
   ```bash
