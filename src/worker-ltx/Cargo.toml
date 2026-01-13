@@ -7,8 +7,9 @@ license = { workspace = true }
 description = "Backend worker executing logic (generation + update) from API sever into database."
 
 [dependencies]
-tokio = { workspace = true }
+axum = { workspace = true }
 diesel = { workspace = true }
+tokio = { workspace = true }
 diesel-async = { workspace = true }
 deadpool = { workspace = true }
 dotenvy = { workspace = true }
