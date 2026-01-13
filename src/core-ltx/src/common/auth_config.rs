@@ -8,9 +8,14 @@ pub struct AuthConfig {
 }
 
 /// Check if authentication is enabled
+/// True if the env var ENABLE_AUTH is present and is one of "1", "true", "yes", or "y".
+/// False otherwise.
 pub fn is_auth_enabled() -> bool {
     env::var("ENABLE_AUTH")
-        .map(|v| v.to_lowercase() == "true" || v == "1")
+        .map(|v| {
+            let v = v.trim().to_lowercase();
+            v == "1" || v == "true" || v == "yes" || v == "y"
+        })
         .unwrap_or(false)
 }
 
