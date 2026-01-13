@@ -131,15 +131,15 @@ All of the above, plus:
 - **PostgreSQL 15+**: Database server
   ```bash
   # macOS
-  brew install postgresql@15 libpq
+  brew install postgresql@15 libpq pkg-config cmake
   brew services start postgresql@15
 
   # Linux (Ubuntu/Debian)
-  sudo apt update && sudo apt install postgresql postgresql-contrib libpq-dev
+  sudo apt update && sudo apt install postgresql postgresql-contrib libpq-dev pkg-config cmake
   sudo systemctl start postgresql
 
   # Linux (Arch)
-  sudo pacman -S postgresql libpq
+  sudo pacman -S postgresql libpq-dev pkg-config cmake
   sudo systemctl start postgresql
   ```
 
