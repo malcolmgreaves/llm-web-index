@@ -23,7 +23,9 @@
       "Bash(ls:*)",
       "Bash(chmod:*)",
       "Bash(./make_tls_cert.sh)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(echo:*)",
+      "Bash(dpkg:*)"
     ]
   }
 }

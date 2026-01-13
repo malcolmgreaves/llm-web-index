@@ -4,5 +4,8 @@ rustflags = [
   "-L", "/opt/homebrew/lib",
 ]
 
-[env]
+[target.aarch64-apple-darwin.env]
+PQ_LIB_DIR = "/opt/homebrew/opt/libpq/lib"
+
+[target.x86_64-apple-darwin.env]
 PQ_LIB_DIR = "/opt/homebrew/opt/libpq/lib"
