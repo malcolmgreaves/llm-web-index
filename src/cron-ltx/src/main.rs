@@ -1,8 +1,7 @@
+use std::env;
 use std::sync::Arc;
 use std::time::Duration;
-use std::{env, path::PathBuf};
 
-use core_ltx::common::env_check::check_non_empty_env_vars;
 use core_ltx::{
     TimeUnit, get_api_base_url, get_auth_config, get_db_pool, get_poll_interval, is_auth_enabled, setup_logging,
 };
@@ -19,19 +18,32 @@ async fn main() {
 
     // Fail-fast check: verify required auth env vars are present if auth is enabled
     if is_auth_enabled() {
-        check_non_empty_env_vars(&["AUTH_PASSWORD_HASH", "SESSION_SECRET", "TLS_KEY_PATH", "TLS_CERT_PATH"]);
-
-        // we know these are non-empty -- ok to unwrap
-        for var_name in &["TLS_KEY_PATH", "TLS_CERT_PATH"] {
-            let val = env::var(var_name).unwrap();
-            let path = PathBuf::from(val);
-            if !path.is_file() {
-                eprintln!(
-                    "FATAL: {} points to file {}, but the file does not exist!",
-                    var_name,
-                    path.display()
-                );
-                std::process::exit(1);
+        let required_vars = ["AUTH_PASSWORD_HASH", "SESSION_SECRET"];
+        for var_name in &required_vars {
+            match env::var(var_name) {
+                Ok(value) if !value.trim().is_empty() => {
+                    // Variable is present and non-empty, continue
+                }
+                Ok(_) => {
+                    eprintln!(
+                        "FATAL: {} environment variable is set but empty. \
+                         Authentication is enabled (ENABLE_AUTH=true) but required configuration is invalid.",
+                        var_name
+                    );
+                    std::process::exit(1);
+                }
+                Err(_) => {
+                    eprintln!(
+                        "FATAL: {} environment variable is required when ENABLE_AUTH=true.",
+                        var_name
+                    );
+                    if var_name == &"AUTH_PASSWORD_HASH" {
+                        eprintln!("Generate a hash with: cargo run --bin generate-password-hash -- your_password");
+                    } else if var_name == &"SESSION_SECRET" {
+                        eprintln!("Generate a secret with: openssl rand -base64 32");
+                    }
+                    std::process::exit(1);
+                }
             }
         }
     }
