@@ -22,7 +22,8 @@
       "WebFetch(domain:docs.rs)",
       "Bash(ls:*)",
       "Bash(chmod:*)",
-      "Bash(./make_tls_cert.sh)"
+      "Bash(./make_tls_cert.sh)",
+      "Bash(tree:*)"
     ]
   }
 }
