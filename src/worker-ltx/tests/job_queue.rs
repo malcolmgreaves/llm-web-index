@@ -297,10 +297,18 @@ async fn test_next_job_in_queue_prefers_started_over_queued() {
     // The query should pick based on job_id order (ASC), not status
     let claimed1 = next_job(&pool).await.unwrap();
 
+    let (lower_ordering_job_id, higher_ordering_job_id) = if queued_job.job_id < started_job.job_id {
+        (&queued_job.job_id, &started_job.job_id)
+    } else {
+        (&started_job.job_id, &queued_job.job_id)
+    };
+
     // Should claim the first eligible job by ID
-    assert_eq!(claimed1.job_id, queued_job.job_id);
+    // assert_eq!(claimed1.job_id, queued_job.job_id);
+    assert_eq!(claimed1.job_id, *lower_ordering_job_id);
 
     // Second claim should get the other job
     let claimed2 = next_job(&pool).await.unwrap();
-    assert_eq!(claimed2.job_id, started_job.job_id);
+    // assert_eq!(claimed2.job_id, started_job.job_id);
+    assert_eq!(claimed2.job_id, *higher_ordering_job_id);
 }

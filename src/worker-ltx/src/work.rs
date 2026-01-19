@@ -53,9 +53,9 @@ pub async fn next_job_in_queue(
                             .eq(JobStatus::Queued)
                             .or(schema::job_state::status.eq(JobStatus::Started)),
                     )
-                    .order(schema::job_state::job_id.asc()) // Process jobs in order
                     .for_update()
                     .skip_locked()
+                    .order(schema::job_state::job_id.asc()) // Process jobs in order
                     .first::<JobState>(conn)
                     .await?;
 
