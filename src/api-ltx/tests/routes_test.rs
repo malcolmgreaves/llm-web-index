@@ -108,7 +108,9 @@ async fn test_post_llm_txt_creates_job() {
     //     .with(tracing_subscriber::fmt::layer())
     //     .init()
     tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::new("api_ltx=trace"))
+        .with_env_filter(tracing_subscriber::EnvFilter::new(
+            "api_ltx=trace,axum::rejection=trace,tower_http=trace,hyper=trace",
+        ))
         .with_test_writer()
         .try_init()
         .ok();

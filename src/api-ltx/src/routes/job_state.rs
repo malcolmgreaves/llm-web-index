@@ -18,7 +18,7 @@ use data_model_ltx::{db::DbPool, models::JobStatus};
 /// Returns all JobIds (UUID v4) of all in-progress jobs that match the `url`.
 /// An in-progress job is one whose status is either Queued, Started, or Running.
 ///
-/// An error is returned if there are no matching rows or if there's an internal DB error.s
+/// An error is returned if there are no matching rows or if there's an internal DB error.
 pub async fn in_progress_jobs(conn: &mut AsyncPgConnection, url: &str) -> Result<Vec<Uuid>, diesel::result::Error> {
     job_state::table
         .filter(job_state::url.eq(url))

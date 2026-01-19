@@ -95,8 +95,14 @@ pub async fn post_llm_txt(
                 Err(e) => match e {
                     diesel::result::Error::NotFound => match in_progress_jobs(conn, &payload.url).await {
                         Ok(existing_jobs) => {
-                            tracing::debug!("{} has existing jobs: {:?}", payload.url, existing_jobs);
-                            Err(PostLlmTxtError::JobsInProgress(existing_jobs))
+                            if existing_jobs.is_empty() {
+                                tracing::debug!("{} not found, creating", payload.url);
+                                let job_id_response = new_llms_txt_generate_job(conn, &payload.url).await?;
+                                Ok((StatusCode::CREATED, Json(job_id_response)))
+                            } else {
+                                tracing::debug!("{} has existing jobs: {:?}", payload.url, existing_jobs);
+                                Err(PostLlmTxtError::JobsInProgress(existing_jobs))
+                            }
                         }
 
                         Err(e_jobs) => match e_jobs {
@@ -180,16 +186,21 @@ pub async fn put_llm_txt(
         async move {
             match fetch_llms_txt(conn, &payload.url).await {
                 Ok(llms_txt) => {
+                    tracing::debug!("{} Ok: {:?}", payload.url, llms_txt);
                     let job_id_response = update_llms_txt_generation(conn, &payload.url, &llms_txt.result_data).await?;
                     Ok((StatusCode::CREATED, Json(job_id_response)))
                 }
 
                 Err(e) => match e {
                     diesel::result::Error::NotFound => {
+                        tracing::debug!("{} not found, but creating & returning Ok", payload.url);
                         let job_id_response = new_llms_txt_generate_job(conn, &payload.url).await?;
                         Ok((StatusCode::CREATED, Json(job_id_response)))
                     }
-                    _ => Err(e.into()),
+                    _ => {
+                        tracing::debug!("{} error: {}", payload.url, e);
+                        Err(e.into())
+                    }
                 },
             }
         }
