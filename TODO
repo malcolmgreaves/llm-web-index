@@ -1,0 +1,4 @@
+- [ ] remove `JobStatus::Started`
+  + originally for 2-phase design (manager gets, sends request to worker pool, marks as started)
+  + now it's just queued -> running as workers dequeue directly (_no 'job maanger'_)
+
