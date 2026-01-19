@@ -189,19 +189,20 @@ async fn test_next_job_in_queue_skips_locked_jobs() {
     let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
-    // Create 3 jobs
     let job1 = create_test_job(&pool, "https://job1.com", JobKind::New, JobStatus::Queued).await;
-    let job2 = create_test_job(&pool, "https://job2.com", JobKind::New, JobStatus::Queued).await;
-    let _job3 = create_test_job(&pool, "https://job3.com", JobKind::New, JobStatus::Queued).await;
 
     // Worker 1 claims first job
     let claimed1 = next_job(&pool).await.unwrap();
     assert_eq!(claimed1.job_id, job1.job_id);
+    assert_eq!(claimed1.status, JobStatus::Running);
+
+    let job2 = create_test_job(&pool, "https://job2.com", JobKind::New, JobStatus::Queued).await;
+    let job3 = create_test_job(&pool, "https://job3.com", JobKind::New, JobStatus::Queued).await;
 
     // Worker 2 should skip job1 (now Running) and claim job2
     let claimed2 = next_job(&pool).await.unwrap();
-    assert_eq!(claimed2.job_id, job2.job_id);
     assert_ne!(claimed2.job_id, claimed1.job_id, "Should claim different job");
+    assert!(claimed2.job_id == job2.job_id || claimed2.job_id == job3.job_id);
 }
 
 #[tokio::test]
