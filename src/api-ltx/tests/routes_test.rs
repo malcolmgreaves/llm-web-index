@@ -10,6 +10,8 @@
 //! - GET /api/job - Get job details
 //! - GET /api/jobs/in_progress - List in-progress jobs
 
+// use std::sync::Mutex;
+
 use axum::{
     body::Body,
     http::{Request, StatusCode, header},
@@ -19,6 +21,7 @@ use data_model_ltx::{
     test_helpers::{clean_test_db, create_completed_test_job, create_test_job, test_db_pool},
 };
 use http_body_util::BodyExt;
+use tokio::sync::Mutex;
 use tower::ServiceExt;
 
 use api_ltx::routes::router;
@@ -40,12 +43,17 @@ async fn response_json<T: serde::de::DeserializeOwned>(body: Body) -> T {
     serde_json::from_slice(&bytes).unwrap()
 }
 
+/// Ensures tests that need sequential access work correctly.
+static TEST_MUTEX: Mutex<()> = Mutex::const_new(());
+
 //
 // GET /api/llm_txt tests
 //
 
 #[tokio::test]
 async fn test_get_llm_txt_success() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
@@ -70,6 +78,8 @@ async fn test_get_llm_txt_success() {
 
 #[tokio::test]
 async fn test_get_llm_txt_not_found() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = get_test_pool().await;
     clean_test_db(&pool).await;
 
@@ -91,6 +101,8 @@ async fn test_get_llm_txt_not_found() {
 #[tokio::test]
 #[ignore] // TODO: Known bug - in_progress_jobs returns Ok([]) instead of Err(NotFound), causing 409 even for new URLs
 async fn test_post_llm_txt_creates_job() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = get_test_pool().await;
     clean_test_db(&pool).await;
 
@@ -116,6 +128,8 @@ async fn test_post_llm_txt_creates_job() {
 
 #[tokio::test]
 async fn test_post_llm_txt_fails_if_already_generated() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
@@ -143,6 +157,8 @@ async fn test_post_llm_txt_fails_if_already_generated() {
 
 #[tokio::test]
 async fn test_post_update_creates_job() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
@@ -173,6 +189,8 @@ async fn test_post_update_creates_job() {
 
 #[tokio::test]
 async fn test_put_llm_txt_creates_new_job() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = get_test_pool().await;
     clean_test_db(&pool).await;
 
@@ -198,6 +216,8 @@ async fn test_put_llm_txt_creates_new_job() {
 
 #[tokio::test]
 async fn test_put_llm_txt_creates_update_job_when_exists() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
@@ -225,6 +245,8 @@ async fn test_put_llm_txt_creates_update_job_when_exists() {
 
 #[tokio::test]
 async fn test_get_list_empty() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = get_test_pool().await;
     clean_test_db(&pool).await;
 
@@ -241,6 +263,8 @@ async fn test_get_list_empty() {
 
 #[tokio::test]
 async fn test_get_list_returns_results() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
@@ -265,6 +289,8 @@ async fn test_get_list_returns_results() {
 
 #[tokio::test]
 async fn test_get_status_success() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
@@ -292,6 +318,8 @@ async fn test_get_status_success() {
 
 #[tokio::test]
 async fn test_get_job_success() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
@@ -314,6 +342,8 @@ async fn test_get_job_success() {
 
 #[tokio::test]
 async fn test_get_in_progress_jobs_empty() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = get_test_pool().await;
     clean_test_db(&pool).await;
 
@@ -333,6 +363,8 @@ async fn test_get_in_progress_jobs_empty() {
 
 #[tokio::test]
 async fn test_get_in_progress_jobs_returns_queued() {
+    let _guard = TEST_MUTEX.lock().await;
+
     let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
