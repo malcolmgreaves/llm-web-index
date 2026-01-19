@@ -32,18 +32,13 @@ async fn test_router() -> axum::Router {
     router(None).with_state(pool)
 }
 
-/// Helper to get the test pool for setup
-async fn get_test_pool() -> data_model_ltx::db::DbPool {
-    test_db_pool().await
-}
-
 /// Helper to parse JSON response body
 async fn response_json<T: serde::de::DeserializeOwned>(body: Body) -> T {
     let bytes = body.collect().await.unwrap().to_bytes();
     serde_json::from_slice(&bytes).unwrap()
 }
 
-/// Ensures tests that need sequential access work correctly.
+/// These tests require sequential execution.
 static TEST_MUTEX: Mutex<()> = Mutex::const_new(());
 
 //
@@ -80,7 +75,7 @@ async fn test_get_llm_txt_success() {
 async fn test_get_llm_txt_not_found() {
     let _guard = TEST_MUTEX.lock().await;
 
-    let pool = get_test_pool().await;
+    let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
     let app = test_router().await;
@@ -99,11 +94,10 @@ async fn test_get_llm_txt_not_found() {
 //
 
 #[tokio::test]
-#[ignore] // TODO: Known bug - in_progress_jobs returns Ok([]) instead of Err(NotFound), causing 409 even for new URLs
 async fn test_post_llm_txt_creates_job() {
     let _guard = TEST_MUTEX.lock().await;
 
-    let pool = get_test_pool().await;
+    let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
     let app = test_router().await;
@@ -120,6 +114,7 @@ async fn test_post_llm_txt_creates_job() {
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
+    // TODO: Known bug - in_progress_jobs returns Ok([]) instead of Err(NotFound), causing 409 even for new URLs
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let body: JobIdResponse = response_json(response.into_body()).await;
@@ -191,7 +186,7 @@ async fn test_post_update_creates_job() {
 async fn test_put_llm_txt_creates_new_job() {
     let _guard = TEST_MUTEX.lock().await;
 
-    let pool = get_test_pool().await;
+    let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
     let app = test_router().await;
@@ -247,7 +242,7 @@ async fn test_put_llm_txt_creates_update_job_when_exists() {
 async fn test_get_list_empty() {
     let _guard = TEST_MUTEX.lock().await;
 
-    let pool = get_test_pool().await;
+    let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
     let app = test_router().await;
@@ -344,7 +339,7 @@ async fn test_get_job_success() {
 async fn test_get_in_progress_jobs_empty() {
     let _guard = TEST_MUTEX.lock().await;
 
-    let pool = get_test_pool().await;
+    let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
     let app = test_router().await;
