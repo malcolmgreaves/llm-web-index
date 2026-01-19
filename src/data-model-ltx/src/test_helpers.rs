@@ -271,9 +271,14 @@ pub async fn update_job_status(pool: &DbPool, job_id: Uuid, new_status: JobStatu
 mod tests {
     use super::*;
 
+    use tokio::sync::Mutex;
+
+    static TEST_MUTEX: Mutex<()> = Mutex::const_new(());
+
     #[tokio::test]
     async fn test_create_and_get_job() {
         let pool = test_db_pool().await;
+        let _guard = TEST_MUTEX.lock().await;
         clean_test_db(&pool).await;
 
         let job = create_test_job(&pool, "https://test.com", JobKind::New, JobStatus::Queued).await;
@@ -289,6 +294,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_completed_job() {
         let pool = test_db_pool().await;
+        let _guard = TEST_MUTEX.lock().await;
         clean_test_db(&pool).await;
 
         let (job, llms_txt) = create_completed_test_job(
@@ -306,11 +312,13 @@ mod tests {
         let retrieved_llms_txt = retrieved_llms_txt.unwrap();
         assert_eq!(retrieved_llms_txt.result_status, ResultStatus::Ok);
         assert_eq!(retrieved_llms_txt.html, "<html></html>");
+        assert_eq!(retrieved_llms_txt, llms_txt);
     }
 
     #[tokio::test]
     async fn test_clean_test_db() {
         let pool = test_db_pool().await;
+        let _guard = TEST_MUTEX.lock().await;
 
         // Create some test data
         create_test_job(&pool, "https://test1.com", JobKind::New, JobStatus::Queued).await;
@@ -329,6 +337,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_job_status() {
         let pool = test_db_pool().await;
+        let _guard = TEST_MUTEX.lock().await;
         clean_test_db(&pool).await;
 
         let job = create_test_job(&pool, "https://test.com", JobKind::New, JobStatus::Queued).await;
@@ -343,6 +352,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_jobs_with_status() {
         let pool = test_db_pool().await;
+        let _guard = TEST_MUTEX.lock().await;
         clean_test_db(&pool).await;
 
         create_test_job(&pool, "https://test1.com", JobKind::New, JobStatus::Queued).await;
