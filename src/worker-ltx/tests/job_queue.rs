@@ -23,7 +23,7 @@ async fn test_next_job_in_queue_claims_queued_job() {
     let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Queued).await;
 
     // Claim it
-    let (claimed_job, _) = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await.unwrap();
+    let claimed_job = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await.unwrap().0;
 
     assert_eq!(claimed_job.job_id, job.job_id);
     assert_eq!(claimed_job.url, job.url);
@@ -114,8 +114,23 @@ async fn test_next_job_in_queue_processes_in_order() {
     assert_eq!(claimed3.job_id, job3.job_id, "Should claim third job");
 
     // No more jobs
-    let (result, _) = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await;
+    let (result, _) = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await.unwrap();
     assert!(result.is_err(), "Should have no more jobs to claim");
+}
+
+/// Applies a function to multiple values, or to a tuple literal's elements.
+/// Evaluates to a tuple of transformed values, the output order corresponds 1:1 to input order.
+///
+macro_rules! map {
+    // Tuple literal input: map!(f, (a, b, c)) -> (f(a), f(b), f(c))
+    ($f:expr, ($($x:expr),+ $(,)?)) => {
+        ($($f($x)),+)
+    };
+
+    // Individual arguments: map!(f, a, b, c) -> (f(a), f(b), f(c))
+    ($f:expr, $($x:expr),+ $(,)?) => {
+        ($($f($x)),+)
+    };
 }
 
 #[tokio::test]
@@ -131,31 +146,22 @@ async fn test_next_job_in_queue_concurrent_claiming() {
     let job5 = create_test_job(&pool, "https://job5.com", JobKind::New, JobStatus::Queued).await;
 
     // Spawn 3 concurrent workers trying to claim jobs
-    let pool1 = pool.clone();
-    let pool2 = pool.clone();
-    let pool3 = pool.clone();
-
-    fn next_job<F,U>(pool: &db::DbPool) -> F
-
-    where
-      U: Future<Output=Result<JobState, worker_ltx::Error>>
-      F: fn() -> U
-    {
-      async move || {
-        next_job_in_queue(pool, Arc::new(Semaphore::new(1))).await.map(|x|x.0)
-      }
-    }
-
-    let handle1 = tokio::spawn(next_job(&pool1));
-
-    let handle2 = tokio::spawn(async move { next_job_in_queue(&pool2, Arc::new(Semaphore::new(1))).await });
-
-    let handle3 = tokio::spawn(async move { next_job_in_queue(&pool3, Arc::new(Semaphore::new(1))).await.map(|x|x.0) });
-
     // Wait for all to complete
-    let result1 = handle1.await.unwrap();
-    let result2 = handle2.await.unwrap();
-    let result3 = handle3.await.unwrap();
+    let (result1, result2, result3) = {
+
+      async fn next_job(pool: db::DbPool) -> Result<JobState, worker_ltx::Error> {
+        next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await.map(|x|x.0)
+      }
+
+      map!(
+        |x| { x.unwrap() },
+        tokio::join!(
+          tokio::spawn(next_job(pool.clone())),
+          tokio::spawn(next_job(pool.clone())),
+          tokio::spawn(next_job(pool.clone()))
+        )
+      )
+    };
 
     // All should succeed (we have 5 jobs, 3 workers)
     assert!(result1.is_ok(), "Worker 1 should claim a job");
