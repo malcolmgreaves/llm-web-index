@@ -6,10 +6,12 @@
 //! - Handling concurrent worker access
 //! - Proper job status transitions
 
+use std::sync::Arc;
+
 use data_model_ltx::{
-    models::{JobKind, JobKindData, JobState, JobStatus},
-    test_helpers::{clean_test_db, create_test_job, get_job_by_id, test_db_pool, update_job_status},
+    db, models::{JobKind, JobKindData, JobState, JobStatus}, test_helpers::{clean_test_db, create_test_job, get_job_by_id, test_db_pool, update_job_status}
 };
+use tokio::sync::Semaphore;
 use worker_ltx::work::next_job_in_queue;
 
 #[tokio::test]
@@ -21,7 +23,7 @@ async fn test_next_job_in_queue_claims_queued_job() {
     let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Queued).await;
 
     // Claim it
-    let claimed_job = next_job_in_queue(&pool).await.unwrap();
+    let (claimed_job, _) = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await.unwrap();
 
     assert_eq!(claimed_job.job_id, job.job_id);
     assert_eq!(claimed_job.url, job.url);
@@ -40,7 +42,7 @@ async fn test_next_job_in_queue_claims_started_job() {
     let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Started).await;
 
     // Should be able to claim Started jobs too
-    let claimed_job = next_job_in_queue(&pool).await.unwrap();
+    let (claimed_job, _) = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await.unwrap();
 
     assert_eq!(claimed_job.job_id, job.job_id);
 
@@ -55,7 +57,7 @@ async fn test_next_job_in_queue_empty_queue() {
     clean_test_db(&pool).await;
 
     // No jobs in queue
-    let result = next_job_in_queue(&pool).await;
+    let (result, _) = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await;
 
     assert!(result.is_err(), "Should return error when queue is empty");
 }
@@ -69,7 +71,7 @@ async fn test_next_job_in_queue_ignores_running_jobs() {
     create_test_job(&pool, "https://running.com", JobKind::New, JobStatus::Running).await;
 
     // Try to claim - should fail since only Running job exists
-    let result = next_job_in_queue(&pool).await;
+    let (result, _) = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await;
 
     assert!(result.is_err(), "Should not claim jobs that are already Running");
 }
@@ -84,7 +86,7 @@ async fn test_next_job_in_queue_ignores_completed_jobs() {
     create_test_job(&pool, "https://failed.com", JobKind::New, JobStatus::Failure).await;
 
     // Try to claim - should fail since only completed jobs exist
-    let result = next_job_in_queue(&pool).await;
+    let (result, _) = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await;
 
     assert!(result.is_err(), "Should not claim jobs that are already completed");
 }
@@ -100,19 +102,19 @@ async fn test_next_job_in_queue_processes_in_order() {
     let job3 = create_test_job(&pool, "https://third.com", JobKind::New, JobStatus::Queued).await;
 
     // Claim first job
-    let claimed1 = next_job_in_queue(&pool).await.unwrap();
+    let (claimed1, _) = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await.unwrap();
     assert_eq!(claimed1.job_id, job1.job_id, "Should claim first job");
 
     // Claim second job
-    let claimed2 = next_job_in_queue(&pool).await.unwrap();
+    let (claimed2, _) = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await.unwrap();
     assert_eq!(claimed2.job_id, job2.job_id, "Should claim second job");
 
     // Claim third job
-    let claimed3 = next_job_in_queue(&pool).await.unwrap();
+    let (claimed3, _) = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await.unwrap();
     assert_eq!(claimed3.job_id, job3.job_id, "Should claim third job");
 
     // No more jobs
-    let result = next_job_in_queue(&pool).await;
+    let (result, _) = next_job_in_queue(&pool, Arc::new(Semaphore::new(1))).await;
     assert!(result.is_err(), "Should have no more jobs to claim");
 }
 
@@ -133,11 +135,22 @@ async fn test_next_job_in_queue_concurrent_claiming() {
     let pool2 = pool.clone();
     let pool3 = pool.clone();
 
-    let handle1 = tokio::spawn(async move { next_job_in_queue(&pool1).await });
+    fn next_job<F,U>(pool: &db::DbPool) -> F
 
-    let handle2 = tokio::spawn(async move { next_job_in_queue(&pool2).await });
+    where
+      U: Future<Output=Result<JobState, worker_ltx::Error>>
+      F: fn() -> U
+    {
+      async move || {
+        next_job_in_queue(pool, Arc::new(Semaphore::new(1))).await.map(|x|x.0)
+      }
+    }
 
-    let handle3 = tokio::spawn(async move { next_job_in_queue(&pool3).await });
+    let handle1 = tokio::spawn(next_job(&pool1));
+
+    let handle2 = tokio::spawn(async move { next_job_in_queue(&pool2, Arc::new(Semaphore::new(1))).await });
+
+    let handle3 = tokio::spawn(async move { next_job_in_queue(&pool3, Arc::new(Semaphore::new(1))).await.map(|x|x.0) });
 
     // Wait for all to complete
     let result1 = handle1.await.unwrap();
