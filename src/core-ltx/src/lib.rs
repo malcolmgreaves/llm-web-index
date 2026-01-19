@@ -1,5 +1,6 @@
 pub mod common;
 pub mod errors;
+pub mod functional;
 pub mod llms;
 pub mod md_llm_txt;
 pub mod web_html;
