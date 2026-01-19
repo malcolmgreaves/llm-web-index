@@ -260,11 +260,11 @@ async fn test_next_job_in_queue_transaction_isolation() {
     let job = create_test_job(&pool, "https://test.com", JobKind::New, JobStatus::Queued).await;
 
     // Claim it
-    let claimed = next_job_in_queue(&pool).await.unwrap();
+    let claimed = next_job(&pool).await.unwrap();
     assert_eq!(claimed.job_id, job.job_id);
 
     // Try to claim again - should fail because job is now Running
-    let result = next_job_in_queue(&pool).await;
+    let result = next_job(&pool).await;
     assert!(result.is_err(), "Should not be able to claim the same job twice");
 
     // Verify job is indeed Running
