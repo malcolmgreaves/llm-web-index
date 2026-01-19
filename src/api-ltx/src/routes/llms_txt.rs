@@ -44,22 +44,16 @@ pub async fn get_llm_txt(
     let mut conn = pool.get().await?;
 
     match fetch_llms_txt(&mut conn, &payload.url).await {
-        Ok(llms_txt_record) => {
-            tracing::debug!("{} is Ok: {:?}", payload.url, llms_txt_record);
-            match llms_txt_record.result_status {
-                ResultStatus::Ok => Ok((
-                    StatusCode::OK,
-                    Json(LlmTxtResponse {
-                        content: llms_txt_record.result_data,
-                    }),
-                )),
-                ResultStatus::Error => Err(GetLlmTxtError::GenerationFailure(llms_txt_record.result_data)),
-            }
-        }
-        Err(e) => {
-            tracing::debug!("{} is Error: {}", payload.url, e);
-            Err(e.into())
-        }
+        Ok(llms_txt_record) => match llms_txt_record.result_status {
+            ResultStatus::Ok => Ok((
+                StatusCode::OK,
+                Json(LlmTxtResponse {
+                    content: llms_txt_record.result_data,
+                }),
+            )),
+            ResultStatus::Error => Err(GetLlmTxtError::GenerationFailure(llms_txt_record.result_data)),
+        },
+        Err(e) => Err(e.into()),
     }
 }
 
@@ -88,39 +82,27 @@ pub async fn post_llm_txt(
     conn.transaction(|conn| {
         async move {
             match fetch_llms_txt(conn, &payload.url).await {
-                Ok(x) => {
-                    tracing::debug!("{} is Ok: {:?}", payload.url, x);
-                    Err(PostLlmTxtError::AlreadyGenerated)
-                }
+                Ok(x) => Err(PostLlmTxtError::AlreadyGenerated),
                 Err(e) => match e {
                     diesel::result::Error::NotFound => match in_progress_jobs(conn, &payload.url).await {
                         Ok(existing_jobs) => {
                             if existing_jobs.is_empty() {
-                                tracing::debug!("{} not found, creating", payload.url);
                                 let job_id_response = new_llms_txt_generate_job(conn, &payload.url).await?;
                                 Ok((StatusCode::CREATED, Json(job_id_response)))
                             } else {
-                                tracing::debug!("{} has existing jobs: {:?}", payload.url, existing_jobs);
                                 Err(PostLlmTxtError::JobsInProgress(existing_jobs))
                             }
                         }
 
                         Err(e_jobs) => match e_jobs {
                             diesel::result::Error::NotFound => {
-                                tracing::debug!("{} not found", payload.url);
                                 let job_id_response = new_llms_txt_generate_job(conn, &payload.url).await?;
                                 Ok((StatusCode::CREATED, Json(job_id_response)))
                             }
-                            _ => {
-                                tracing::debug!("{} not found -- other error: {}", payload.url, e_jobs);
-                                Err(e_jobs.into())
-                            }
+                            _ => Err(e_jobs.into()),
                         },
                     },
-                    _ => {
-                        tracing::debug!("{} error fetching llms_txt: {}", payload.url, e);
-                        Err(e.into())
-                    }
+                    _ => Err(e.into()),
                 },
             }
         }
@@ -186,21 +168,16 @@ pub async fn put_llm_txt(
         async move {
             match fetch_llms_txt(conn, &payload.url).await {
                 Ok(llms_txt) => {
-                    tracing::debug!("{} Ok: {:?}", payload.url, llms_txt);
                     let job_id_response = update_llms_txt_generation(conn, &payload.url, &llms_txt.result_data).await?;
                     Ok((StatusCode::CREATED, Json(job_id_response)))
                 }
 
                 Err(e) => match e {
                     diesel::result::Error::NotFound => {
-                        tracing::debug!("{} not found, but creating & returning Ok", payload.url);
                         let job_id_response = new_llms_txt_generate_job(conn, &payload.url).await?;
                         Ok((StatusCode::CREATED, Json(job_id_response)))
                     }
-                    _ => {
-                        tracing::debug!("{} error: {}", payload.url, e);
-                        Err(e.into())
-                    }
+                    _ => Err(e.into()),
                 },
             }
         }
