@@ -97,6 +97,22 @@ async fn test_get_llm_txt_not_found() {
 async fn test_post_llm_txt_creates_job() {
     let _guard = TEST_MUTEX.lock().await;
 
+    // tracing_subscriber::fmt()
+    //     .with_max_level(tracing::Level::TRACE)
+    //     .with_test_writer()
+    //     .try_init()
+    //     .ok();
+    //
+    // tracing_subscriber::registry()
+    //     .with(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| default_log_settings.into()))
+    //     .with(tracing_subscriber::fmt::layer())
+    //     .init()
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::new("api_ltx=trace"))
+        .with_test_writer()
+        .try_init()
+        .ok();
+
     let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 

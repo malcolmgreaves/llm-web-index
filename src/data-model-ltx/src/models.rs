@@ -206,7 +206,7 @@ impl JobState {
 }
 
 // llms_txt table model (database representation)
-#[derive(Queryable, Selectable, Insertable, Serialize, Deserialize)]
+#[derive(Debug, Queryable, Selectable, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::llms_txt)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct LlmsTxt {
