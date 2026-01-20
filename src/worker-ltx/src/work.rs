@@ -67,6 +67,13 @@ pub async fn next_job_in_queue(
                     .execute(conn)
                     .await?;
 
+                // Make sure our job reflects this `status` update!
+                let job = {
+                    let mut job = job;
+                    job.status = JobStatus::Running;
+                    job
+                };
+
                 Ok((job, permit))
             })
         })
