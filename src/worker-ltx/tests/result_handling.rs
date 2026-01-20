@@ -11,6 +11,7 @@ use data_model_ltx::{
     models::{JobKind, JobStatus, ResultStatus},
     test_helpers::{clean_test_db, create_test_job, get_job_by_id, get_llms_txt_by_job_id, test_db_pool},
 };
+use tokio::sync::Mutex;
 use worker_ltx::work::{JobResult, handle_result};
 
 /// Helper to create a valid LlmsTxt for testing
@@ -24,9 +25,12 @@ fn create_test_error(message: &str) -> worker_ltx::errors::Error {
     worker_ltx::errors::Error::CoreError(core_ltx::Error::InvalidLlmsTxtFormat(message.to_string()))
 }
 
+static TEST_MUTEX: Mutex<()> = Mutex::const_new(());
+
 #[tokio::test]
 async fn test_handle_result_success() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Running).await;
@@ -55,6 +59,7 @@ async fn test_handle_result_success() {
 #[tokio::test]
 async fn test_handle_result_generation_failed() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Running).await;
@@ -85,6 +90,7 @@ async fn test_handle_result_generation_failed() {
 #[tokio::test]
 async fn test_handle_result_download_failed() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Running).await;
@@ -108,6 +114,7 @@ async fn test_handle_result_download_failed() {
 #[tokio::test]
 async fn test_handle_result_preserves_html_on_generation_failure() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Running).await;
@@ -130,6 +137,7 @@ async fn test_handle_result_preserves_html_on_generation_failure() {
 #[tokio::test]
 async fn test_handle_result_transaction_atomicity_success() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Running).await;
@@ -151,6 +159,7 @@ async fn test_handle_result_transaction_atomicity_success() {
 #[tokio::test]
 async fn test_handle_result_multiple_jobs() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     let job1 = create_test_job(&pool, "https://job1.com", JobKind::New, JobStatus::Running).await;
@@ -205,6 +214,7 @@ async fn test_handle_result_multiple_jobs() {
 #[tokio::test]
 async fn test_handle_result_error_message_storage() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Running).await;
@@ -227,6 +237,7 @@ async fn test_handle_result_error_message_storage() {
 #[tokio::test]
 async fn test_handle_result_concurrent_results() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     let job1 = create_test_job(&pool, "https://job1.com", JobKind::New, JobStatus::Running).await;
