@@ -13,16 +13,18 @@ use data_model_ltx::{
     models::{JobKind, JobKindData, JobState, JobStatus},
     test_helpers::{clean_test_db, create_test_job, get_job_by_id, test_db_pool, update_job_status},
 };
-use tokio::sync::Semaphore;
+use tokio::sync::{Mutex, Semaphore};
 use worker_ltx::work::next_job_in_queue;
 
 async fn next_job(pool: &db::DbPool) -> Result<JobState, worker_ltx::Error> {
     next_job_in_queue(pool, Arc::new(Semaphore::new(1))).await.map(|x| x.0)
 }
+static TEST_MUTEX: Mutex<()> = Mutex::const_new(());
 
 #[tokio::test]
 async fn test_next_job_in_queue_claims_queued_job() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     // Create a queued job
@@ -42,6 +44,7 @@ async fn test_next_job_in_queue_claims_queued_job() {
 #[tokio::test]
 async fn test_next_job_in_queue_claims_started_job() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     // Create a job in Started state
@@ -60,6 +63,7 @@ async fn test_next_job_in_queue_claims_started_job() {
 #[tokio::test]
 async fn test_next_job_in_queue_empty_queue() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     // No jobs in queue
@@ -71,6 +75,7 @@ async fn test_next_job_in_queue_empty_queue() {
 #[tokio::test]
 async fn test_next_job_in_queue_ignores_running_jobs() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     // Create a job that's already running
@@ -85,6 +90,7 @@ async fn test_next_job_in_queue_ignores_running_jobs() {
 #[tokio::test]
 async fn test_next_job_in_queue_ignores_completed_jobs() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     // Create completed jobs
@@ -100,6 +106,7 @@ async fn test_next_job_in_queue_ignores_completed_jobs() {
 #[tokio::test]
 async fn test_next_job_in_queue_processes_in_order() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     // Create multiple queued jobs
@@ -127,6 +134,7 @@ async fn test_next_job_in_queue_processes_in_order() {
 #[tokio::test]
 async fn test_next_job_in_queue_concurrent_claiming() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     // Create 5 jobs
@@ -187,6 +195,7 @@ async fn test_next_job_in_queue_concurrent_claiming() {
 #[tokio::test]
 async fn test_next_job_in_queue_skips_locked_jobs() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     let job1 = create_test_job(&pool, "https://job1.com", JobKind::New, JobStatus::Queued).await;
@@ -208,6 +217,7 @@ async fn test_next_job_in_queue_skips_locked_jobs() {
 #[tokio::test]
 async fn test_next_job_in_queue_handles_both_new_and_update_jobs() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     // Create both New and Update jobs
@@ -237,6 +247,7 @@ async fn test_next_job_in_queue_handles_both_new_and_update_jobs() {
 #[tokio::test]
 async fn test_next_job_in_queue_transaction_isolation() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     // Create a job
@@ -258,6 +269,7 @@ async fn test_next_job_in_queue_transaction_isolation() {
 #[tokio::test]
 async fn test_next_job_in_queue_marks_job_running_atomically() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     // Create a job
@@ -286,6 +298,7 @@ async fn test_next_job_in_queue_marks_job_running_atomically() {
 #[tokio::test]
 async fn test_next_job_in_queue_prefers_started_over_queued() {
     let pool = test_db_pool().await;
+    let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
 
     // Create jobs in different states
