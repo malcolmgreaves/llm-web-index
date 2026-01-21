@@ -93,6 +93,9 @@ pub async fn get_job(
 
 // GET /api/jobs/in_progress - List all in-progress jobs
 pub async fn get_in_progress_jobs(State(pool): State<DbPool>) -> Result<impl IntoResponse, StatusError> {
+    let span = tracing::debug_span!("/api/jobs/in_progress");
+    let _span = span.enter();
+
     let mut conn = pool.get().await?;
 
     let jobs = job_state::table
