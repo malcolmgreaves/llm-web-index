@@ -1,7 +1,7 @@
 use axum::{extract::Request, middleware::Next, response::Response};
 use std::time::Instant;
 
-pub(crate) const ROUTE_ACCESS: &str = "route_access";
+pub(crate) const ROUTE_ACCESS: &str = "|";
 
 /// Middleware that logs each route access with its result
 pub async fn log_route_access(request: Request, next: Next) -> Response {
