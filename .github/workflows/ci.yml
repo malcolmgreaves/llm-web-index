@@ -60,6 +60,9 @@ jobs:
             https://github.com/diesel-rs/diesel/releases/latest/download/diesel_cli-installer.sh | sh
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
+      - name: Start test DB
+        run: ./scripts/setup_test_db.sh
+
       - name: Run CI pipeline
         run: just ci
 
