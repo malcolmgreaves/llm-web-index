@@ -1,8 +1,6 @@
 use axum::{extract::Request, middleware::Next, response::Response};
 use std::time::Instant;
 
-pub(crate) const ROUTE_ACCESS: &str = "|";
-
 /// Middleware that logs each route access with its result
 pub async fn log_route_access(request: Request, next: Next) -> Response {
     let method = request.method().clone();
@@ -23,7 +21,6 @@ pub async fn log_route_access(request: Request, next: Next) -> Response {
                 path = %path,
                 status = %status.as_u16(),
                 duration_ms = %duration.as_millis(),
-                ROUTE_ACCESS
             );
         }
         400..=499 => {
@@ -32,7 +29,6 @@ pub async fn log_route_access(request: Request, next: Next) -> Response {
                 path = %path,
                 status = %status.as_u16(),
                 duration_ms = %duration.as_millis(),
-                ROUTE_ACCESS
             );
         }
         500..=599 => {
@@ -41,7 +37,6 @@ pub async fn log_route_access(request: Request, next: Next) -> Response {
                 path = %path,
                 status = %status.as_u16(),
                 duration_ms = %duration.as_millis(),
-                ROUTE_ACCESS
             );
         }
         _ => {
@@ -50,7 +45,6 @@ pub async fn log_route_access(request: Request, next: Next) -> Response {
                 path = %path,
                 status = %status.as_u16(),
                 duration_ms = %duration.as_millis(),
-                ROUTE_ACCESS
             );
         }
     }
