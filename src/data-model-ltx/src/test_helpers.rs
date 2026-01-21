@@ -4,9 +4,8 @@
 //! creating test data, and cleaning up after tests.
 
 use crate::db::{DbPool, establish_connection_pool};
-use crate::models::{JobKind, JobKindData, JobState, JobStatus, LlmsTxt, LlmsTxtResult, ResultStatus};
+use crate::models::{JobKind, JobKindData, JobState, JobStatus, LlmsTxt, LlmsTxtResult};
 use crate::schema;
-
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use uuid::Uuid;
@@ -271,6 +270,7 @@ pub async fn update_job_status(pool: &DbPool, job_id: Uuid, new_status: JobStatu
 mod tests {
     use super::*;
 
+    use crate::models::ResultStatus;
     use tokio::sync::Mutex;
 
     static TEST_MUTEX: Mutex<()> = Mutex::const_new(());

@@ -11,7 +11,7 @@ use std::sync::Arc;
 use data_model_ltx::{
     db::{self},
     models::{JobKind, JobKindData, JobState, JobStatus},
-    test_helpers::{clean_test_db, create_test_job, get_job_by_id, test_db_pool, update_job_status},
+    test_helpers::{clean_test_db, create_test_job, get_job_by_id, test_db_pool},
 };
 use tokio::sync::{Mutex, Semaphore};
 use uuid::Uuid;
@@ -104,7 +104,7 @@ async fn test_next_job_in_queue_ignores_completed_jobs() {
     assert!(result.is_err(), "Should not claim jobs that are already completed");
 }
 
-fn job_ids_in_asc<'a, const N: usize>(jobs: [&'a JobState; N]) -> [&'a Uuid; N] {
+fn job_ids_in_asc<const N: usize>(jobs: [&JobState; N]) -> [&Uuid; N] {
     let mut job_ids = jobs.map(|j| &j.job_id);
     job_ids.sort();
     job_ids
@@ -186,7 +186,7 @@ async fn test_next_job_in_queue_concurrent_claiming() {
     assert_ne!(claimed2, claimed3, "Workers should claim different jobs");
 
     // All claimed jobs should be among our created jobs
-    let all_job_ids = vec![job1.job_id, job2.job_id, job3.job_id, job4.job_id, job5.job_id];
+    let all_job_ids = [job1.job_id, job2.job_id, job3.job_id, job4.job_id, job5.job_id];
     assert!(all_job_ids.contains(&claimed1), "Claimed job should be one we created");
     assert!(all_job_ids.contains(&claimed2), "Claimed job should be one we created");
     assert!(all_job_ids.contains(&claimed3), "Claimed job should be one we created");
@@ -252,7 +252,7 @@ async fn test_next_job_in_queue_handles_both_new_and_update_jobs() {
     let claimed2 = next_job(&pool).await.unwrap();
 
     // Both should be claimed
-    let claimed_ids = vec![claimed1.job_id, claimed2.job_id];
+    let claimed_ids = [claimed1.job_id, claimed2.job_id];
     assert!(claimed_ids.contains(&new_job.job_id));
     assert!(claimed_ids.contains(&update_job.job_id));
 }

@@ -5,11 +5,8 @@
 //! - Generating or updating llms.txt using LLM providers
 //! - Handling various error conditions
 
-use core_ltx::llms::mock::{MockLlmProvider, sample_html, sample_valid_llms_txt};
-use data_model_ltx::{
-    models::{JobKind, JobKindData, JobState, JobStatus},
-    test_helpers::create_test_job_with_kind_data,
-};
+use core_ltx::llms::mock::{MockLlmProvider, sample_valid_llms_txt};
+use data_model_ltx::models::{JobKindData, JobState, JobStatus};
 use worker_ltx::work::{JobResult, handle_job};
 
 /// Helper to create a test job without database
