@@ -14,10 +14,7 @@ diesel-async = { workspace = true }
 deadpool = { workspace = true }
 dotenvy = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-chrono = { workspace = true }
 uuid = { workspace = true }
-serde = { workspace = true }
 core-ltx = { path = "../core-ltx" }
 data-model-ltx = { path = "../data-model-ltx" }
 
