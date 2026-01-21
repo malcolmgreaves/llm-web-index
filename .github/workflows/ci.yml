@@ -15,7 +15,7 @@ jobs:
     name: CI Pipeline
     runs-on: ubuntu-latest
     env:
-      CI_RELAX: 'yes'
+      CI_RELAX: 'no'
 
     steps:
       - name: Checkout code
