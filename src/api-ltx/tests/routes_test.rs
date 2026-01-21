@@ -10,7 +10,9 @@
 //! - GET /api/job - Get job details
 //! - GET /api/jobs/in_progress - List in-progress jobs
 
-// use std::sync::Mutex;
+use std::process::Command;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 use axum::{
     body::Body,
@@ -21,10 +23,102 @@ use data_model_ltx::{
     test_helpers::{clean_test_db, create_completed_test_job, create_test_job, test_db_pool},
 };
 use http_body_util::BodyExt;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, OnceCell};
 use tower::ServiceExt;
 
 use api_ltx::routes::router;
+
+// =============================================================================
+// Test Database Lifecycle Management
+// =============================================================================
+
+/// Shared state for test database lifecycle management.
+/// Tracks the number of active test users and handles DB startup/shutdown.
+struct TestDbState {
+    active_count: AtomicUsize,
+}
+
+/// Lazily-initialized shared state for the test database.
+static TEST_DB_STATE: OnceCell<Arc<TestDbState>> = OnceCell::const_new();
+
+/// Guard that represents a test's usage of the test database.
+/// Increments counter on creation, decrements on drop.
+/// Shuts down DB when last guard is dropped.
+pub struct TestDbGuard {
+    state: Arc<TestDbState>,
+}
+
+impl TestDbGuard {
+    /// Acquire a guard for test database usage.
+    /// On first call, checks if DB is running and starts it if needed.
+    pub async fn acquire() -> Self {
+        // Get workspace root from CARGO_MANIFEST_DIR (api-ltx is at src/api-ltx/)
+        let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap();
+        let compose_file = workspace_root.join("docker-compose.test.yml");
+        let setup_script = workspace_root.join("scripts/setup_test_db.sh");
+
+        let state = TEST_DB_STATE
+            .get_or_init(|| async {
+                // Check if DB is running
+                let check_cmd = format!(
+                    "docker compose -f {} ps postgres-test 2>/dev/null | grep -q Up",
+                    compose_file.display()
+                );
+                let is_running = Command::new("sh")
+                    .arg("-c")
+                    .arg(&check_cmd)
+                    .status()
+                    .map(|s| s.success())
+                    .unwrap_or(false);
+
+                if !is_running {
+                    eprintln!("Test database not running, starting via setup_test_db.sh...");
+                    let status = Command::new(&setup_script)
+                        .current_dir(&workspace_root)
+                        .status()
+                        .expect("Failed to run setup_test_db.sh");
+                    if !status.success() {
+                        panic!("Failed to start test database");
+                    }
+                }
+
+                Arc::new(TestDbState {
+                    active_count: AtomicUsize::new(0),
+                })
+            })
+            .await
+            .clone();
+
+        state.active_count.fetch_add(1, Ordering::SeqCst);
+        Self { state }
+    }
+}
+
+impl Drop for TestDbGuard {
+    fn drop(&mut self) {
+        let prev = self.state.active_count.fetch_sub(1, Ordering::SeqCst);
+        if prev == 1 {
+            // We were the last user, shut down the database
+            let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap();
+            let compose_file = workspace_root.join("docker-compose.test.yml");
+
+            eprintln!("Last test finished, shutting down test database...");
+            let _ = Command::new("docker")
+                .args(["compose", "-f", compose_file.to_str().unwrap(), "down"])
+                .status();
+        }
+    }
+}
+
+// =============================================================================
 
 /// Helper to create a router with test database (does NOT clean DB)
 async fn test_router() -> axum::Router {
@@ -60,6 +154,7 @@ fn debug_logging() {
 
 #[tokio::test]
 async fn test_get_llm_txt_success() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
     // debug_logging();
 
@@ -87,6 +182,7 @@ async fn test_get_llm_txt_success() {
 
 #[tokio::test]
 async fn test_get_llm_txt_not_found() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
 
     let pool = test_db_pool().await;
@@ -109,6 +205,7 @@ async fn test_get_llm_txt_not_found() {
 
 #[tokio::test]
 async fn test_post_llm_txt_creates_job() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
 
     let pool = test_db_pool().await;
@@ -137,6 +234,7 @@ async fn test_post_llm_txt_creates_job() {
 
 #[tokio::test]
 async fn test_post_llm_txt_fails_if_already_generated() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
 
     let pool = test_db_pool().await;
@@ -166,6 +264,7 @@ async fn test_post_llm_txt_fails_if_already_generated() {
 
 #[tokio::test]
 async fn test_post_update_creates_job() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
 
     let pool = test_db_pool().await;
@@ -198,6 +297,7 @@ async fn test_post_update_creates_job() {
 
 #[tokio::test]
 async fn test_put_llm_txt_creates_new_job() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
 
     let pool = test_db_pool().await;
@@ -225,6 +325,7 @@ async fn test_put_llm_txt_creates_new_job() {
 
 #[tokio::test]
 async fn test_put_llm_txt_creates_update_job_when_exists() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
 
     let pool = test_db_pool().await;
@@ -254,6 +355,7 @@ async fn test_put_llm_txt_creates_update_job_when_exists() {
 
 #[tokio::test]
 async fn test_get_list_empty() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
 
     let pool = test_db_pool().await;
@@ -272,6 +374,7 @@ async fn test_get_list_empty() {
 
 #[tokio::test]
 async fn test_get_list_returns_results() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
 
     let pool = test_db_pool().await;
@@ -298,6 +401,7 @@ async fn test_get_list_returns_results() {
 
 #[tokio::test]
 async fn test_get_status_success() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
 
     let pool = test_db_pool().await;
@@ -327,6 +431,7 @@ async fn test_get_status_success() {
 
 #[tokio::test]
 async fn test_get_job_success() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
 
     let pool = test_db_pool().await;
@@ -351,6 +456,7 @@ async fn test_get_job_success() {
 
 #[tokio::test]
 async fn test_get_in_progress_jobs_empty() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
 
     let pool = test_db_pool().await;
@@ -372,6 +478,7 @@ async fn test_get_in_progress_jobs_empty() {
 
 #[tokio::test]
 async fn test_get_in_progress_jobs_returns_queued() {
+    let _db = TestDbGuard::acquire().await;
     let _guard = TEST_MUTEX.lock().await;
 
     let pool = test_db_pool().await;
