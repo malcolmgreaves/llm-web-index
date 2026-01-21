@@ -86,6 +86,40 @@ impl TestDbGuard {
                     if !status.success() {
                         panic!("Failed to start test database");
                     }
+
+                    // Wait for database to be healthy
+                    eprintln!("Waiting for test database to be healthy...");
+                    let health_cmd = format!(
+                        "docker compose -f {} ps postgres-test 2>/dev/null | grep -q healthy",
+                        compose_file.display()
+                    );
+                    let max_attempts = 30;
+                    let mut attempts = 0;
+                    loop {
+                        let is_healthy = Command::new("sh")
+                            .arg("-c")
+                            .arg(&health_cmd)
+                            .status()
+                            .map(|s| s.success())
+                            .unwrap_or(false);
+
+                        if is_healthy {
+                            eprintln!("Test database is healthy.");
+                            break;
+                        }
+
+                        attempts += 1;
+                        if attempts >= max_attempts {
+                            panic!("Test database failed to become healthy after {} attempts", max_attempts);
+                        }
+
+                        eprintln!(
+                            "  Attempt {}/{}: waiting for database to be healthy...",
+                            attempts, max_attempts
+                        );
+                        std::thread::sleep(std::time::Duration::from_secs(1));
+                    }
+
                     true
                 } else {
                     eprintln!("Test database already running, will not shut down after tests.");
