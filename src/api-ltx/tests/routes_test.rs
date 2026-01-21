@@ -11,8 +11,8 @@
 //! - GET /api/jobs/in_progress - List in-progress jobs
 
 use std::process::Command;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use axum::{
     body::Body,
@@ -36,6 +36,8 @@ use api_ltx::routes::router;
 /// Tracks the number of active test users and handles DB startup/shutdown.
 struct TestDbState {
     active_count: AtomicUsize,
+    /// True if we started the DB, false if it was already running.
+    we_started_db: AtomicBool,
 }
 
 /// Lazily-initialized shared state for the test database.
@@ -75,7 +77,7 @@ impl TestDbGuard {
                     .map(|s| s.success())
                     .unwrap_or(false);
 
-                if !is_running {
+                let we_started_db = if !is_running {
                     eprintln!("Test database not running, starting via setup_test_db.sh...");
                     let status = Command::new(&setup_script)
                         .current_dir(&workspace_root)
@@ -84,10 +86,15 @@ impl TestDbGuard {
                     if !status.success() {
                         panic!("Failed to start test database");
                     }
-                }
+                    true
+                } else {
+                    eprintln!("Test database already running, will not shut down after tests.");
+                    false
+                };
 
                 Arc::new(TestDbState {
                     active_count: AtomicUsize::new(0),
+                    we_started_db: AtomicBool::new(we_started_db),
                 })
             })
             .await
@@ -102,18 +109,23 @@ impl Drop for TestDbGuard {
     fn drop(&mut self) {
         let prev = self.state.active_count.fetch_sub(1, Ordering::SeqCst);
         if prev == 1 {
-            // We were the last user, shut down the database
-            let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .parent()
-                .unwrap()
-                .parent()
-                .unwrap();
-            let compose_file = workspace_root.join("docker-compose.test.yml");
+            // We were the last user
+            if self.state.we_started_db.load(Ordering::SeqCst) {
+                // We started the DB, so shut it down
+                let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .parent()
+                    .unwrap()
+                    .parent()
+                    .unwrap();
+                let compose_file = workspace_root.join("docker-compose.test.yml");
 
-            eprintln!("Last test finished, shutting down test database...");
-            let _ = Command::new("docker")
-                .args(["compose", "-f", compose_file.to_str().unwrap(), "down"])
-                .status();
+                eprintln!("Last test finished, shutting down test database...");
+                let _ = Command::new("docker")
+                    .args(["compose", "-f", compose_file.to_str().unwrap(), "down"])
+                    .status();
+            } else {
+                eprintln!("Last test finished, leaving test database running (was already up).");
+            }
         }
     }
 }
