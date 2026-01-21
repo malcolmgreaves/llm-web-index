@@ -42,6 +42,7 @@ pub async fn get_status(
         .first::<JobState>(&mut conn)
         .await?;
 
+    tracing::trace!("Success: retrieved status ({:?}) for job ({})", job.status, job.job_id);
     Ok((
         StatusCode::OK,
         Json(JobStatusResponse {
@@ -86,6 +87,7 @@ pub async fn get_job(
         error_message,
     };
 
+    tracing::trace!("Success: retrieved details for job ({})", job.job_id);
     Ok((StatusCode::OK, Json(response)))
 }
 
@@ -99,5 +101,6 @@ pub async fn get_in_progress_jobs(State(pool): State<DbPool>) -> Result<impl Int
         .load::<JobState>(&mut conn)
         .await?;
 
+    tracing::trace!("Success: retrieved all {} in-progress jobs", jobs.len());
     Ok((StatusCode::OK, Json(jobs)))
 }

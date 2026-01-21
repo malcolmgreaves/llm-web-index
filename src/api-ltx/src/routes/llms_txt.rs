@@ -51,7 +51,10 @@ pub async fn get_llm_txt(
                     content: llms_txt_record.result_data,
                 }),
             )),
-            ResultStatus::Error => Err(GetLlmTxtError::GenerationFailure(llms_txt_record.result_data)),
+            ResultStatus::Error => {
+                tracing::trace!("Error: failed generation record for '{}'", payload.url);
+                Err(GetLlmTxtError::GenerationFailure(llms_txt_record.result_data))
+            }
         },
         Err(e) => Err(e.into()),
     }
@@ -82,27 +85,55 @@ pub async fn post_llm_txt(
     conn.transaction(|conn| {
         async move {
             match fetch_llms_txt(conn, &payload.url).await {
-                Ok(x) => Err(PostLlmTxtError::AlreadyGenerated),
+                Ok(prior) => {
+                  match prior.result_status {
+                      ResultStatus::Ok => {
+                        tracing::trace!(
+                          "Error: '{}' cannot POST llms_txt because it already exists (job ID: {})",
+                          payload.url,
+                          prior.job_id,
+                        );
+                        Err(PostLlmTxtError::AlreadyGenerated)
+                      },
+                      ResultStatus::Error => {
+                        tracing::trace!("Success: '{}' had a failed POST before (job ID: {}). Re-creating.",
+                          payload.url,
+                          prior.job_id,
+                        );
+                        let job_id_response = new_llms_txt_generate_job(conn, &payload.url).await?;
+                        Ok((StatusCode::CREATED, Json(job_id_response)))
+                      }
+                  }
+                },
                 Err(e) => match e {
                     diesel::result::Error::NotFound => match in_progress_jobs(conn, &payload.url).await {
                         Ok(existing_jobs) => {
                             if existing_jobs.is_empty() {
+                                tracing::trace!("Success: '{}' creating for the first time.", payload.url);
                                 let job_id_response = new_llms_txt_generate_job(conn, &payload.url).await?;
                                 Ok((StatusCode::CREATED, Json(job_id_response)))
                             } else {
+                                tracing::trace!("Error: '{}' already has existing in-progress jobs: {:?}", payload.url, existing_jobs,);
                                 Err(PostLlmTxtError::JobsInProgress(existing_jobs))
                             }
                         }
 
                         Err(e_jobs) => match e_jobs {
                             diesel::result::Error::NotFound => {
+                                tracing::trace!("Success: '{}' creating for the first time.", payload.url);
                                 let job_id_response = new_llms_txt_generate_job(conn, &payload.url).await?;
                                 Ok((StatusCode::CREATED, Json(job_id_response)))
                             }
-                            _ => Err(e_jobs.into()),
+                            _ => {
+                              tracing::trace!("Error: unknown DB error encountered checking in-progress jobs for '{}': {}", payload.url,e_jobs);
+                              Err(e_jobs.into())
+                            },
                         },
                     },
-                    _ => Err(e.into()),
+                    _ => {
+                      tracing::trace!("Error: unknown DB error encountered while checking for prior llms_txt records for '{}': {}", payload.url, e);
+                      Err(e.into())
+                    },
                 },
             }
         }
@@ -145,12 +176,16 @@ pub async fn post_update(
         async move {
             match fetch_llms_txt(conn, &payload.url).await {
                 Ok(llms_txt) => {
+                    tracing::trace!("Success: started update check for '{}'", payload.url);
                     // Create an update job using the existing llms.txt result_data
                     let job_id_response = update_llms_txt_generation(conn, &payload.url, &llms_txt.result_data).await?;
                     Ok((StatusCode::CREATED, Json(job_id_response)))
                 }
 
-                Err(e) => Err(e.into()),
+                Err(e) => {
+                    tracing::trace!("Error: no existing llms.txt entry for '{}'", payload.url);
+                    Err(e.into())
+                }
             }
         }
         .scope_boxed()
@@ -168,16 +203,21 @@ pub async fn put_llm_txt(
         async move {
             match fetch_llms_txt(conn, &payload.url).await {
                 Ok(llms_txt) => {
+                    tracing::trace!("Success: re-generating llms.txt for '{}'", payload.url);
                     let job_id_response = update_llms_txt_generation(conn, &payload.url, &llms_txt.result_data).await?;
                     Ok((StatusCode::CREATED, Json(job_id_response)))
                 }
 
                 Err(e) => match e {
                     diesel::result::Error::NotFound => {
+                        tracing::trace!("Success: 1st-time llms.txt generation for '{}'", payload.url);
                         let job_id_response = new_llms_txt_generate_job(conn, &payload.url).await?;
                         Ok((StatusCode::CREATED, Json(job_id_response)))
                     }
-                    _ => Err(e.into()),
+                    _ => {
+                        tracing::trace!("Error: DB failure getting llms.txt info for '{}'", payload.url);
+                        Err(e.into())
+                    }
                 },
             }
         }
@@ -199,10 +239,13 @@ pub async fn get_list(State(pool): State<DbPool>) -> Result<impl IntoResponse, A
         .await?;
 
     // Deduplicate by URL, keeping only the most recent
-    let mut url_map: HashMap<String, String> = HashMap::new();
-    for record in all_records {
-        url_map.entry(record.url).or_insert(record.result_data);
-    }
+    let url_map = {
+        let mut url_map: HashMap<String, String> = HashMap::new();
+        for record in all_records {
+            url_map.entry(record.url).or_insert(record.result_data);
+        }
+        url_map
+    };
 
     // Convert to list response
     let items: Vec<LlmsTxtListItem> = url_map
@@ -210,5 +253,6 @@ pub async fn get_list(State(pool): State<DbPool>) -> Result<impl IntoResponse, A
         .map(|(url, llm_txt)| LlmsTxtListItem { url, llm_txt })
         .collect();
 
+    tracing::trace!("Success: retrieved {} all llms.txt results", items.len());
     Ok((StatusCode::OK, Json(LlmsTxtListResponse { items })))
 }
