@@ -36,6 +36,7 @@ core-ltx = { path = "../core-ltx" }
 [dev-dependencies]
 data-model-ltx = { path = "../data-model-ltx", features = ["test-helpers"] }
 http-body-util = "0.1.2"
+libc = "0.2.180"
 urlencoding = "2.1"
 
 [[bin]]
