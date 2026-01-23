@@ -206,7 +206,7 @@ impl JobState {
 }
 
 // llms_txt table model (database representation)
-#[derive(Debug, PartialEq, Eq, Queryable, Selectable, Insertable, Serialize, Deserialize)]
+#[derive(Debug, Eq, Queryable, Selectable, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::llms_txt)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct LlmsTxt {
@@ -216,6 +216,16 @@ pub struct LlmsTxt {
     pub result_status: ResultStatus,
     pub created_at: DateTime<Utc>,
     pub html: String,
+}
+
+impl PartialEq for LlmsTxt {
+    // Two LlmsTxt are equivalent if all fields other than created_at are equivalent
+    fn eq(&self, other: &LlmsTxt) -> bool {
+        (&self.job_id).eq(&other.job_id) && (&self.url).eq(&other.url) &&
+    (&self.result_status).eq(&other.result_status) && (&self.result_data).eq(&other.result_data) &&
+      // DO NOT INCLUDE created_at !!
+      (&self.html).eq(&other.html)
+    }
 }
 
 // LlmsTxtResult - ergonomic Rust enum for the result
