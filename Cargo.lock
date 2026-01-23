@@ -92,7 +92,6 @@ dependencies = [
  "dotenvy",
  "hmac",
  "http-body-util",
- "libc",
  "rand 0.8.5",
  "rcgen",
  "rustls",
