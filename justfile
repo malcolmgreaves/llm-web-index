@@ -55,9 +55,10 @@ tidy:
   [ "${CI_RELAX:-no}" != "yes" ] && cargo machete --with-metadata || true
   cargo clippy --all-targets --workspace --fix
 
-ci: tidy check test_cov
+ci: tidy check # test_cov
   #!/usr/bin/env bash
   set -e
+  time ./scripts/run_all_tests.sh
   CURRENT_BRANCH=$(git branch --show-current)
   if [ "$CURRENT_BRANCH" = "main" ]; then
     just bench
