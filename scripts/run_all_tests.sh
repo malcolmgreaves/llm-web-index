@@ -68,63 +68,6 @@ run_test_suite "Workspace Unit Tests with Code Coverage" "cargo llvm-cov --all-t
 
 echo -e "${GREEN}Coverage report generated: target/llvm-cov/html/index.html${NC}"
 
-# # Run API integration tests
-# echo ""
-# echo -e "${YELLOW}Running API Route Tests...${NC}"
-# run_test_suite "API Route Tests" "cargo test --package api-ltx --test routes_test -- --test-threads=1"
-
-# # Run worker integration tests separately with single thread for DB tests
-# echo ""
-# echo -e "${YELLOW}Running Worker Integration Tests...${NC}"
-# run_test_suite "Worker Job Processing Tests" "cargo test --test job_processing"
-# run_test_suite "Worker Job Queue Tests" "cargo test --test job_queue -- --test-threads=1"
-# run_test_suite "Worker Result Handling Tests" "cargo test --test result_handling -- --test-threads=1"
-
-# Summary
-echo ""
-echo -e "${YELLOW}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${YELLOW}║                    Test Summary                            ║${NC}"
-echo -e "${YELLOW}╚════════════════════════════════════════════════════════════╝${NC}"
-echo ""
-
-TOTAL_SUITES=$((TESTS_PASSED + TESTS_FAILED))
-
-if [ $TESTS_FAILED -eq 0 ]; then
-    echo -e "${GREEN}All test suites passed! ($TESTS_PASSED/$TOTAL_SUITES)${NC}"
-    echo ""
-    echo -e "${GREEN}✓ Mock LLM Provider: 11 tests${NC}"
-    echo -e "${GREEN}✓ Database Test Helpers: 5 tests${NC}"
-    echo -e "${GREEN}✓ Worker Job Processing: 11 tests${NC}"
-    echo -e "${GREEN}✓ Worker Job Queue: 10-12 tests${NC}"
-    echo -e "${GREEN}✓ Worker Result Handling: 8 tests${NC}"
-    echo -e "${GREEN}✓ API Route Handlers: 12 tests${NC}"
-    echo -e "${GREEN}✓ API Auth: 11 tests${NC}"
-    echo -e "${GREEN}✓ Core LLM: 24 tests${NC}"
-    echo -e "${GREEN}✓ Cron: 8 tests${NC}"
-    echo -e "${GREEN}✓ Data Model: 4 tests${NC}"
-    echo ""
-    echo -e "${GREEN}Total: ~100+ tests passing${NC}"
-else
-    echo -e "${RED}Some test suites failed: $TESTS_FAILED/$TOTAL_SUITES${NC}"
-    echo -e "${GREEN}Passed: $TESTS_PASSED${NC}"
-    echo -e "${RED}Failed: $TESTS_FAILED${NC}"
-fi
-
-echo ""
-echo -e "${YELLOW}═══════════════════════════════════════════════════════════${NC}"
-
-# # Optional: Generate coverage report if cargo-llvm-cov is installed
-# if command -v cargo-llvm-cov &> /dev/null; then
-#     echo ""
-#     echo -e "${YELLOW}Generating coverage report...${NC}"
-#     cargo llvm-cov --all-targets --workspace --html || true
-#     echo -e "${GREEN}Coverage report generated: target/llvm-cov/html/index.html${NC}"
-# else
-#     echo ""
-#     echo -e "${YELLOW}Note: Install cargo-llvm-cov to generate coverage reports:${NC}"
-#     echo "  cargo install cargo-llvm-cov"
-# fi
-
 echo ""
 
 if [ $STARTED_DB -eq 1 ]; then
