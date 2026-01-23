@@ -20,9 +20,15 @@ front:
 serve: front
   cargo run -p api-ltx
 
-test:
+test_cov:
   cargo install cargo-llvm-cov || true
   cargo llvm-cov --all-targets --workspace --html
+
+test:
+  cargo test --all-targets --workspace
+
+test_only test_name:
+  cargo test {{test_name}} -- --exact --nocapture 
 
 release: front
   #!/usr/bin/env bash
@@ -49,7 +55,7 @@ tidy:
   [ "${CI_RELAX:-no}" != "yes" ] && cargo machete --with-metadata || true
   cargo clippy --all-targets --workspace --fix
 
-ci: tidy check test
+ci: tidy check test_cov
   #!/usr/bin/env bash
   set -e
   CURRENT_BRANCH=$(git branch --show-current)

@@ -569,6 +569,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_and_get_job() {
+        let _db = TestDbGuard::acquire().await;
         let pool = test_db_pool().await;
         let _guard = TEST_MUTEX.lock().await;
         clean_test_db(&pool).await;
@@ -585,6 +586,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_completed_job() {
+        let _db = TestDbGuard::acquire().await;
         let pool = test_db_pool().await;
         let _guard = TEST_MUTEX.lock().await;
         clean_test_db(&pool).await;
@@ -629,6 +631,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_job_status() {
+        let _db = TestDbGuard::acquire().await;
         let pool = test_db_pool().await;
         let _guard = TEST_MUTEX.lock().await;
         clean_test_db(&pool).await;
@@ -644,6 +647,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_jobs_with_status() {
+        let _db = TestDbGuard::acquire().await;
         let pool = test_db_pool().await;
         let _guard = TEST_MUTEX.lock().await;
         clean_test_db(&pool).await;
