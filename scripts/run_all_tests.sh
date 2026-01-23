@@ -25,8 +25,10 @@ echo -e "${YELLOW}╚═══════════════════�
 echo ""
 
 # Check if test database is running
+STARTED_DB=0
 echo "Checking test database..."
 if ! docker compose -f docker-compose.test.yml ps postgres-test | grep -q "Up"; then
+    STARTED_DB=1
     echo -e "${YELLOW}Test database not running. Starting it now...${NC}"
     ./scripts/setup_test_db.sh
 fi
@@ -47,6 +49,7 @@ run_test_suite() {
     echo -e "${YELLOW}Running: $name${NC}"
     echo -e "${YELLOW}═══════════════════════════════════════════════════════════${NC}"
 
+    set +e
     if eval "$command"; then
         echo -e "${GREEN}✓ $name passed${NC}"
         ((TESTS_PASSED++))
@@ -54,24 +57,28 @@ run_test_suite() {
         echo -e "${RED}✗ $name failed${NC}"
         ((TESTS_FAILED++))
     fi
+    set -e
 }
 
-# Run all unit tests
+# Run all unit tests with code coverage
+cargo install cargo-llvm-cov || true
 echo ""
 echo -e "${YELLOW}Running All Workspace Unit Tests...${NC}"
-run_test_suite "Workspace Unit Tests" "cargo test --workspace --lib"
+run_test_suite "Workspace Unit Tests with Code Coverage" "cargo llvm-cov --all-targets --workspace --html"
 
-# Run API integration tests
-echo ""
-echo -e "${YELLOW}Running API Route Tests...${NC}"
-run_test_suite "API Route Tests" "cargo test --package api-ltx --test routes_test -- --test-threads=1"
+echo -e "${GREEN}Coverage report generated: target/llvm-cov/html/index.html${NC}"
 
-# Run worker integration tests separately with single thread for DB tests
-echo ""
-echo -e "${YELLOW}Running Worker Integration Tests...${NC}"
-run_test_suite "Worker Job Processing Tests" "cargo test --test job_processing"
-run_test_suite "Worker Job Queue Tests" "cargo test --test job_queue -- --test-threads=1"
-run_test_suite "Worker Result Handling Tests" "cargo test --test result_handling -- --test-threads=1"
+# # Run API integration tests
+# echo ""
+# echo -e "${YELLOW}Running API Route Tests...${NC}"
+# run_test_suite "API Route Tests" "cargo test --package api-ltx --test routes_test -- --test-threads=1"
+
+# # Run worker integration tests separately with single thread for DB tests
+# echo ""
+# echo -e "${YELLOW}Running Worker Integration Tests...${NC}"
+# run_test_suite "Worker Job Processing Tests" "cargo test --test job_processing"
+# run_test_suite "Worker Job Queue Tests" "cargo test --test job_queue -- --test-threads=1"
+# run_test_suite "Worker Result Handling Tests" "cargo test --test result_handling -- --test-threads=1"
 
 # Summary
 echo ""
@@ -106,19 +113,24 @@ fi
 echo ""
 echo -e "${YELLOW}═══════════════════════════════════════════════════════════${NC}"
 
-# Optional: Generate coverage report if cargo-llvm-cov is installed
-if command -v cargo-llvm-cov &> /dev/null; then
-    echo ""
-    echo -e "${YELLOW}Generating coverage report...${NC}"
-    cargo llvm-cov --all-targets --workspace --html || true
-    echo -e "${GREEN}Coverage report generated: target/llvm-cov/html/index.html${NC}"
-else
-    echo ""
-    echo -e "${YELLOW}Note: Install cargo-llvm-cov to generate coverage reports:${NC}"
-    echo "  cargo install cargo-llvm-cov"
-fi
+# # Optional: Generate coverage report if cargo-llvm-cov is installed
+# if command -v cargo-llvm-cov &> /dev/null; then
+#     echo ""
+#     echo -e "${YELLOW}Generating coverage report...${NC}"
+#     cargo llvm-cov --all-targets --workspace --html || true
+#     echo -e "${GREEN}Coverage report generated: target/llvm-cov/html/index.html${NC}"
+# else
+#     echo ""
+#     echo -e "${YELLOW}Note: Install cargo-llvm-cov to generate coverage reports:${NC}"
+#     echo "  cargo install cargo-llvm-cov"
+# fi
 
 echo ""
+
+if [ $STARTED_DB -eq 1 ]; then
+    echo "Started test DB, stopping & removing."
+    ./scripts/remove_test_db.sh
+fi
 
 # Exit with appropriate code
 if [ $TESTS_FAILED -eq 0 ]; then
