@@ -11,7 +11,7 @@ use std::sync::Arc;
 use data_model_ltx::{
     db::{self},
     models::{JobKind, JobKindData, JobState, JobStatus},
-    test_helpers::{clean_test_db, create_test_job, get_job_by_id, test_db_pool},
+    test_helpers::{TestDbGuard, clean_test_db, create_test_job, get_job_by_id, test_db_pool},
 };
 use tokio::sync::{Mutex, Semaphore};
 use uuid::Uuid;
@@ -24,6 +24,7 @@ static TEST_MUTEX: Mutex<()> = Mutex::const_new(());
 
 #[tokio::test]
 async fn test_next_job_in_queue_claims_queued_job() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -44,6 +45,7 @@ async fn test_next_job_in_queue_claims_queued_job() {
 
 #[tokio::test]
 async fn test_next_job_in_queue_claims_started_job() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -63,6 +65,7 @@ async fn test_next_job_in_queue_claims_started_job() {
 
 #[tokio::test]
 async fn test_next_job_in_queue_empty_queue() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -75,6 +78,7 @@ async fn test_next_job_in_queue_empty_queue() {
 
 #[tokio::test]
 async fn test_next_job_in_queue_ignores_running_jobs() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -90,6 +94,7 @@ async fn test_next_job_in_queue_ignores_running_jobs() {
 
 #[tokio::test]
 async fn test_next_job_in_queue_ignores_completed_jobs() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -112,6 +117,7 @@ fn job_ids_in_asc<const N: usize>(jobs: [&JobState; N]) -> [&Uuid; N] {
 
 #[tokio::test]
 async fn test_next_job_in_queue_processes_in_order() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -142,6 +148,7 @@ async fn test_next_job_in_queue_processes_in_order() {
 
 #[tokio::test]
 async fn test_next_job_in_queue_concurrent_claiming() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -203,6 +210,7 @@ async fn test_next_job_in_queue_concurrent_claiming() {
 
 #[tokio::test]
 async fn test_next_job_in_queue_skips_locked_jobs() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -229,6 +237,7 @@ async fn test_next_job_in_queue_skips_locked_jobs() {
 
 #[tokio::test]
 async fn test_next_job_in_queue_handles_both_new_and_update_jobs() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -259,6 +268,7 @@ async fn test_next_job_in_queue_handles_both_new_and_update_jobs() {
 
 #[tokio::test]
 async fn test_next_job_in_queue_transaction_isolation() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -281,6 +291,7 @@ async fn test_next_job_in_queue_transaction_isolation() {
 
 #[tokio::test]
 async fn test_next_job_in_queue_marks_job_running_atomically() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -310,6 +321,7 @@ async fn test_next_job_in_queue_marks_job_running_atomically() {
 
 #[tokio::test]
 async fn test_next_job_in_queue_prefers_started_over_queued() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;

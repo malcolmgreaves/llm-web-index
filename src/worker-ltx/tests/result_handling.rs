@@ -9,7 +9,7 @@
 use core_ltx::{is_valid_markdown, validate_is_llm_txt};
 use data_model_ltx::{
     models::{JobKind, JobStatus, ResultStatus},
-    test_helpers::{clean_test_db, create_test_job, get_job_by_id, get_llms_txt_by_job_id, test_db_pool},
+    test_helpers::{TestDbGuard, clean_test_db, create_test_job, get_job_by_id, get_llms_txt_by_job_id, test_db_pool},
 };
 use tokio::sync::Mutex;
 use worker_ltx::work::{JobResult, handle_result};
@@ -29,6 +29,7 @@ static TEST_MUTEX: Mutex<()> = Mutex::const_new(());
 
 #[tokio::test]
 async fn test_handle_result_success() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -58,6 +59,7 @@ async fn test_handle_result_success() {
 
 #[tokio::test]
 async fn test_handle_result_generation_failed() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -89,6 +91,7 @@ async fn test_handle_result_generation_failed() {
 
 #[tokio::test]
 async fn test_handle_result_download_failed() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -113,6 +116,7 @@ async fn test_handle_result_download_failed() {
 
 #[tokio::test]
 async fn test_handle_result_preserves_html_on_generation_failure() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -136,6 +140,7 @@ async fn test_handle_result_preserves_html_on_generation_failure() {
 
 #[tokio::test]
 async fn test_handle_result_transaction_atomicity_success() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -158,6 +163,7 @@ async fn test_handle_result_transaction_atomicity_success() {
 
 #[tokio::test]
 async fn test_handle_result_multiple_jobs() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -213,6 +219,7 @@ async fn test_handle_result_multiple_jobs() {
 
 #[tokio::test]
 async fn test_handle_result_error_message_storage() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;
@@ -236,6 +243,7 @@ async fn test_handle_result_error_message_storage() {
 
 #[tokio::test]
 async fn test_handle_result_concurrent_results() {
+    let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
     let _guard = TEST_MUTEX.lock().await;
     clean_test_db(&pool).await;

@@ -3,12 +3,304 @@
 //! This module provides helpers for setting up and managing test databases,
 //! creating test data, and cleaning up after tests.
 
+use std::fs::{File, OpenOptions};
+use std::io::{Read, Seek, SeekFrom, Write};
+use std::path::PathBuf;
+use std::process::Command;
+
 use crate::db::{DbPool, establish_connection_pool};
 use crate::models::{JobKind, JobKindData, JobState, JobStatus, LlmsTxt, LlmsTxtResult};
 use crate::schema;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use uuid::Uuid;
+
+// =============================================================================
+// Test Database Lifecycle Management (Cross-Process Singleton)
+// =============================================================================
+//
+// Uses file-based coordination to manage the test database lifecycle across
+// multiple test binaries (e.g., when running `cargo test --workspace`).
+//
+// Files used (in system temp directory):
+// - llm-web-index-test-db.lock: File lock for atomic operations
+// - llm-web-index-test-db.state: Stores "count:started_externally" (e.g., "3:false")
+//
+// Protocol:
+// - On acquire: lock, read state, if count==0 && DB not running -> start DB,
+//   increment count, write state, unlock
+// - On release: lock, read state, decrement count, if count==0 && we started it
+//   -> stop DB, unlock
+
+const LOCK_FILE_NAME: &str = "llm-web-index-test-db.lock";
+const STATE_FILE_NAME: &str = "llm-web-index-test-db.state";
+
+fn temp_path(name: &str) -> PathBuf {
+    std::env::temp_dir().join(name)
+}
+
+/// Returns the workspace root directory.
+/// This function looks for the Cargo.toml with [workspace] to find the root.
+fn workspace_root() -> PathBuf {
+    // Start from the CARGO_MANIFEST_DIR of this crate (data-model-ltx)
+    // which is at src/data-model-ltx/, so workspace root is ../../
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| env!("CARGO_MANIFEST_DIR").to_string());
+    std::path::Path::new(&manifest_dir)
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf()
+}
+
+fn compose_file() -> PathBuf {
+    workspace_root().join("docker-compose.test.yml")
+}
+
+fn setup_script() -> PathBuf {
+    workspace_root().join("scripts/setup_test_db.sh")
+}
+
+/// Acquire an exclusive lock on the lock file.
+#[cfg(unix)]
+fn lock_exclusive(file: &File) {
+    use std::os::unix::io::AsRawFd;
+    unsafe {
+        if libc::flock(file.as_raw_fd(), libc::LOCK_EX) != 0 {
+            panic!("Failed to acquire file lock");
+        }
+    }
+}
+
+/// Release the lock on the lock file.
+#[cfg(unix)]
+fn unlock(file: &File) {
+    use std::os::unix::io::AsRawFd;
+    unsafe {
+        libc::flock(file.as_raw_fd(), libc::LOCK_UN);
+    }
+}
+
+/// State stored in the state file: (active_count, db_was_already_running)
+#[derive(Debug, Clone, Copy)]
+struct DbState {
+    count: usize,
+    was_already_running: bool,
+}
+
+impl DbState {
+    fn parse(s: &str) -> Option<Self> {
+        let parts: Vec<&str> = s.trim().split(':').collect();
+        if parts.len() == 2 {
+            let count = parts[0].parse().ok()?;
+            let was_already_running = parts[1].parse().ok()?;
+            Some(Self {
+                count,
+                was_already_running,
+            })
+        } else {
+            None
+        }
+    }
+
+    fn serialize(&self) -> String {
+        format!("{}:{}", self.count, self.was_already_running)
+    }
+}
+
+fn read_state(file: &mut File) -> DbState {
+    let mut contents = String::new();
+    file.seek(SeekFrom::Start(0)).ok();
+    file.read_to_string(&mut contents).ok();
+    DbState::parse(&contents).unwrap_or(DbState {
+        count: 0,
+        was_already_running: false,
+    })
+}
+
+fn write_state(file: &mut File, state: &DbState) {
+    file.seek(SeekFrom::Start(0)).unwrap();
+    file.set_len(0).unwrap();
+    file.write_all(state.serialize().as_bytes()).unwrap();
+    file.sync_all().unwrap();
+}
+
+fn is_db_running() -> bool {
+    let check_cmd = format!(
+        "docker compose -f {} ps postgres-test 2>/dev/null | grep -q Up",
+        compose_file().display()
+    );
+    Command::new("sh")
+        .arg("-c")
+        .arg(&check_cmd)
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+fn is_db_healthy() -> bool {
+    let health_cmd = format!(
+        "docker compose -f {} ps postgres-test 2>/dev/null | grep -q healthy",
+        compose_file().display()
+    );
+    Command::new("sh")
+        .arg("-c")
+        .arg(&health_cmd)
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+fn start_db() {
+    eprintln!("[TestDbGuard] Starting test database via setup_test_db.sh...");
+    let status = Command::new(setup_script())
+        .current_dir(workspace_root())
+        .status()
+        .expect("Failed to run setup_test_db.sh");
+    if !status.success() {
+        panic!("Failed to start test database");
+    }
+
+    // Wait for database to be healthy
+    eprintln!("[TestDbGuard] Waiting for test database to be healthy...");
+    let max_attempts = 30;
+    for attempt in 1..=max_attempts {
+        if is_db_healthy() {
+            eprintln!("[TestDbGuard] Test database is healthy.");
+            return;
+        }
+        eprintln!("[TestDbGuard]   Attempt {}/{}: waiting...", attempt, max_attempts);
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+    panic!("Test database failed to become healthy after {} attempts", max_attempts);
+}
+
+fn stop_db() {
+    eprintln!("[TestDbGuard] Shutting down test database...");
+    let _ = Command::new("docker")
+        .args(["compose", "-f", compose_file().to_str().unwrap(), "down"])
+        .status();
+}
+
+/// Guard that represents a test's usage of the test database.
+/// Uses file-based locking for cross-process coordination.
+///
+/// # Example
+/// ```ignore
+/// #[tokio::test]
+/// async fn my_test() {
+///     let _db = TestDbGuard::acquire().await;
+///     let pool = test_db_pool().await;
+///     // ... test code
+/// }
+/// ```
+pub struct TestDbGuard {
+    _private: (), // prevent construction outside of acquire()
+}
+
+impl TestDbGuard {
+    /// Acquire a guard for test database usage.
+    /// Coordinates with other processes via file locking.
+    pub async fn acquire() -> Self {
+        // Open/create lock file
+        let lock_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(temp_path(LOCK_FILE_NAME))
+            .expect("Failed to open lock file");
+
+        // Open/create state file
+        let mut state_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(temp_path(STATE_FILE_NAME))
+            .expect("Failed to open state file");
+
+        // Acquire exclusive lock
+        lock_exclusive(&lock_file);
+
+        // Read current state
+        let mut state = read_state(&mut state_file);
+
+        if state.count == 0 {
+            // We're the first acquirer in this session
+            let db_running = is_db_running();
+            state.was_already_running = db_running;
+
+            if !db_running {
+                start_db();
+            } else {
+                eprintln!("[TestDbGuard] Test database already running (started externally).");
+            }
+        }
+
+        // Increment count
+        state.count += 1;
+        eprintln!("[TestDbGuard] Acquired (active count: {})", state.count);
+        write_state(&mut state_file, &state);
+
+        // Release lock
+        unlock(&lock_file);
+
+        Self { _private: () }
+    }
+}
+
+impl Drop for TestDbGuard {
+    fn drop(&mut self) {
+        // Open lock file
+        let lock_file = match OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(temp_path(LOCK_FILE_NAME))
+        {
+            Ok(f) => f,
+            Err(_) => return, // Lock file gone, nothing to do
+        };
+
+        // Open state file
+        let mut state_file = match OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(temp_path(STATE_FILE_NAME))
+        {
+            Ok(f) => f,
+            Err(_) => return, // State file gone, nothing to do
+        };
+
+        // Acquire exclusive lock
+        lock_exclusive(&lock_file);
+
+        // Read and decrement count
+        let mut state = read_state(&mut state_file);
+        state.count = state.count.saturating_sub(1);
+        eprintln!("[TestDbGuard] Released (active count: {})", state.count);
+
+        if state.count == 0 {
+            if state.was_already_running {
+                eprintln!("[TestDbGuard] Last user done. DB was started externally, leaving it running.");
+            } else {
+                eprintln!("[TestDbGuard] Last user done. Shutting down test database.");
+                stop_db();
+            }
+            // Clean up state file for next session
+            let _ = std::fs::remove_file(temp_path(STATE_FILE_NAME));
+        } else {
+            write_state(&mut state_file, &state);
+        }
+
+        // Release lock
+        unlock(&lock_file);
+    }
+}
+
+// =============================================================================
+// Database Test Helpers
+// =============================================================================
 
 /// Get a connection pool for the test database
 ///
@@ -317,6 +609,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_clean_test_db() {
+        let _db = TestDbGuard::acquire().await;
         let pool = test_db_pool().await;
         let _guard = TEST_MUTEX.lock().await;
 

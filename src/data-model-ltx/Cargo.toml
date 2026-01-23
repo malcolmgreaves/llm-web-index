@@ -8,7 +8,7 @@ description = "The application's data model."
 
 [features]
 # Feature to enable test helper modules for use in other crates' tests
-test-helpers = []
+test-helpers = ["libc"]
 
 [dependencies]
 anyhow = {workspace = true}
@@ -21,6 +21,7 @@ serde_json = {workspace = true}
 thiserror = {workspace = true}
 uuid = { workspace = true }
 deadpool = {workspace = true }
+libc = { version = "0.2", optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
