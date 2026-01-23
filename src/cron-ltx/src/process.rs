@@ -74,7 +74,7 @@ async fn handle_record_updates(
     url_records: HashMap<String, LlmsTxtWithKind>,
 ) {
     for (url, record) in url_records {
-        let _ = tokio::spawn({
+        tokio::spawn({
             let http_client = http_client.clone();
             let api_base_url = api_base_url.to_string();
             async move {

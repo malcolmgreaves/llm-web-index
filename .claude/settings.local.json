@@ -25,7 +25,12 @@
       "Bash(./make_tls_cert.sh)",
       "Bash(tree:*)",
       "Bash(echo:*)",
-      "Bash(sudo lsof:*)"
+      "Bash(sudo lsof:*)",
+      "Bash(xargs -I {} sh -c 'echo \"\"=== {} ===\"\" && head -5 {}')",
+      "Bash(done)",
+      "Bash(./scripts/setup_test_db.sh:*)",
+      "Bash(export TEST_DATABASE_URL=\"postgres://ltx_test_user:ltx_test_password@localhost:5433/ltx_test_db\")",
+      "Bash(./scripts/run_all_tests.sh:*)"
     ]
   }
 }

@@ -15,7 +15,7 @@ jobs:
     name: CI Pipeline
     runs-on: ubuntu-latest
     env:
-      CI_RELAX: 'yes'
+      CI_RELAX: 'no'
 
     steps:
       - name: Checkout code
@@ -54,11 +54,13 @@ jobs:
       - name: Install PostgreSQL client libraries
         run: sudo apt-get update && sudo apt-get install -y libpq-dev
 
-      - name: Install diesel_cli (prebuilt)
+      - name: Install diesel_cli
         run: |
-          curl --proto '=https' --tlsv1.2 -LsSf \
-            https://github.com/diesel-rs/diesel/releases/latest/download/diesel_cli-installer.sh | sh
+          cargo install diesel_cli --no-default-features --features postgres
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Start test DB
+        run: ./scripts/setup_test_db.sh
 
       - name: Run CI pipeline
         run: just ci

@@ -13,6 +13,7 @@ use crate::auth;
 
 pub mod job_state;
 pub mod llms_txt;
+pub mod logging_middleware;
 
 //
 // Router
@@ -52,6 +53,8 @@ pub fn router(auth_config: Option<AuthConfig>) -> Router<DbPool> {
         .nest_service("/pkg", ServeDir::new("src/front-ltx/www/pkg"))
         // Fallback to index.html for all other routes (enables client-side routing, no auth required)
         .fallback_service(ServeFile::new("src/front-ltx/www/index.html"))
+        // Custom route access logging
+        .layer(middleware::from_fn(logging_middleware::log_route_access))
         // Tracing middleware
         .layer(TraceLayer::new_for_http())
 }

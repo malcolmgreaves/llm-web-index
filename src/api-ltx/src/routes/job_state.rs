@@ -18,7 +18,7 @@ use data_model_ltx::{db::DbPool, models::JobStatus};
 /// Returns all JobIds (UUID v4) of all in-progress jobs that match the `url`.
 /// An in-progress job is one whose status is either Queued, Started, or Running.
 ///
-/// An error is returned if there are no matching rows or if there's an internal DB error.s
+/// An error is returned if there are no matching rows or if there's an internal DB error.
 pub async fn in_progress_jobs(conn: &mut AsyncPgConnection, url: &str) -> Result<Vec<Uuid>, diesel::result::Error> {
     job_state::table
         .filter(job_state::url.eq(url))
@@ -42,6 +42,7 @@ pub async fn get_status(
         .first::<JobState>(&mut conn)
         .await?;
 
+    tracing::trace!("Success: retrieved status ({:?}) for job ({})", job.status, job.job_id);
     Ok((
         StatusCode::OK,
         Json(JobStatusResponse {
@@ -86,11 +87,15 @@ pub async fn get_job(
         error_message,
     };
 
+    tracing::trace!("Success: retrieved details for job ({})", job.job_id);
     Ok((StatusCode::OK, Json(response)))
 }
 
 // GET /api/jobs/in_progress - List all in-progress jobs
 pub async fn get_in_progress_jobs(State(pool): State<DbPool>) -> Result<impl IntoResponse, StatusError> {
+    let span = tracing::debug_span!("/api/jobs/in_progress");
+    let _span = span.enter();
+
     let mut conn = pool.get().await?;
 
     let jobs = job_state::table
@@ -99,5 +104,6 @@ pub async fn get_in_progress_jobs(State(pool): State<DbPool>) -> Result<impl Int
         .load::<JobState>(&mut conn)
         .await?;
 
+    tracing::trace!("Success: retrieved all {} in-progress jobs", jobs.len());
     Ok((StatusCode::OK, Json(jobs)))
 }
