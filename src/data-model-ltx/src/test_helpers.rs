@@ -6,7 +6,7 @@
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, ExitStatus};
 
 use crate::db::{DbPool, establish_connection_pool};
 use crate::models::{JobKind, JobKindData, JobState, JobStatus, LlmsTxt, LlmsTxtResult};
@@ -118,11 +118,11 @@ fn read_state(file: &mut File) -> DbState {
     })
 }
 
-fn write_state(file: &mut File, state: &DbState) {
-    file.seek(SeekFrom::Start(0)).unwrap();
-    file.set_len(0).unwrap();
-    file.write_all(state.serialize().as_bytes()).unwrap();
-    file.sync_all().unwrap();
+fn write_state(file: &mut File, state: &DbState) -> std::io::Result<()> {
+    file.seek(SeekFrom::Start(0))?;
+    file.set_len(0)?;
+    file.write_all(state.serialize().as_bytes())?;
+    file.sync_all()
 }
 
 fn is_db_running() -> bool {
@@ -151,15 +151,9 @@ fn is_db_healthy() -> bool {
         .unwrap_or(false)
 }
 
-fn start_db() {
+fn start_db() -> Result<(), String> {
     eprintln!("[TestDbGuard] Starting test database via setup_test_db.sh...");
-    let status = Command::new(setup_script())
-        .current_dir(workspace_root())
-        .status()
-        .expect("Failed to run setup_test_db.sh");
-    if !status.success() {
-        panic!("Failed to start test database");
-    }
+    convert(Command::new(setup_script()).current_dir(workspace_root()).status())?;
 
     // Wait for database to be healthy
     eprintln!("[TestDbGuard] Waiting for test database to be healthy...");
@@ -167,19 +161,38 @@ fn start_db() {
     for attempt in 1..=max_attempts {
         if is_db_healthy() {
             eprintln!("[TestDbGuard] Test database is healthy.");
-            return;
+            return Ok(());
         }
         eprintln!("[TestDbGuard]   Attempt {}/{}: waiting...", attempt, max_attempts);
         std::thread::sleep(std::time::Duration::from_secs(2_u64.pow(attempt)));
     }
-    panic!("Test database failed to become healthy after {} attempts", max_attempts);
+    Err(format!(
+        "Test database failed to become healthy after {} attempts",
+        max_attempts
+    ))
 }
 
-fn stop_db() {
+fn convert(x: std::io::Result<ExitStatus>) -> Result<(), String> {
+    x.map_err(|e: std::io::Error| e.to_string())
+        .and_then(|status: ExitStatus| {
+            if status.success() {
+                Ok(())
+            } else {
+                Err(format!(
+                    "Failed to start test database. ./setup_test_db.sh exited with code: {}",
+                    status
+                ))
+            }
+        })
+}
+
+fn stop_db() -> Result<(), String> {
     eprintln!("[TestDbGuard] Shutting down test database...");
-    let _ = Command::new("docker")
-        .args(["compose", "-f", compose_file().to_str().unwrap(), "down"])
-        .status();
+    convert(
+        Command::new("docker")
+            .args(["compose", "-f", compose_file().to_str().unwrap(), "down"])
+            .status(),
+    )
 }
 
 /// Guard that represents a test's usage of the test database.
@@ -202,7 +215,6 @@ impl TestDbGuard {
     /// Acquire a guard for test database usage.
     /// Coordinates with other processes via file locking.
     pub async fn acquire() -> Self {
-        // Open/create lock file
         let lock_file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -214,7 +226,6 @@ impl TestDbGuard {
         // Acquire exclusive lock on lockfile
         lock_exclusive(&lock_file);
 
-        // Open/create state file
         let mut state_file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -231,18 +242,18 @@ impl TestDbGuard {
             state.was_already_running = db_running;
 
             if !db_running {
-                start_db();
+                start_db().expect("Could not start test database");
             } else {
                 eprintln!("[TestDbGuard] Test database already running (started externally).");
             }
         }
 
-        // Increment count
+        // Increment count: register the caller as needing the test database
         state.count += 1;
         eprintln!("[TestDbGuard] Acquired (active count: {})", state.count);
-        write_state(&mut state_file, &state);
+        write_state(&mut state_file, &state).expect("Failed to write state file");
 
-        // Release lock
+        // Don't forget to release the lockfile lock!
         unlock(&lock_file);
 
         Self { _private: () }
@@ -251,7 +262,6 @@ impl TestDbGuard {
 
 impl Drop for TestDbGuard {
     fn drop(&mut self) {
-        // Open lock file
         let lock_file = match OpenOptions::new()
             .read(true)
             .write(true)
@@ -261,7 +271,9 @@ impl Drop for TestDbGuard {
             Err(_) => return, // Lock file gone, nothing to do
         };
 
-        // Open state file
+        // Acquire exclusive lock on lockfile
+        lock_exclusive(&lock_file);
+
         let mut state_file = match OpenOptions::new()
             .read(true)
             .write(true)
@@ -271,10 +283,7 @@ impl Drop for TestDbGuard {
             Err(_) => return, // State file gone, nothing to do
         };
 
-        // Acquire exclusive lock
-        lock_exclusive(&lock_file);
-
-        // Read and decrement count
+        // the calling test has finished and no longer needs the test DB
         let mut state = read_state(&mut state_file);
         state.count = state.count.saturating_sub(1);
         eprintln!("[TestDbGuard] Released (active count: {})", state.count);
@@ -284,15 +293,15 @@ impl Drop for TestDbGuard {
                 eprintln!("[TestDbGuard] Last user done. DB was started externally, leaving it running.");
             } else {
                 eprintln!("[TestDbGuard] Last user done. Shutting down test database.");
-                stop_db();
+                stop_db().expect("Failed to stop test database");
             }
             // Clean up state file for next session
             let _ = std::fs::remove_file(temp_path(STATE_FILE_NAME));
         } else {
-            write_state(&mut state_file, &state);
+            write_state(&mut state_file, &state).expect("Could not write statefile");
         }
 
-        // Release lock
+        // Do not forget to release the lock!
         unlock(&lock_file);
     }
 }
