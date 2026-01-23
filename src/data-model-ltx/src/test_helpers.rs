@@ -170,7 +170,7 @@ fn start_db() {
             return;
         }
         eprintln!("[TestDbGuard]   Attempt {}/{}: waiting...", attempt, max_attempts);
-        std::thread::sleep(std::time::Duration::from_secs(1));
+        std::thread::sleep(std::time::Duration::from_secs(2_u64.pow(attempt)));
     }
     panic!("Test database failed to become healthy after {} attempts", max_attempts);
 }
@@ -211,6 +211,9 @@ impl TestDbGuard {
             .open(temp_path(LOCK_FILE_NAME))
             .expect("Failed to open lock file");
 
+        // Acquire exclusive lock on lockfile
+        lock_exclusive(&lock_file);
+
         // Open/create state file
         let mut state_file = OpenOptions::new()
             .read(true)
@@ -220,10 +223,6 @@ impl TestDbGuard {
             .open(temp_path(STATE_FILE_NAME))
             .expect("Failed to open state file");
 
-        // Acquire exclusive lock
-        lock_exclusive(&lock_file);
-
-        // Read current state
         let mut state = read_state(&mut state_file);
 
         if state.count == 0 {

@@ -28,7 +28,7 @@ test:
   cargo test --all-targets --workspace
 
 test_only test_name:
-  cargo test {{test_name}} -- --exact --nocapture 
+  cargo test {{test_name}} -- --exact --nocapture
 
 release: front
   #!/usr/bin/env bash
