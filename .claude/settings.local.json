@@ -30,7 +30,9 @@
       "Bash(done)",
       "Bash(./scripts/setup_test_db.sh:*)",
       "Bash(export TEST_DATABASE_URL=\"postgres://ltx_test_user:ltx_test_password@localhost:5433/ltx_test_db\")",
-      "Bash(./scripts/run_all_tests.sh:*)"
+      "Bash(./scripts/run_all_tests.sh:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:crates.io)"
     ]
   }
 }
