@@ -33,6 +33,9 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
+# Install wasm32 target for frontend builds (cached in this layer)
+RUN rustup target add wasm32-unknown-unknown
+
 # Copy ONLY dependency-related files (Cargo manifests and build scripts)
 COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
 COPY src/core-ltx/Cargo.toml src/core-ltx/build.rs ./src/core-ltx/
