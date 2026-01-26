@@ -33,11 +33,12 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# wasm32 target for frontend builds
-RUN rustup target add wasm32-unknown-unknown
+# Copy rust-toolchain.toml first - rustup will auto-install the toolchain and targets
+# (including wasm32-unknown-unknown specified in the file) on first cargo invocation
+COPY rust-toolchain.toml ./
 
-# Copy ONLY dependency-related files (Cargo manifests and build scripts)
-COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
+# Copy remaining dependency-related files (Cargo manifests and build scripts)
+COPY Cargo.toml Cargo.lock ./
 COPY src/core-ltx/Cargo.toml src/core-ltx/build.rs ./src/core-ltx/
 COPY src/data-model-ltx/Cargo.toml ./src/data-model-ltx/
 COPY src/front-ltx/Cargo.toml ./src/front-ltx/
