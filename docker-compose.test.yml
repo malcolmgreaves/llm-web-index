@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: ltx-test-db
+    environment:
+      POSTGRES_USER: ltx_test_user
+      POSTGRES_PASSWORD: ltx_test_password
+      POSTGRES_DB: ltx_test_db
+    ports:
+      - "5433:5432"
+    # Use tmpfs for in-memory database (much faster for tests)
+    tmpfs:
+      - /var/lib/postgresql/data
+    # Health check to ensure database is ready
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ltx_test_user"]
+      interval: 2s
+      timeout: 3s
+      retries: 5
+    # Reduce logging for cleaner test output
+    command:
+      - "postgres"
+      - "-c"
+      - "log_statement=none"
+      - "-c"
+      - "log_duration=off"

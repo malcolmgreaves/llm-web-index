@@ -53,9 +53,11 @@ pub async fn next_job_in_queue(
                             .eq(JobStatus::Queued)
                             .or(schema::job_state::status.eq(JobStatus::Started)),
                     )
-                    .order(schema::job_state::job_id.asc()) // Process jobs in order
                     .for_update()
                     .skip_locked()
+                    // TODO: add a created_at field to job_state and order on this first, then order by job ID for fully consistent
+                    //       ordering + ensure that jobs are processed FIFO
+                    .order(schema::job_state::job_id.asc()) // provide consistent ordering for de-queueing jobs
                     .first::<JobState>(conn)
                     .await?;
 
@@ -64,6 +66,13 @@ pub async fn next_job_in_queue(
                     .set(schema::job_state::status.eq(JobStatus::Running))
                     .execute(conn)
                     .await?;
+
+                // Make sure our job reflects this `status` update!
+                let job = {
+                    let mut job = job;
+                    job.status = JobStatus::Running;
+                    job
+                };
 
                 Ok((job, permit))
             })

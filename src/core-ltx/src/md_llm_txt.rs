@@ -456,11 +456,11 @@ mod tests {
 
         let x = is_valid_markdown("# Title");
         assert!(x.is_ok());
-        match x.unwrap().blocks.get(0).unwrap() {
+        match x.unwrap().blocks.first().unwrap() {
             Block::Heading(ast::Heading {
                 kind: ast::HeadingKind::Atx(1),
                 content,
-            }) => match content.get(0).unwrap() {
+            }) => match content.first().unwrap() {
                 ast::Inline::Text(text) => assert_eq!(text, "Title"),
                 _ => panic!("unexpected text: {:?}", content),
             },

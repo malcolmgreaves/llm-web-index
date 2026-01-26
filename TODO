@@ -1,6 +1,4 @@
-Not quite working! a code change in core-ltx still causes the others to be rebuilt.
-
-Maybe we should go back to the original claude-suggested idea:
-- dependencies stage
-- buidler stage: all code is compiled here
-- per-service runtime stage (copy relevant binaries from builder stage)
+- [ ] remove `JobStatus::Started`
+  + originally for 2-phase design (manager gets, sends request to worker pool, marks as started)
+  + now it's just queued -> running as workers dequeue directly (_no 'job maanger'_)
+- [ ] add `created_at` to `JobState` and order by it to ensure workers deque FIFO

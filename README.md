@@ -88,10 +88,10 @@ Before you begin, ensure you have these installed:
 - **Docker**: Container runtime
   - macOS: [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/)
   - Linux: [Docker Engine](https://docs.docker.com/engine/install/)
-  - Windows: [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
 
 - **Docker Compose**: Multi-container orchestration (usually included with Docker Desktop)
   - Verify: `docker compose version`
+    + If this fails, it's because you are not using docker v2. Uninstall v1 and install v2.
 
 - **OpenAI API Key**: Required for llms.txt generation
   - Get one at: https://platform.openai.com/api-keys
@@ -106,6 +106,7 @@ All of the above, plus:
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
   ```
   - Verify: `cargo --version` (should be 1.70.0 or higher)
+  - Verify: `rustc --version` (should be exactly 1.92.0 -- if not, use `rustup` to install the 1.92.0 toolchain)
 
 - **WASM Target**: For compiling the frontend
   ```bash
@@ -123,26 +124,25 @@ All of the above, plus:
   brew install just
 
   # Linux
-  cargo install just
-
-  # Windows
-  cargo install just
+  cargo install just # or for debian based systems: apt install just
   ```
-  - Verify: `just --version`
+  - Verify: `just --version` should be 1.21.0 or later
 
 - **PostgreSQL 15+**: Database server
   ```bash
   # macOS
   brew install postgresql@15 libpq pkg-config cmake
-  brew services start postgresql@15
+  
+  # Only run this if you want to run the DB natively.
+  # We strongly recommend that you instead run the DB via docker compose up.
+  # brew services start postgresql@15
 
   # Linux (Ubuntu/Debian)
-  sudo apt update && sudo apt install postgresql postgresql-contrib libpq-dev pkg-config cmake
-  sudo systemctl start postgresql
-
-  # Linux (Arch)
-  sudo pacman -S postgresql libpq-dev pkg-config cmake
-  sudo systemctl start postgresql
+  sudo apt update && sudo apt install -y postgresql postgresql-contrib libpq-dev pkg-config cmake
+  
+  # Only run this if you want to run the DB natively.
+  # We strongly recommend that you instead run the DB via docker compose up.
+  # sudo systemctl start postgresql
   ```
 
 - **diesel_cli**: Database migration tool
@@ -162,7 +162,10 @@ All of the above, plus:
   pre-commit install
   ```
 
-#### Optional but Recommended
+- **wasm-pack**: For building WebAssembly modules
+  ```bash
+  cargo install wasm-pack
+  ```
 
 - **binaryen**: For optimizing WASM in production builds
   ```bash
@@ -171,7 +174,6 @@ All of the above, plus:
 
   # Linux
   sudo apt install binaryen    # Ubuntu/Debian
-  sudo pacman -S binaryen      # Arch
   ```
 
 - **mkcert**: For locally-trusted TLS certificates (avoids browser warnings)
@@ -184,6 +186,7 @@ All of the above, plus:
   # See: https://github.com/FiloSottile/mkcert#installation
   ```
 
+#### Optional, but recommended for developments
 - **cargo-watch**: Auto-rebuild on file changes
   ```bash
   cargo install cargo-watch
@@ -208,9 +211,6 @@ export OPENAI_API_KEY='sk-...'
 
 # 3. Start all services
 docker compose up
-
-# Or run in detached mode (background)
-docker compose up -d
 ```
 
 The system will be available at **https://localhost:3000**
@@ -259,12 +259,17 @@ export ENABLE_AUTH=1
 
 # 3. Generate TLS certificates (if not already done)
 ./make_tls_cert.sh ./certs
+export TLS_CERT_PATH="$(pwd)/certs/cert.pem"
+export TLS_KEY_PATH="$(pwd)/certs/key.pem"
+
+export ACCEPT_INVALID_CERTS=true
 
 # 4. Start with authentication enabled
-docker compose up
+docker compose up --build
 ```
 
 Now accessing https://localhost:3000 will show a login page.
+You will need to input the password you set in step 1.
 
 ### Setting Up TLS Certificates
 

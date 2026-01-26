@@ -13,8 +13,6 @@ rustls = { workspace = true }
 tokio = { workspace = true }
 diesel = { workspace = true }
 diesel-async = { workspace = true }
-deadpool = { workspace = true }
-chrono = { workspace = true }
 dotenvy = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -22,7 +20,6 @@ tower = { workspace = true }
 tower-http = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-anyhow = { workspace = true }
 uuid = { workspace = true }
 bcrypt = { workspace = true }
 cookie = { workspace = true }
@@ -35,6 +32,11 @@ thiserror = { workspace = true }
 # internal
 data-model-ltx = { path = "../data-model-ltx" }
 core-ltx = { path = "../core-ltx" }
+
+[dev-dependencies]
+data-model-ltx = { path = "../data-model-ltx", features = ["test-helpers"] }
+http-body-util = "0.1.2"
+urlencoding = "2.1"
 
 [[bin]]
 name = "generate-password-hash"

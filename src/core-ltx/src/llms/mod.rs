@@ -2,6 +2,10 @@ pub mod chatgpt;
 pub mod claude;
 pub mod prompts;
 
+// Make mock module available for tests in this crate and dependent crates
+#[cfg(any(test, feature = "test-helpers"))]
+pub mod mock;
+
 use async_trait::async_trait;
 pub use prompts::{
     prompt_generate_llms_txt, prompt_retry_generate_llms_txt, prompt_retry_update_llms_txt, prompt_update_llms_txt,
