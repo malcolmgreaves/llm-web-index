@@ -73,9 +73,11 @@ RUN mkdir -p src/core-ltx/src src/data-model-ltx/src src/front-ltx/src \
 # Build all dependencies.
 # IMPORTANT: Do NOT use --mount=type=cache for target directory here!
 # The compiled dependencies must be part of the image layer so they're inherited by later stages.
+# Build for native target (api, worker, cron) AND wasm32 target (frontend).
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    cargo build --release --workspace
+    cargo build --release --workspace && \
+    cargo build --release --target wasm32-unknown-unknown -p front-ltx
 
 ###
 ### Builder - Project Crates
@@ -141,11 +143,11 @@ FROM builder AS frontend
 
 COPY --from=tools /tools/bin/wasm-pack /usr/local/bin/wasm-pack
 
-# Remove fingerprints for front-ltx to force rebuild
-RUN rm -rf target/release/.fingerprint/front-ltx-* \
-           target/release/.fingerprint/front_ltx-* \
-           target/release/deps/libfront_ltx* \
-           target/release/deps/front_ltx*
+# Remove fingerprints for front-ltx (wasm32 target) to force rebuild
+RUN rm -rf target/wasm32-unknown-unknown/release/.fingerprint/front-ltx-* \
+           target/wasm32-unknown-unknown/release/.fingerprint/front_ltx-* \
+           target/wasm32-unknown-unknown/release/deps/libfront_ltx* \
+           target/wasm32-unknown-unknown/release/deps/front_ltx*
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
