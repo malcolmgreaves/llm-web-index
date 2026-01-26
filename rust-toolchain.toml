@@ -14,6 +14,6 @@ components = ["rustfmt", "clippy"]
 # - complete: all components (very large, usually unnecessary)
 profile = "default"
 
-# Targets for cross-compilation (optional)
-# Uncomment and add targets if you need cross-compilation support
-# targets = ["wasm32-unknown-unknown", "x86_64-unknown-linux-musl"]
+# Targets for cross-compilation
+# The wasm32 target is required for building the frontend (front-ltx)
+targets = ["wasm32-unknown-unknown"]

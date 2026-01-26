@@ -1,5 +1,5 @@
 ###
-### Supporting tools
+### Tools
 ###
 FROM rust:1.92-slim-bookworm AS tools
 
@@ -20,168 +20,140 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo install wasm-pack --root /tools
 
 ###
-### Project build: all dependencies
+### Dependencies - Build and cache all external dependencies
 ###
-FROM rust:1.92-slim-bookworm AS builder
+###     This stage ONLY changes when Cargo.toml, Cargo.lock, or build.rs files change.
+###     Source code changes (*.rs) do NOT invalidate this layer.
+###
+FROM rust:1.92-slim-bookworm AS dependencies
 
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-RUN mkdir ./bin
 
-COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
+# Copy rust-toolchain.toml first - rustup will auto-install the toolchain and targets
+# (including wasm32-unknown-unknown specified in the file) on first cargo invocation
+COPY rust-toolchain.toml ./
 
-# Ensure that the first layers of builder image contain all of the Rust
-# dependencies for the project. By keeping dependencies first, then
-# project code, we can reuse layers when making code changes.
-#
-# NOTE: Keep up to date! Include **ALL** crates referenced in the top-level Cargo.toml!
-#       All crates **MUST** have:
-#         - a Cargo.toml file
-#         - either a lib.rs or a main.rs file (depending on what its Cargo says)
-#           + a "dummy" file ("" or "fn main(){}", respectively) works
-
-COPY src/core-ltx/Cargo.toml ./src/core-ltx/
-COPY src/core-ltx/build.rs ./src/core-ltx/
+# Copy remaining dependency-related files (Cargo manifests and build scripts)
+COPY Cargo.toml Cargo.lock ./
+COPY src/core-ltx/Cargo.toml src/core-ltx/build.rs ./src/core-ltx/
 COPY src/data-model-ltx/Cargo.toml ./src/data-model-ltx/
 COPY src/front-ltx/Cargo.toml ./src/front-ltx/
 COPY src/api-ltx/Cargo.toml ./src/api-ltx/
 COPY src/cron-ltx/Cargo.toml ./src/cron-ltx/
 COPY src/worker-ltx/Cargo.toml ./src/worker-ltx/
 
-# NOTE: Keep up to date! Dummy file for library crates.
-RUN for crate in core-ltx data-model-ltx front-ltx; do \
-        mkdir -p src/${crate}/src && \
-        echo "" > src/${crate}/src/lib.rs; \
-    done
-
-# NOTE: Keep up to date! Dummy file for binary crates.
-RUN for crate in api-ltx cli-ltx cron-ltx worker-ltx core-ltx; do \
-        mkdir -p src/${crate}/src && \
-        echo "fn main() {}" > src/${crate}/src/main.rs; \
-    done
-
-# Create dummy files for api-ltx binaries (defined in [[bin]] sections)
-RUN mkdir -p src/api-ltx/src/bin && \
-    echo "fn main() {}" > src/api-ltx/src/bin/generate-password-hash.rs && \
-    echo "fn main() {}" > src/api-ltx/src/bin/generate-tls-cert.rs
-
+# Install wasm-bindgen-cli with the exact version from Cargo.lock.
+# This prevents wasm-pack from re-downloading it during frontend builds.
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/app/target \
-    cargo build --release
+    WASM_BINDGEN_VERSION=$(grep -A1 'name = "wasm-bindgen"' Cargo.lock | grep version | head -1 | sed 's/.*"\(.*\)"/\1/') && \
+    cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION"
+
+# Create minimal dummy source files for each workspace crate.
+# This allows cargo to compile all EXTERNAL dependencies without any project source code.
+# - Library crates need lib.rs
+# - Binary crates need main.rs
+# - core-ltx has both lib.rs and main.rs
+# - api-ltx has additional binaries in src/bin/
+RUN mkdir -p src/core-ltx/src src/data-model-ltx/src src/front-ltx/src \
+             src/api-ltx/src src/api-ltx/src/bin src/cron-ltx/src src/worker-ltx/src && \
+    echo "pub fn _dummy() {}" > src/core-ltx/src/lib.rs && \
+    echo "fn main() {}" > src/core-ltx/src/main.rs && \
+    echo "pub fn _dummy() {}" > src/data-model-ltx/src/lib.rs && \
+    echo "pub fn _dummy() {}" > src/front-ltx/src/lib.rs && \
+    echo "fn main() {}" > src/api-ltx/src/main.rs && \
+    echo "fn main() {}" > src/api-ltx/src/bin/generate-password-hash.rs && \
+    echo "fn main() {}" > src/api-ltx/src/bin/generate-tls-cert.rs && \
+    echo "fn main() {}" > src/cron-ltx/src/main.rs && \
+    echo "fn main() {}" > src/worker-ltx/src/main.rs
+
+# Build all dependencies.
+# IMPORTANT: Do NOT use --mount=type=cache for target directory here!
+# The compiled dependencies must be part of the image layer so they're inherited by later stages.
+# Build for native target (api, worker, cron) AND wasm32 target (frontend).
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    cargo build --release --workspace && \
+    cargo build --release --target wasm32-unknown-unknown -p front-ltx
 
 ###
-### WASM frontend
+### Builder - Project Crates
+###
+###     Copy all project source code.
+###     Inherits the compiled dependencies from the dependencies stage.
+###
+FROM dependencies AS builder
+
+# Remove dummy source files (keep target/ with compiled deps)
+RUN rm -rf src/*/src
+
+# Copy all actual project source code
+COPY src/ ./src/
+
+###
+### Builder - Binaries
+###
+###     Build all release binaries.
+###     Only workspace crates are recompiled.
+###
+FROM builder AS binaries
+
+# Remove fingerprints for workspace crates to force them to rebuild.
+# External dependencies remain cached and won't be recompiled.
+RUN rm -rf target/release/.fingerprint/core-ltx-* \
+           target/release/.fingerprint/core_ltx-* \
+           target/release/.fingerprint/data-model-ltx-* \
+           target/release/.fingerprint/data_model_ltx-* \
+           target/release/.fingerprint/front-ltx-* \
+           target/release/.fingerprint/front_ltx-* \
+           target/release/.fingerprint/api-ltx-* \
+           target/release/.fingerprint/api_ltx-* \
+           target/release/.fingerprint/cron-ltx-* \
+           target/release/.fingerprint/cron_ltx-* \
+           target/release/.fingerprint/worker-ltx-* \
+           target/release/.fingerprint/worker_ltx-* && \
+    rm -rf target/release/deps/libcore_ltx* \
+           target/release/deps/libdata_model_ltx* \
+           target/release/deps/libfront_ltx* \
+           target/release/deps/api_ltx* \
+           target/release/deps/libapi_ltx* \
+           target/release/deps/cron_ltx* \
+           target/release/deps/libcron_ltx* \
+           target/release/deps/worker_ltx* \
+           target/release/deps/libworker_ltx*
+
+# Build all workspace binaries (dependencies are already compiled)
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    cargo build --release --workspace && \
+    mkdir -p ./bin && \
+    cp target/release/api-ltx ./bin/ && \
+    cp target/release/worker-ltx ./bin/ && \
+    cp target/release/cron-ltx ./bin/
+
+###
+### Builder - WASM frontend
+###
+### Builds the front-ltx WASM package for the web UI.
 ###
 FROM builder AS frontend
 
 COPY --from=tools /tools/bin/wasm-pack /usr/local/bin/wasm-pack
 
-# NOTE: Keep up to date! Remove dummy files from crates that **ARE** used.
-RUN rm -rf src/front-ltx/src
+# Remove fingerprints for front-ltx (wasm32 target) to force rebuild
+RUN rm -rf target/wasm32-unknown-unknown/release/.fingerprint/front-ltx-* \
+           target/wasm32-unknown-unknown/release/.fingerprint/front_ltx-* \
+           target/wasm32-unknown-unknown/release/deps/libfront_ltx* \
+           target/wasm32-unknown-unknown/release/deps/front_ltx*
 
-COPY src/front-ltx/src ./src/front-ltx/src
-COPY src/front-ltx/www ./src/front-ltx/www
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/app/target \
-    rm -rf /app/target/release/.fingerprint/front-ltx-* \
-           /app/target/release/.fingerprint/front_ltx-* \
-           /app/target/release/deps/libfront_ltx* \
-           /app/target/release/deps/front_ltx* && \
     cd src/front-ltx && \
     wasm-pack build --target web --out-dir www/pkg --release
-
-###
-### Builder - API server
-###
-FROM builder AS api-build
-
-# NOTE: Keep up to date! Remove dummy files from crates that **ARE** used.
-RUN for crate in core-ltx data-model-ltx api-ltx ; do \
-        rm -rf src/${crate}/src; \
-    done
-
-COPY src/core-ltx/src ./src/core-ltx/src
-COPY src/data-model-ltx/src ./src/data-model-ltx/src
-COPY src/api-ltx/src ./src/api-ltx/src
-
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target \
-    rm -rf /app/target/release/.fingerprint/core-ltx-* \
-           /app/target/release/.fingerprint/core_ltx-* \
-           /app/target/release/.fingerprint/data-model-ltx-* \
-           /app/target/release/.fingerprint/data_model_ltx-* \
-           /app/target/release/.fingerprint/api-ltx-* \
-           /app/target/release/.fingerprint/api_ltx-* \
-           /app/target/release/deps/libcore_ltx* \
-           /app/target/release/deps/libdata_model_ltx* \
-           /app/target/release/deps/libapi_ltx* \
-           /app/target/release/deps/api_ltx* && \
-    cargo build --release -p api-ltx && \
-    cp /app/target/release/api-ltx /app/bin/api-ltx
-
-###
-### Builder - Worker
-###
-FROM builder AS worker-build
-
-# NOTE: Keep up to date! Remove dummy files from crates that **ARE** used.
-RUN for crate in core-ltx data-model-ltx worker-ltx; do \
-        rm -rf src/${crate}/src; \
-    done
-
-COPY src/core-ltx/src ./src/core-ltx/src
-COPY src/data-model-ltx/src ./src/data-model-ltx/src
-COPY src/worker-ltx/src ./src/worker-ltx/src
-
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target \
-    rm -rf /app/target/release/.fingerprint/core-ltx-* \
-           /app/target/release/.fingerprint/core_ltx-* \
-           /app/target/release/.fingerprint/data-model-ltx-* \
-           /app/target/release/.fingerprint/data_model_ltx-* \
-           /app/target/release/.fingerprint/worker-ltx-* \
-           /app/target/release/.fingerprint/worker_ltx-* \
-           /app/target/release/deps/libcore_ltx* \
-           /app/target/release/deps/libdata_model_ltx* \
-           /app/target/release/deps/libworker_ltx* \
-           /app/target/release/deps/worker_ltx* && \
-    cargo build --release -p worker-ltx && \
-    cp /app/target/release/worker-ltx /app/bin/worker-ltx
-
-###
-### Builder - Cron Updater
-###
-FROM builder AS cron-build
-
-# NOTE: Keep up to date! Remove dummy files from crates that **ARE** used.
-RUN for crate in core-ltx data-model-ltx cron-ltx; do \
-        rm -rf src/${crate}/src; \
-    done
-
-COPY src/core-ltx/src ./src/core-ltx/src
-COPY src/data-model-ltx/src ./src/data-model-ltx/src
-COPY src/cron-ltx/src ./src/cron-ltx/src
-
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target \
-    rm -rf /app/target/release/.fingerprint/core-ltx-* \
-           /app/target/release/.fingerprint/core_ltx-* \
-           /app/target/release/.fingerprint/data-model-ltx-* \
-           /app/target/release/.fingerprint/data_model_ltx-* \
-           /app/target/release/.fingerprint/cron-ltx-* \
-           /app/target/release/.fingerprint/cron_ltx-* \
-           /app/target/release/deps/libcore_ltx* \
-           /app/target/release/deps/libdata_model_ltx* \
-           /app/target/release/deps/libcron_ltx* \
-           /app/target/release/deps/cron_ltx* && \
-    cargo build --release -p cron-ltx && \
-    cp /app/target/release/cron-ltx /app/bin/cron-ltx
-
 
 ###
 ### Runtime - Base
@@ -198,7 +170,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 ###
-### Runtime - API
+### Runtime - API Server + Frontend
 ###
 FROM runtime-base AS api
 
@@ -206,8 +178,8 @@ COPY --from=tools /tools/bin/diesel /usr/local/bin/diesel
 
 WORKDIR /app
 
-# API server
-COPY --from=api-build /app/bin/api-ltx /usr/local/bin/api-ltx
+# API server binary
+COPY --from=binaries /app/bin/api-ltx /usr/local/bin/api-ltx
 # DB migrations
 COPY src/api-ltx/migrations ./migrations
 COPY src/api-ltx/diesel.toml ./diesel.toml
@@ -226,7 +198,7 @@ FROM runtime-base AS worker
 
 WORKDIR /app
 # Worker binary
-COPY --from=worker-build /app/bin/worker-ltx /usr/local/bin/worker-ltx
+COPY --from=binaries /app/bin/worker-ltx /usr/local/bin/worker-ltx
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/worker-ltx"]
 
@@ -237,5 +209,5 @@ FROM runtime-base AS cron
 
 WORKDIR /app
 # cron updater binary
-COPY --from=cron-build /app/bin/cron-ltx /usr/local/bin/cron-ltx
+COPY --from=binaries /app/bin/cron-ltx /usr/local/bin/cron-ltx
 ENTRYPOINT ["/usr/local/bin/cron-ltx"]
