@@ -1,5 +1,5 @@
 ###
-### Supporting tools
+### Tools
 ###
 FROM rust:1.92-slim-bookworm AS tools
 
@@ -22,8 +22,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 ###
 ### Dependencies - Build and cache all external dependencies
 ###
-### This stage ONLY changes when Cargo.toml, Cargo.lock, or build.rs files change.
-### Source code changes (*.rs) do NOT invalidate this layer.
+###     This stage ONLY changes when Cargo.toml, Cargo.lock, or build.rs files change.
+###     Source code changes (*.rs) do NOT invalidate this layer.
 ###
 FROM rust:1.92-slim-bookworm AS dependencies
 
@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Install wasm32 target for frontend builds (cached in this layer)
+# wasm32 target for frontend builds
 RUN rustup target add wasm32-unknown-unknown
 
 # Copy ONLY dependency-related files (Cargo manifests and build scripts)
@@ -71,9 +71,10 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo build --release --workspace
 
 ###
-### Builder - Copy all project source code
+### Builder - Project Crates
 ###
-### Inherits the compiled dependencies from the dependencies stage.
+###     Copy all project source code.
+###     Inherits the compiled dependencies from the dependencies stage.
 ###
 FROM dependencies AS builder
 
@@ -84,9 +85,10 @@ RUN rm -rf src/*/src
 COPY src/ ./src/
 
 ###
-### Binaries - Build all release binaries
+### Builder - Binaries
 ###
-### Inherits compiled dependencies from builder. Only workspace crates are recompiled.
+###     Build all release binaries.
+###     Only workspace crates are recompiled.
 ###
 FROM builder AS binaries
 
@@ -124,7 +126,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cp target/release/cron-ltx ./bin/
 
 ###
-### WASM frontend
+### Builder - WASM frontend
 ###
 ### Builds the front-ltx WASM package for the web UI.
 ###
@@ -158,7 +160,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 ###
-### Runtime - API
+### Runtime - API Server + Frontend
 ###
 FROM runtime-base AS api
 
