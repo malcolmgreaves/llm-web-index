@@ -45,6 +45,13 @@ COPY src/api-ltx/Cargo.toml ./src/api-ltx/
 COPY src/cron-ltx/Cargo.toml ./src/cron-ltx/
 COPY src/worker-ltx/Cargo.toml ./src/worker-ltx/
 
+# Install wasm-bindgen-cli with the exact version from Cargo.lock.
+# This prevents wasm-pack from re-downloading it during frontend builds.
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    WASM_BINDGEN_VERSION=$(grep -A1 'name = "wasm-bindgen"' Cargo.lock | grep version | head -1 | sed 's/.*"\(.*\)"/\1/') && \
+    cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION"
+
 # Create minimal dummy source files for each workspace crate.
 # This allows cargo to compile all EXTERNAL dependencies without any project source code.
 # - Library crates need lib.rs
