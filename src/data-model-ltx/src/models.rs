@@ -258,10 +258,7 @@ impl LlmsTxt {
         let created_at = Utc::now();
 
         // Compute checksum - if normalization fails, use raw HTML
-        let html_checksum = compute_html_checksum(&html).unwrap_or_else(|_| {
-            let digest = md5::compute(html.as_bytes());
-            format!("{:x}", digest)
-        });
+        let html_checksum = core_ltx::web_html::compute_html_checksum(&html).expect("Unexpected: ");
 
         match result {
             LlmsTxtResult::Ok { llms_txt } => LlmsTxt {

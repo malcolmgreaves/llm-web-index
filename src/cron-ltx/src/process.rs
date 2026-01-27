@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use core_ltx::web_html::compute_html_checksum;
 use data_model_ltx::{
     db::{self},
     models::{JobKind, ResultStatus},
