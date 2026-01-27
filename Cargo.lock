@@ -519,7 +519,6 @@ dependencies = [
  "axum",
  "axum-server",
  "clap",
- "data-model-ltx",
  "html5ever",
  "indoc",
  "markdown-ppp",
@@ -648,13 +647,11 @@ dependencies = [
  "anyhow",
  "axum",
  "chrono",
+ "core-ltx",
  "deadpool",
  "diesel",
  "diesel-async",
- "html5ever",
  "libc",
- "markup5ever_rcdom",
- "md5",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -1619,12 +1616,6 @@ dependencies = [
  "cfg-if",
  "digest",
 ]
-
-[[package]]
-name = "md5"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
 
 [[package]]
 name = "memchr"

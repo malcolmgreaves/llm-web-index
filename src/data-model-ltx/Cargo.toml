@@ -22,9 +22,8 @@ thiserror = {workspace = true}
 uuid = { workspace = true }
 deadpool = {workspace = true }
 libc = { version = "0.2", optional = true }
+# internal
+core-ltx = { path = "../core-ltx" }
 
 [dev-dependencies]
 tokio = { workspace = true }
-md5 = {workspace = true}
-html5ever = {workspace = true}
-markup5ever_rcdom = {workspace = true}

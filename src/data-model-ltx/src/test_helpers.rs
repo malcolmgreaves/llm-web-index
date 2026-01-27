@@ -8,7 +8,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 use std::process::{Command, ExitStatus};
 
-use crate::db::{DbPool, establish_connection_pool};
+use core_ltx::db::{DbPool, establish_connection_pool};
 use crate::models::{JobKind, JobKindData, JobState, JobStatus, LlmsTxt, LlmsTxtResult};
 use crate::schema;
 use diesel::prelude::*;

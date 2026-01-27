@@ -16,5 +16,6 @@ pub use common::logging::setup_logging;
 pub use common::max_concurrency::get_max_concurrency;
 pub use common::poll_interval::{TimeUnit, get_poll_interval};
 pub use common::tls_config::get_tls_config;
+pub use common::db;
 
 pub use errors::Error;
