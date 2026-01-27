@@ -15,14 +15,6 @@ use uuid::Uuid;
 
 use crate::db::PoolError;
 
-/// Compute MD5 checksum of normalized HTML content
-fn compute_html_checksum(html: &str) -> Result<String, anyhow::Error> {
-    // Normalize HTML to avoid false positives from whitespace changes
-    let normalized = crate::web_html::parse_html(html)?;
-    let digest = md5::compute(normalized.as_bytes());
-    Ok(format!("{:x}", digest))
-}
-
 // SQL type definitions for custom enums
 // Note: These types use snake_case to match PostgreSQL type names
 #[allow(non_camel_case_types)]

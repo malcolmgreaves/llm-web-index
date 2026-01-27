@@ -14,14 +14,6 @@ use crate::AuthenticatedClient;
 use crate::LlmsTxtWithKind;
 use crate::errors::Error;
 
-/// Compute MD5 checksum of normalized HTML
-fn compute_html_checksum(html: &str) -> String {
-    // Normalize HTML - if normalization fails, hash raw HTML
-    let normalized = data_model_ltx::web_html::parse_html(html).unwrap_or_else(|_| html.to_string());
-    let digest = md5::compute(normalized.as_bytes());
-    format!("{:x}", digest)
-}
-
 /// Gets the most recent llms.txt for each url and spawns a task to determine if the llms.txt should be updated/regenerated.
 pub async fn poll_and_process(
     pool: &db::DbPool,

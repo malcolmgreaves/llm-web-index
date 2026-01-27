@@ -552,7 +552,6 @@ dependencies = [
  "diesel",
  "diesel-async",
  "dotenvy",
- "md5",
  "reqwest 0.13.1",
  "rustls",
  "serde",

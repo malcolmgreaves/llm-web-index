@@ -41,9 +41,21 @@ pub fn parse_html(content: &str) -> Result<String, Error> {
     Ok(html)
 }
 
+/// Normalize the HTML and compute and MD5 checksum on the content.
+pub fn compute_html_checksum(html: &str) -> Result<String, Error> {
+    let normalized = parse_html(html)?;
+    let digest = md5::compute(normalized.as_bytes());
+    Ok(format!("{:x}", digest))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const HTML_EXAMPLES: [&str; 2] = [
+        "<html><body><h1>Hello, World!</h1></body></html>", // valid
+        "<html><body><h1>Hello, World!</body></html>", // assert that it can close missing tags -- this is missing a closing </h1>
+    ];
 
     #[test]
     fn test_url() {
@@ -62,14 +74,20 @@ mod tests {
     }
 
     #[test]
-    fn test_html() {
+    fn test_parse_html() {
         let expected = "<html><head></head><body><h1>Hello, World!</h1></body></html>";
-        for html in [
-            "<html><body><h1>Hello, World!</h1></body></html>", // valid
-            "<html><body><h1>Hello, World!</body></html>", // assert that it can close missing tags -- this is missing a closing </h1>
-        ] {
+        for html in HTML_EXAMPLES {
             let parsed_html = parse_html(html).unwrap();
             assert_eq!(parsed_html, expected);
+        }
+    }
+
+    #[test]
+    fn test_compute_html_checksum() {
+        let expected = "f1bde789117e2fb41cd8b21824ce58b1";
+        for html in HTML_EXAMPLES {
+            let checksum = compute_html_checksum(&html);
+            assert_eq!(checksum, expected);
         }
     }
 }
