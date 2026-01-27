@@ -403,7 +403,7 @@ pub async fn create_completed_test_job(
 ) -> (JobState, LlmsTxt) {
     let job = create_test_job(pool, url, JobKind::New, JobStatus::Success).await;
 
-    let html_checksum = compute_html_checksum(&normalized_html).expect("Failed to compute checksum");
+    let html_checksum = compute_html_checksum(normalized_html).expect("Failed to compute checksum");
     let html_compress = compress_string(normalized_html.as_str()).expect("Failed to compress HTML");
 
     let llms_txt_record = LlmsTxt::from_result(

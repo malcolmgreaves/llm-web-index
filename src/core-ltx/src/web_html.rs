@@ -165,7 +165,7 @@ mod tests {
     fn test_compute_html_checksum() {
         let expected = "b5e56c5effa9b4e92f1b5b6f80a5a781";
         for html in HTML_EXAMPLES {
-            let normalized = normalize_html(&html).unwrap();
+            let normalized = normalize_html(html).unwrap();
             let checksum = compute_html_checksum(&normalized).unwrap();
             assert_eq!(checksum, expected);
         }

@@ -592,7 +592,7 @@ mod tests {
     #[test]
     fn test_create_llms_txt() {
         let html = "<html><body>Test</body></html>";
-        let normalized_fresh_html = normalize_html(&html).unwrap();
+        let normalized_fresh_html = normalize_html(html).unwrap();
         let html_checksum = compute_html_checksum(&normalized_fresh_html).unwrap();
         let html_compress = core_ltx::compress_string(html).unwrap();
 
@@ -620,7 +620,7 @@ mod tests {
         let job_id = Uuid::new_v4();
         let url = "https://example.com/llms.txt".to_string();
         let html = "<html><body>Test</body></html>";
-        let normalized_fresh_html = normalize_html(&html).unwrap();
+        let normalized_fresh_html = normalize_html(html).unwrap();
         let html_checksum = compute_html_checksum(&normalized_fresh_html).unwrap();
         let html_compress = core_ltx::compress_string(html).unwrap();
 

@@ -217,7 +217,7 @@ mod tests {
         kind: JobKind,
     ) -> LlmsTxtWithKind {
         let html = "<html>test</html>";
-        let normalized_fresh_html = normalize_html(&html).unwrap();
+        let normalized_fresh_html = normalize_html(html).unwrap();
         let html_checksum = compute_html_checksum(&normalized_fresh_html).unwrap();
         let html_compress = core_ltx::compress_string(html).unwrap();
 

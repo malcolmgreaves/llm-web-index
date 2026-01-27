@@ -45,7 +45,7 @@ mod tests {
     #[test]
     fn test_compress_roundtrip() {
         let input = "Hello world! How are you doing today?";
-        let compressed = compress_string(&input).unwrap();
+        let compressed = compress_string(input).unwrap();
         let decompressed = decompress_to_string(&compressed).unwrap();
         assert_eq!(input, decompressed);
     }
