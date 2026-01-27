@@ -10,23 +10,28 @@ use minify_html::{Cfg, minify};
 
 use crate::Error;
 
-/// Newtype for HTML
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Html(String);
+macro_rules! string_wrap {
+    ($x:ident) => {
+        #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+        pub struct $x(String);
 
-impl Html {
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
+        impl $x {
+            pub fn as_str(&self) -> &str {
+                &self.0
+            }
 
-    pub const fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
-    }
-
-    pub fn consume(self) -> String {
-        self.0
-    }
+            pub const fn as_bytes(&self) -> &[u8] {
+                self.0.as_bytes()
+            }
+        }
+    };
 }
+
+// Newtype for valid HTML
+string_wrap!(Html);
+
+// Newtype for normalized HTML (valid and cleaned / minified).
+string_wrap!(CleanHtml);
 
 impl std::fmt::Display for Html {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -104,22 +109,21 @@ const CLEAN_HTML_CFG: Cfg = Cfg {
 /// - Keeps all closing tags for structural integrity
 /// - Does NOT transform CSS or JS content
 /// - Produces spec-compliant output
-pub fn clean_html(html: &Html) -> Result<Html, std::string::FromUtf8Error> {
+pub fn clean_html(html: &Html) -> Result<CleanHtml, std::string::FromUtf8Error> {
     let minified = minify(html.as_bytes(), &CLEAN_HTML_CFG);
-    String::from_utf8(minified).map(Html)
+    String::from_utf8(minified).map(CleanHtml)
 }
 
 /// Normalizes HTML by parsing and cleaning it.
-pub fn normalize_html(html: &str) -> Result<Html, Error> {
+pub fn normalize_html(html: &str) -> Result<CleanHtml, Error> {
     let parsed = parse_html(html)?;
     let cleaned = clean_html(&parsed)?;
     Ok(cleaned)
 }
 
 /// Normalize the HTML and compute and MD5 checksum on the content.
-pub fn compute_html_checksum(html: &str) -> Result<String, Error> {
-    let normalized = normalize_html(html)?;
-    let digest = md5::compute(normalized.as_bytes());
+pub fn compute_html_checksum(normalized_html: &CleanHtml) -> Result<String, Error> {
+    let digest = md5::compute(normalized_html.as_bytes());
     Ok(format!("{:x}", digest))
 }
 
@@ -161,7 +165,8 @@ mod tests {
     fn test_compute_html_checksum() {
         let expected = "b5e56c5effa9b4e92f1b5b6f80a5a781";
         for html in HTML_EXAMPLES {
-            let checksum = compute_html_checksum(&html).unwrap();
+            let normalized = normalize_html(&html).unwrap();
+            let checksum = compute_html_checksum(&normalized).unwrap();
             assert_eq!(checksum, expected);
         }
     }

@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
 use core_ltx::{
-    download, is_valid_url,
+    compress_string, download, is_valid_url,
     llms::{LlmProvider, generate_llms_txt, update_llms_txt},
+    normalize_html,
+    web_html::compute_html_checksum,
 };
 
 use core_ltx::db;
@@ -18,12 +20,26 @@ use crate::errors::Error;
 
 /// Result of job processing that preserves HTML through error paths
 pub enum JobResult {
-    /// Both HTML download and llms.txt generation succeeded
-    Success { html: String, llms_txt: core_ltx::LlmsTxt },
-    /// HTML downloaded successfully but llms.txt generation failed
-    GenerationFailed { html: String, error: Error },
+    /// Both HTML download and llms.txt generation succeeded.
+    /// html_compress contains Brotli-compressed normalized HTML bytes.
+    /// html_checksum is the MD5 checksum of the normalized (pre-compression) HTML.
+    Success {
+        html_compress: Vec<u8>,
+        html_checksum: String,
+        llms_txt: core_ltx::LlmsTxt,
+    },
+    /// HTML downloaded successfully but llms.txt generation failed.
+    /// html_compress contains Brotli-compressed normalized HTML bytes.
+    /// html_checksum is the MD5 checksum of the normalized (pre-compression) HTML.
+    GenerationFailed {
+        html_compress: Vec<u8>,
+        html_checksum: String,
+        error: Error,
+    },
     /// HTML download failed (no HTML to store)
     DownloadFailed { error: Error },
+    /// HTML normalization or compression failed (no HTML to store)
+    HtmlProcessingFailed { error: Error },
 }
 
 /// Query the DB for a job to be performed.
@@ -99,7 +115,47 @@ pub async fn handle_job<P: LlmProvider>(provider: &P, job: &JobState) -> JobResu
     };
     tracing::debug!("[job: {}] Downloaded HTML ({} bytes)", job.job_id, html.len());
 
-    // Generate or update llms.txt - if this fails, we still have HTML
+    // Normalize HTML - if this fails, return immediately
+    let normalized = match normalize_html(&html) {
+        Ok(h) => h,
+        Err(e) => {
+            tracing::error!("[job: {}] Failed to normalize HTML: {}", job.job_id, e);
+            return JobResult::HtmlProcessingFailed { error: e.into() };
+        }
+    };
+    tracing::debug!(
+        "[job: {}] Normalized HTML ({} bytes -> {} bytes)",
+        job.job_id,
+        html.len(),
+        normalized.as_str().len()
+    );
+
+    // Compute checksum of normalized HTML (before compression)
+    let html_checksum = match compute_html_checksum(&normalized) {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::error!("[job: {}] Failed to compute HTML checksum: {}", job.job_id, e);
+            return JobResult::HtmlProcessingFailed { error: e.into() };
+        }
+    };
+    tracing::debug!("[job: {}] Computed HTML checksum: {}", job.job_id, html_checksum);
+
+    // Compress HTML - if this fails, return immediately
+    let html_compress = match compress_string(normalized.as_str()) {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::error!("[job: {}] Failed to compress HTML: {}", job.job_id, e);
+            return JobResult::HtmlProcessingFailed { error: e.into() };
+        }
+    };
+    tracing::debug!(
+        "[job: {}] Compressed HTML ({} bytes -> {} bytes)",
+        job.job_id,
+        normalized.as_str().len(),
+        html_compress.len()
+    );
+
+    // Generate or update llms.txt - if this fails, we still have processed HTML
     let llms_txt_result = match job.to_kind_data() {
         JobKindData::New => generate_llms_txt(provider, &html).await,
         JobKindData::Update { llms_txt: old_llms_txt } => update_llms_txt(provider, &old_llms_txt, &html).await,
@@ -108,22 +164,35 @@ pub async fn handle_job<P: LlmProvider>(provider: &P, job: &JobState) -> JobResu
     match llms_txt_result {
         Ok(llms_txt) => {
             tracing::debug!("[job: {}] Generated llms.txt", job.job_id);
-            JobResult::Success { html, llms_txt }
+            JobResult::Success {
+                html_compress,
+                html_checksum,
+                llms_txt,
+            }
         }
         Err(e) => {
             tracing::warn!("[job: {}] Failed to generate llms.txt: {}", job.job_id, e);
-            JobResult::GenerationFailed { html, error: e.into() }
+            JobResult::GenerationFailed {
+                html_compress,
+                html_checksum,
+                error: e.into(),
+            }
         }
     }
 }
 
 /// Inserts the result into the llms_txt table & updates job_state appropriately.
-/// Handles three cases: success, generation failure (with HTML), download failure (no HTML).
+/// Handles four cases: success, generation failure (with HTML), download failure (no HTML),
+/// and HTML processing failure (no HTML).
 pub async fn handle_result(pool: &db::DbPool, job: &JobState, result: JobResult) -> Result<(), Error> {
     let mut conn = pool.get().await?;
 
     match result {
-        JobResult::Success { html, llms_txt } => {
+        JobResult::Success {
+            html_compress,
+            html_checksum,
+            llms_txt,
+        } => {
             tracing::info!(
                 "[job: {}] Successfully produced llms.txt ({:?} - '{}')",
                 job.job_id,
@@ -137,7 +206,8 @@ pub async fn handle_result(pool: &db::DbPool, job: &JobState, result: JobResult)
                 LlmsTxtResult::Ok {
                     llms_txt: llms_txt.md_content(),
                 },
-                html,
+                html_compress,
+                html_checksum,
             );
 
             conn.transaction::<_, diesel::result::Error, _>(|mut conn| {
@@ -161,7 +231,11 @@ pub async fn handle_result(pool: &db::DbPool, job: &JobState, result: JobResult)
             Ok(())
         }
 
-        JobResult::GenerationFailed { html, error } => {
+        JobResult::GenerationFailed {
+            html_compress,
+            html_checksum,
+            error,
+        } => {
             tracing::error!(
                 "[job: {}] Failed to generate llms.txt ({:?} - '{}') Error: {}",
                 job.job_id,
@@ -176,7 +250,8 @@ pub async fn handle_result(pool: &db::DbPool, job: &JobState, result: JobResult)
                 LlmsTxtResult::Error {
                     failure_reason: error.to_string(),
                 },
-                html,
+                html_compress,
+                html_checksum,
             );
 
             conn.transaction::<_, diesel::result::Error, _>(|mut conn| {
@@ -224,6 +299,33 @@ pub async fn handle_result(pool: &db::DbPool, job: &JobState, result: JobResult)
             .await?;
 
             tracing::debug!("[job: {}] Marked job as failed (no HTML)", job.job_id);
+            Ok(())
+        }
+
+        JobResult::HtmlProcessingFailed { error } => {
+            tracing::error!(
+                "[job: {}] Failed to process HTML ({:?} - '{}') Error: {}",
+                job.job_id,
+                job.kind,
+                job.url,
+                error
+            );
+
+            // No llms_txt record - HTML processing failed
+            // Only mark job as failed in job_state table
+            conn.transaction::<_, diesel::result::Error, _>(|mut conn| {
+                Box::pin(async move {
+                    diesel::update(schema::job_state::table.find(job.job_id))
+                        .set(schema::job_state::status.eq(JobStatus::Failure))
+                        .execute(&mut conn)
+                        .await?;
+
+                    Ok(())
+                })
+            })
+            .await?;
+
+            tracing::debug!("[job: {}] Marked job as failed (HTML processing error)", job.job_id);
             Ok(())
         }
     }

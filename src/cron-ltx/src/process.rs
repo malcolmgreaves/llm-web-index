@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use core_ltx::{db, web_html::compute_html_checksum};
+use core_ltx::{db, normalize_html, web_html::compute_html_checksum};
 use data_model_ltx::{
     models::{JobKind, ResultStatus},
     schema::{job_state, llms_txt},
@@ -110,7 +110,8 @@ async fn handle_success(
     tracing::debug!("Downloaded {} bytes for '{}'", fresh_html.len(), url);
 
     // Compute checksum of freshly downloaded HTML
-    let fresh_checksum = compute_html_checksum(&fresh_html)?;
+    let normalized_fresh_html = normalize_html(&fresh_html)?;
+    let fresh_checksum = compute_html_checksum(&normalized_fresh_html)?;
 
     if fresh_checksum == stored_checksum {
         tracing::info!(
@@ -215,8 +216,10 @@ mod tests {
         result_status: ResultStatus,
         kind: JobKind,
     ) -> LlmsTxtWithKind {
-        let html_compress = "<html>test</html>".to_string();
-        let html_checksum = compute_html_checksum(&html_compress).unwrap();
+        let html = "<html>test</html>";
+        let normalized_fresh_html = normalize_html(&html).unwrap();
+        let html_checksum = compute_html_checksum(&normalized_fresh_html).unwrap();
+        let html_compress = core_ltx::compress_string(html).unwrap();
 
         LlmsTxtWithKind {
             job_id: uuid::Uuid::new_v4(),

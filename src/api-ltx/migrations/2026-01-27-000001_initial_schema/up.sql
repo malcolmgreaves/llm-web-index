@@ -33,7 +33,7 @@ CREATE TABLE llms_txt (
     result_data TEXT NOT NULL,
     result_status result_status NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
-    html_compress TEXT NOT NULL,
+    html_compress BYTEA NOT NULL,
     html_checksum VARCHAR(32) NOT NULL
 );
 
@@ -44,5 +44,5 @@ CREATE INDEX llms_txt_url_fts_idx ON llms_txt USING GIN (to_tsvector('english', 
 CREATE INDEX llms_txt_html_checksum_idx ON llms_txt (html_checksum);
 
 -- Add documentation
-COMMENT ON COLUMN llms_txt.html_compress IS 'Compressed HTML content (minified, whitespace removed)';
+COMMENT ON COLUMN llms_txt.html_compress IS 'Brotli-compressed normalized HTML content (stored as raw bytes)';
 COMMENT ON COLUMN llms_txt.html_checksum IS 'MD5 checksum of normalized HTML for change detection';

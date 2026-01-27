@@ -215,7 +215,8 @@ pub struct LlmsTxt {
     pub result_data: String,
     pub result_status: ResultStatus,
     pub created_at: DateTime<Utc>,
-    pub html_compress: String,
+    /// Brotli-compressed normalized HTML content (stored as raw bytes)
+    pub html_compress: Vec<u8>,
     pub html_checksum: String,
 }
 
@@ -253,12 +254,17 @@ impl LlmsTxt {
         }
     }
 
-    /// Create database representation from ergonomic Result enum
-    pub fn from_result(job_id: Uuid, url: String, result: LlmsTxtResult, html_compress: String) -> Self {
+    /// Create database representation from ergonomic Result enum.
+    /// `html_compress` is Brotli-compressed normalized HTML bytes.
+    /// `html_checksum` is the MD5 checksum of the normalized (pre-compression) HTML.
+    pub fn from_result(
+        job_id: Uuid,
+        url: String,
+        result: LlmsTxtResult,
+        html_compress: Vec<u8>,
+        html_checksum: String,
+    ) -> Self {
         let created_at = Utc::now();
-
-        // Compute checksum - if normalization fails, use raw HTML
-        let html_checksum = core_ltx::web_html::compute_html_checksum(&html_compress).expect("Unexpected: ");
 
         match result {
             LlmsTxtResult::Ok { llms_txt } => LlmsTxt {
@@ -540,7 +546,7 @@ impl From<diesel::result::Error> for StatusError {
 
 #[cfg(test)]
 mod tests {
-    use core_ltx::web_html::compute_html_checksum;
+    use core_ltx::{normalize_html, web_html::compute_html_checksum};
 
     use super::*;
 
@@ -585,8 +591,10 @@ mod tests {
 
     #[test]
     fn test_create_llms_txt() {
-        let html_compress = "<html><body>Test</body></html>".to_string();
-        let html_checksum = compute_html_checksum(&html_compress).unwrap();
+        let html = "<html><body>Test</body></html>";
+        let normalized_fresh_html = normalize_html(&html).unwrap();
+        let html_checksum = compute_html_checksum(&normalized_fresh_html).unwrap();
+        let html_compress = core_ltx::compress_string(html).unwrap();
 
         let llms_txt = LlmsTxt {
             job_id: Uuid::new_v4(),
@@ -611,13 +619,22 @@ mod tests {
     fn test_llms_txt_result_conversion() {
         let job_id = Uuid::new_v4();
         let url = "https://example.com/llms.txt".to_string();
-        let html_compress = "<html><body>Test</body></html>".to_string();
+        let html = "<html><body>Test</body></html>";
+        let normalized_fresh_html = normalize_html(&html).unwrap();
+        let html_checksum = compute_html_checksum(&normalized_fresh_html).unwrap();
+        let html_compress = core_ltx::compress_string(html).unwrap();
 
         // Test Ok variant
         let ok_result = LlmsTxtResult::Ok {
             llms_txt: "content".to_string(),
         };
-        let db_model = LlmsTxt::from_result(job_id, url.clone(), ok_result.clone(), html_compress.clone());
+        let db_model = LlmsTxt::from_result(
+            job_id,
+            url.clone(),
+            ok_result.clone(),
+            html_compress.clone(),
+            html_checksum.clone(),
+        );
         assert_eq!(db_model.result_status, ResultStatus::Ok);
         assert_eq!(db_model.result_data, "content");
         assert_eq!(db_model.html_compress, html_compress);
@@ -627,7 +644,13 @@ mod tests {
         let error_result = LlmsTxtResult::Error {
             failure_reason: "network timeout".to_string(),
         };
-        let db_model = LlmsTxt::from_result(job_id, url.clone(), error_result.clone(), html_compress.clone());
+        let db_model = LlmsTxt::from_result(
+            job_id,
+            url.clone(),
+            error_result.clone(),
+            html_compress.clone(),
+            html_checksum.clone(),
+        );
         assert_eq!(db_model.result_status, ResultStatus::Error);
         assert_eq!(db_model.result_data, "network timeout");
         assert_eq!(db_model.html_compress, html_compress);

@@ -2,9 +2,11 @@
 //!
 //! This module tests the handle_job() function which is responsible for:
 //! - Downloading HTML from URLs
+//! - Normalizing and compressing HTML
 //! - Generating or updating llms.txt using LLM providers
 //! - Handling various error conditions
 
+use core_ltx::decompress_to_string;
 use core_ltx::llms::mock::{MockLlmProvider, sample_valid_llms_txt};
 use data_model_ltx::models::{JobKindData, JobState, JobStatus};
 use worker_ltx::work::{JobResult, handle_job};
@@ -25,21 +27,34 @@ async fn test_handle_job_success_new() {
     let result = handle_job(&provider, &job).await;
 
     match result {
-        JobResult::Success { html, llms_txt } => {
-            assert!(!html.is_empty(), "HTML should not be empty");
+        JobResult::Success {
+            html_compress,
+            html_checksum,
+            llms_txt,
+        } => {
+            assert!(!html_compress.is_empty(), "Compressed HTML should not be empty");
+            assert!(!html_checksum.is_empty(), "HTML checksum should not be empty");
+            assert_eq!(html_checksum.len(), 32, "MD5 checksum should be 32 hex chars");
             assert!(
                 llms_txt.md_content().contains("# Example"),
                 "llms.txt should contain expected content"
             );
         }
-        JobResult::GenerationFailed { html, error } => {
+        JobResult::GenerationFailed {
+            html_compress: _,
+            html_checksum,
+            error,
+        } => {
             panic!(
-                "Expected success but got generation failure. HTML: {}, Error: {}",
-                html, error
+                "Expected success but got generation failure. HTML checksum: {}, Error: {}",
+                html_checksum, error
             );
         }
         JobResult::DownloadFailed { error } => {
             panic!("Expected success but got download failure: {}", error);
+        }
+        JobResult::HtmlProcessingFailed { error } => {
+            panic!("Expected success but got HTML processing failure: {}", error);
         }
     }
 }
@@ -58,8 +73,13 @@ async fn test_handle_job_success_update() {
     let result = handle_job(&provider, &job).await;
 
     match result {
-        JobResult::Success { html, llms_txt } => {
-            assert!(!html.is_empty());
+        JobResult::Success {
+            html_compress,
+            html_checksum,
+            llms_txt,
+        } => {
+            assert!(!html_compress.is_empty());
+            assert!(!html_checksum.is_empty());
             // The mock should return updated content
             assert!(llms_txt.md_content().contains("#"));
         }
@@ -77,8 +97,16 @@ async fn test_handle_job_generation_failed() {
     let result = handle_job(&provider, &job).await;
 
     match result {
-        JobResult::GenerationFailed { html, error } => {
-            assert!(!html.is_empty(), "HTML should be preserved even on LLM failure");
+        JobResult::GenerationFailed {
+            html_compress,
+            html_checksum,
+            error,
+        } => {
+            assert!(
+                !html_compress.is_empty(),
+                "Compressed HTML should be preserved even on LLM failure"
+            );
+            assert!(!html_checksum.is_empty(), "Checksum should be computed");
             assert!(
                 error.to_string().contains("Mock LLM"),
                 "Error should mention mock provider failure"
@@ -89,6 +117,9 @@ async fn test_handle_job_generation_failed() {
         }
         JobResult::DownloadFailed { .. } => {
             panic!("Expected generation failure but got download failure");
+        }
+        JobResult::HtmlProcessingFailed { .. } => {
+            panic!("Expected generation failure but got HTML processing failure");
         }
     }
 }
@@ -142,8 +173,13 @@ async fn test_handle_job_invalid_markdown_from_llm() {
     let result = handle_job(&provider, &job).await;
 
     match result {
-        JobResult::GenerationFailed { html, error } => {
-            assert!(!html.is_empty(), "HTML should be preserved");
+        JobResult::GenerationFailed {
+            html_compress,
+            html_checksum,
+            error,
+        } => {
+            assert!(!html_compress.is_empty(), "HTML should be preserved");
+            assert!(!html_checksum.is_empty(), "Checksum should be computed");
             // The error should indicate markdown validation failure
             assert!(!error.to_string().is_empty());
         }
@@ -161,8 +197,13 @@ async fn test_handle_job_invalid_llms_txt_format() {
     let result = handle_job(&provider, &job).await;
 
     match result {
-        JobResult::GenerationFailed { html, error } => {
-            assert!(!html.is_empty(), "HTML should be preserved");
+        JobResult::GenerationFailed {
+            html_compress,
+            html_checksum,
+            error,
+        } => {
+            assert!(!html_compress.is_empty(), "HTML should be preserved");
+            assert!(!html_checksum.is_empty(), "Checksum should be computed");
             // Error should indicate llms.txt format validation failure
             assert!(!error.to_string().is_empty());
         }
@@ -179,13 +220,21 @@ async fn test_handle_job_preserves_html_on_llm_failure() {
     let result = handle_job(&provider, &job).await;
 
     match result {
-        JobResult::GenerationFailed { html, error: _ } => {
-            // Verify HTML was actually downloaded
-            assert!(html.len() > 100, "HTML should contain actual content");
+        JobResult::GenerationFailed {
+            html_compress,
+            html_checksum,
+            error: _,
+        } => {
+            // Verify HTML was actually downloaded and compressed
+            let decompressed = decompress_to_string(&html_compress).expect("Should decompress");
+            assert!(decompressed.len() > 100, "HTML should contain actual content");
             assert!(
-                html.contains("<html") || html.contains("<!DOCTYPE"),
+                decompressed.contains("<html")
+                    || decompressed.contains("<!DOCTYPE")
+                    || decompressed.contains("<!doctype"),
                 "HTML should look like real HTML"
             );
+            assert!(!html_checksum.is_empty(), "Checksum should be computed");
         }
         _ => panic!("Expected generation failure"),
     }
@@ -224,8 +273,13 @@ async fn test_handle_job_update_with_existing_content() {
     let result = handle_job(&provider, &job).await;
 
     match result {
-        JobResult::Success { html, llms_txt } => {
-            assert!(!html.is_empty());
+        JobResult::Success {
+            html_compress,
+            html_checksum,
+            llms_txt,
+        } => {
+            assert!(!html_compress.is_empty());
+            assert!(!html_checksum.is_empty());
             let content = llms_txt.md_content();
             assert!(
                 content.contains("Updated"),

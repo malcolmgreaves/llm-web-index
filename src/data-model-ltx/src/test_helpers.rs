@@ -11,6 +11,7 @@ use std::process::{Command, ExitStatus};
 use crate::models::{JobKind, JobKindData, JobState, JobStatus, LlmsTxt, LlmsTxtResult};
 use crate::schema;
 use core_ltx::db::{DbPool, establish_connection_pool};
+use core_ltx::{compress_string, compute_html_checksum, normalize_html};
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use uuid::Uuid;
@@ -401,13 +402,18 @@ pub async fn create_completed_test_job(
 ) -> (JobState, LlmsTxt) {
     let job = create_test_job(pool, url, JobKind::New, JobStatus::Success).await;
 
+    let normalized_html = normalize_html(&html).expect("Failed to parse & clean HTML");
+    let html_checksum = compute_html_checksum(&normalized_html).expect("Failed to compute checksum");
+    let html_compress = compress_string(normalized_html.as_str()).expect("Failed to compress HTML");
+
     let llms_txt_record = LlmsTxt::from_result(
         job.job_id,
         url.to_string(),
         LlmsTxtResult::Ok {
             llms_txt: llms_txt_content.to_string(),
         },
-        html.to_string(),
+        html_compress,
+        html_checksum,
     );
 
     let mut conn = pool.get().await.expect("Failed to get database connection");
@@ -434,13 +440,18 @@ pub async fn create_failed_test_job(
     let job = create_test_job(pool, url, JobKind::New, JobStatus::Failure).await;
 
     let llms_txt_record = html.map(|html_content| {
+        let normalized_html = normalize_html(&html_content).expect("Failed to parse & clean HTML");
+        let html_checksum = compute_html_checksum(&normalized_html).expect("Failed to compute checksum");
+        let html_compress = compress_string(html_content).expect("Failed to compress HTML");
+
         LlmsTxt::from_result(
             job.job_id,
             url.to_string(),
             LlmsTxtResult::Error {
                 failure_reason: error_message.to_string(),
             },
-            html_content.to_string(),
+            html_compress,
+            html_checksum,
         )
     });
 
@@ -613,7 +624,10 @@ mod tests {
         assert!(retrieved_llms_txt.is_some());
         let retrieved_llms_txt = retrieved_llms_txt.unwrap();
         assert_eq!(retrieved_llms_txt.result_status, ResultStatus::Ok);
-        assert_eq!(retrieved_llms_txt.html_compress, "<html></html>");
+        // Verify compressed HTML can be decompressed back to original
+        let decompressed =
+            core_ltx::decompress_to_string(&retrieved_llms_txt.html_compress).expect("Failed to decompress");
+        assert_eq!(decompressed, "<html></html>");
         assert_eq!(retrieved_llms_txt, llms_txt);
     }
 
