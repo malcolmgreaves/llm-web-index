@@ -6,6 +6,7 @@ use html5ever::{
     tendril::TendrilSink,
 };
 use markup5ever_rcdom::{RcDom, SerializableHandle};
+use minify_html::{Cfg, minify};
 
 use crate::Error;
 
@@ -41,12 +42,54 @@ pub fn parse_html(content: &str) -> Result<String, Error> {
     Ok(html)
 }
 
-// pub fn clean_html()
+/// Configuration used by `clean_html`.
+const CLEAN_HTML_CFG: Cfg = Cfg {
+    // Preserve document structure
+    keep_closing_tags: true,
+    keep_html_and_head_opening_tags: true,
+    keep_input_type_text_attr: true,
+
+    // Remove non-semantic content
+    keep_comments: false,
+    keep_ssi_comments: false,
+
+    // Don't transform embedded code
+    minify_css: false,
+    minify_js: false,
+
+    // Stay spec-compliant
+    minify_doctype: false,
+    allow_noncompliant_unquoted_attribute_values: false,
+    allow_optimal_entities: false,
+    allow_removing_spaces_between_attributes: false,
+
+    // Remove processing instructions and bangs (non-semantic)
+    remove_bangs: true,
+    remove_processing_instructions: true,
+
+    // Template syntax (not relevant for plain HTML)
+    preserve_brace_template_syntax: false,
+    preserve_chevron_percent_template_syntax: false,
+};
+
+/// Cleans HTML by removing insignificant whitespace while preserving semantics.
+///
+/// This function:
+/// - Collapses whitespace in content areas
+/// - Preserves whitespace in `<pre>`, `<code>`, `<textarea>` elements
+/// - Keeps all closing tags for structural integrity
+/// - Does NOT transform CSS or JS content
+/// - Produces spec-compliant output
+pub fn clean_html(html: &str) -> Result<String, std::string::FromUtf8Error> {
+    let minified = minify(html.as_bytes(), &CLEAN_HTML_CFG);
+    String::from_utf8(minified)
+}
 
 /// Normalize the HTML and compute and MD5 checksum on the content.
 pub fn compute_html_checksum(html: &str) -> Result<String, Error> {
     let normalized = parse_html(html)?;
-    let digest = md5::compute(normalized.as_bytes());
+    let cleaned = clean_html(&normalized)?;
+    let digest = md5::compute(cleaned.as_bytes());
     Ok(format!("{:x}", digest))
 }
 
@@ -91,5 +134,37 @@ mod tests {
             let checksum = compute_html_checksum(&html).unwrap();
             assert_eq!(checksum, expected);
         }
+    }
+
+    #[test]
+    fn test_clean_html_removes_whitespace() {
+        let input = "<html>  <head>  </head>  <body>  <p>  Hello,   world!  </p>  </body>  </html>";
+        let cleaned = clean_html(input).unwrap();
+        // Whitespace between tags and within text is collapsed
+        assert!(!cleaned.contains("  "));
+    }
+
+    #[test]
+    fn test_clean_html_preserves_pre_whitespace() {
+        let input = "<pre>  code with   spaces  </pre>";
+        let cleaned = clean_html(input).unwrap();
+        // Whitespace in <pre> is preserved
+        assert!(cleaned.contains("  code with   spaces  "));
+    }
+
+    #[test]
+    fn test_clean_html_removes_comments() {
+        let input = "<p>Hello<!-- comment -->World</p>";
+        let cleaned = clean_html(input).unwrap();
+        assert!(!cleaned.contains("comment"));
+        assert!(cleaned.contains("HelloWorld") || cleaned.contains("Hello World"));
+    }
+
+    #[test]
+    fn test_clean_html_keeps_closing_tags() {
+        let input = "<div><p>Text</p></div>";
+        let cleaned = clean_html(input).unwrap();
+        assert!(cleaned.contains("</p>"));
+        assert!(cleaned.contains("</div>"));
     }
 }

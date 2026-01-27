@@ -91,6 +91,7 @@ html5ever = "0.36.1"
 markup5ever_rcdom = "0.36.0"
 async-trait = "0.1.89"
 subst = "0.3.8"
+minify-html = "0.18"
 
 # Test dependencies
 # libc = { version = "0.2", optional = true } # file locking

@@ -34,5 +34,6 @@ tracing-subscriber = { workspace = true }
 diesel = { workspace = true }
 diesel-async = { workspace = true }
 deadpool = { workspace = true }
+minify-html = { workspace = true }
 
 [dev-dependencies]

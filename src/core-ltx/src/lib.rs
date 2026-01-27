@@ -6,7 +6,7 @@ pub mod md_llm_txt;
 pub mod web_html;
 
 pub use md_llm_txt::{LlmsTxt, Markdown, is_valid_markdown, validate_is_llm_txt};
-pub use web_html::{download, is_valid_url, parse_html};
+pub use web_html::{clean_html, compute_html_checksum, download, is_valid_url, parse_html};
 
 pub use common::auth_config::{AuthConfig, get_auth_config, is_auth_enabled};
 pub use common::db;
