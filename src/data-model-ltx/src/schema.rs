@@ -23,7 +23,7 @@ diesel::table! {
         result_data -> Text,
         result_status -> Result_status,
         created_at -> Timestamptz,
-        html -> Text,
+        html_compress -> Text,
         html_checksum -> Varchar,
     }
 }

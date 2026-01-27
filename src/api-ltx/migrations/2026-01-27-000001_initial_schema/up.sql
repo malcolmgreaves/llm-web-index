@@ -33,8 +33,16 @@ CREATE TABLE llms_txt (
     result_data TEXT NOT NULL,
     result_status result_status NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
-    html TEXT NOT NULL
+    html_compress TEXT NOT NULL,
+    html_checksum VARCHAR(32) NOT NULL
 );
 
 -- Create GIN index for full-text search on url column
 CREATE INDEX llms_txt_url_fts_idx ON llms_txt USING GIN (to_tsvector('english', url));
+
+-- Create index for efficient checksum lookups
+CREATE INDEX llms_txt_html_checksum_idx ON llms_txt (html_checksum);
+
+-- Add documentation
+COMMENT ON COLUMN llms_txt.html_compress IS 'Compressed HTML content (minified, whitespace removed)';
+COMMENT ON COLUMN llms_txt.html_checksum IS 'MD5 checksum of normalized HTML for change detection';

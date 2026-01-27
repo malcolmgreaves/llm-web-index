@@ -106,7 +106,7 @@ const CLEAN_HTML_CFG: Cfg = Cfg {
 /// - Produces spec-compliant output
 pub fn clean_html(html: &Html) -> Result<Html, std::string::FromUtf8Error> {
     let minified = minify(html.as_bytes(), &CLEAN_HTML_CFG);
-    String::from_utf8(minified).map(|s| Html(s))
+    String::from_utf8(minified).map(Html)
 }
 
 /// Normalizes HTML by parsing and cleaning it.

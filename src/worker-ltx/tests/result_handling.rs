@@ -53,7 +53,7 @@ async fn test_handle_result_success() {
     assert_eq!(llms_txt_record.job_id, job.job_id);
     assert_eq!(llms_txt_record.url, job.url);
     assert_eq!(llms_txt_record.result_status, ResultStatus::Ok);
-    assert_eq!(llms_txt_record.html, html);
+    assert_eq!(llms_txt_record.html_compress, html);
     assert!(llms_txt_record.result_data.contains("# Test Site"));
 }
 
@@ -82,7 +82,7 @@ async fn test_handle_result_generation_failed() {
     let llms_txt_record = get_llms_txt_by_job_id(&pool, job.job_id).await.unwrap();
     assert_eq!(llms_txt_record.job_id, job.job_id);
     assert_eq!(llms_txt_record.result_status, ResultStatus::Error);
-    assert_eq!(llms_txt_record.html, html, "HTML should be preserved");
+    assert_eq!(llms_txt_record.html_compress, html, "HTML should be preserved");
     assert!(
         llms_txt_record.result_data.contains("LLM generation failed"),
         "Error message should be stored"
@@ -134,8 +134,8 @@ async fn test_handle_result_preserves_html_on_generation_failure() {
     handle_result(&pool, &job, result).await.unwrap();
 
     let llms_txt_record = get_llms_txt_by_job_id(&pool, job.job_id).await.unwrap();
-    assert_eq!(llms_txt_record.html.len(), html.len());
-    assert_eq!(llms_txt_record.html, html);
+    assert_eq!(llms_txt_record.html_compress.len(), html.len());
+    assert_eq!(llms_txt_record.html_compress, html);
 }
 
 #[tokio::test]

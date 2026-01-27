@@ -215,17 +215,17 @@ pub struct LlmsTxt {
     pub result_data: String,
     pub result_status: ResultStatus,
     pub created_at: DateTime<Utc>,
-    pub html: String,
+    pub html_compress: String,
     pub html_checksum: String,
 }
 
 impl PartialEq for LlmsTxt {
     // Two LlmsTxt are equivalent if all fields other than created_at are equivalent
     fn eq(&self, other: &LlmsTxt) -> bool {
-        (&self.job_id).eq(&other.job_id) && (&self.url).eq(&other.url) &&
-    (&self.result_status).eq(&other.result_status) && (&self.result_data).eq(&other.result_data) &&
+        self.job_id.eq(&other.job_id) && self.url.eq(&other.url) &&
+    self.result_status.eq(&other.result_status) && self.result_data.eq(&other.result_data) &&
       // DO NOT INCLUDE created_at !!
-      (&self.html).eq(&other.html)
+      self.html_compress.eq(&other.html_compress)
     }
 }
 
@@ -254,11 +254,11 @@ impl LlmsTxt {
     }
 
     /// Create database representation from ergonomic Result enum
-    pub fn from_result(job_id: Uuid, url: String, result: LlmsTxtResult, html: String) -> Self {
+    pub fn from_result(job_id: Uuid, url: String, result: LlmsTxtResult, html_compress: String) -> Self {
         let created_at = Utc::now();
 
         // Compute checksum - if normalization fails, use raw HTML
-        let html_checksum = core_ltx::web_html::compute_html_checksum(&html).expect("Unexpected: ");
+        let html_checksum = core_ltx::web_html::compute_html_checksum(&html_compress).expect("Unexpected: ");
 
         match result {
             LlmsTxtResult::Ok { llms_txt } => LlmsTxt {
@@ -267,7 +267,7 @@ impl LlmsTxt {
                 result_data: llms_txt,
                 result_status: ResultStatus::Ok,
                 created_at,
-                html,
+                html_compress,
                 html_checksum,
             },
             LlmsTxtResult::Error { failure_reason } => LlmsTxt {
@@ -276,7 +276,7 @@ impl LlmsTxt {
                 result_data: failure_reason,
                 result_status: ResultStatus::Error,
                 created_at,
-                html,
+                html_compress,
                 html_checksum,
             },
         }
@@ -585,8 +585,8 @@ mod tests {
 
     #[test]
     fn test_create_llms_txt() {
-        let html = "<html><body>Test</body></html>".to_string();
-        let html_checksum = compute_html_checksum(&html).unwrap();
+        let html_compress = "<html><body>Test</body></html>".to_string();
+        let html_checksum = compute_html_checksum(&html_compress).unwrap();
 
         let llms_txt = LlmsTxt {
             job_id: Uuid::new_v4(),
@@ -594,7 +594,7 @@ mod tests {
             result_data: "# Example LLMs.txt content".to_string(),
             result_status: ResultStatus::Ok,
             created_at: Utc::now(),
-            html: html.clone(),
+            html_compress: html_compress.clone(),
             html_checksum: html_checksum.clone(),
         };
 
@@ -602,7 +602,7 @@ mod tests {
         assert!(!llms_txt.result_data.is_empty());
         assert!(llms_txt.result_data.starts_with("# Example"));
         assert_eq!(llms_txt.result_status, ResultStatus::Ok);
-        assert!(!llms_txt.html.is_empty());
+        assert!(!llms_txt.html_compress.is_empty());
         assert!(!llms_txt.html_checksum.is_empty());
         assert_eq!(llms_txt.html_checksum.len(), 32); // MD5 hex is always 32 chars
     }
@@ -611,26 +611,26 @@ mod tests {
     fn test_llms_txt_result_conversion() {
         let job_id = Uuid::new_v4();
         let url = "https://example.com/llms.txt".to_string();
-        let html = "<html><body>Test</body></html>".to_string();
+        let html_compress = "<html><body>Test</body></html>".to_string();
 
         // Test Ok variant
         let ok_result = LlmsTxtResult::Ok {
             llms_txt: "content".to_string(),
         };
-        let db_model = LlmsTxt::from_result(job_id, url.clone(), ok_result.clone(), html.clone());
+        let db_model = LlmsTxt::from_result(job_id, url.clone(), ok_result.clone(), html_compress.clone());
         assert_eq!(db_model.result_status, ResultStatus::Ok);
         assert_eq!(db_model.result_data, "content");
-        assert_eq!(db_model.html, html);
+        assert_eq!(db_model.html_compress, html_compress);
         assert_eq!(db_model.to_result(), ok_result);
 
         // Test Error variant
         let error_result = LlmsTxtResult::Error {
             failure_reason: "network timeout".to_string(),
         };
-        let db_model = LlmsTxt::from_result(job_id, url.clone(), error_result.clone(), html.clone());
+        let db_model = LlmsTxt::from_result(job_id, url.clone(), error_result.clone(), html_compress.clone());
         assert_eq!(db_model.result_status, ResultStatus::Error);
         assert_eq!(db_model.result_data, "network timeout");
-        assert_eq!(db_model.html, html);
+        assert_eq!(db_model.html_compress, html_compress);
         assert_eq!(db_model.to_result(), error_result);
     }
 }

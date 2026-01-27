@@ -613,7 +613,7 @@ mod tests {
         assert!(retrieved_llms_txt.is_some());
         let retrieved_llms_txt = retrieved_llms_txt.unwrap();
         assert_eq!(retrieved_llms_txt.result_status, ResultStatus::Ok);
-        assert_eq!(retrieved_llms_txt.html, "<html></html>");
+        assert_eq!(retrieved_llms_txt.html_compress, "<html></html>");
         assert_eq!(retrieved_llms_txt, llms_txt);
     }
 

@@ -47,7 +47,7 @@ async fn fetch_all_completed_jobs(conn: &mut AsyncPgConnection) -> Result<Vec<Ll
             llms_txt::result_data,
             llms_txt::result_status,
             llms_txt::created_at,
-            llms_txt::html,
+            llms_txt::html_compress,
             llms_txt::html_checksum,
             job_state::kind,
         ))
@@ -215,8 +215,8 @@ mod tests {
         result_status: ResultStatus,
         kind: JobKind,
     ) -> LlmsTxtWithKind {
-        let html = "<html>test</html>".to_string();
-        let html_checksum = compute_html_checksum(&html).unwrap();
+        let html_compress = "<html>test</html>".to_string();
+        let html_checksum = compute_html_checksum(&html_compress).unwrap();
 
         LlmsTxtWithKind {
             job_id: uuid::Uuid::new_v4(),
@@ -224,7 +224,7 @@ mod tests {
             result_data: "test data".to_string(),
             result_status,
             created_at,
-            html,
+            html_compress,
             html_checksum,
             kind,
         }
