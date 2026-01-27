@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use core_ltx::{db, normalize_html, web_html::compute_html_checksum};
 use data_model_ltx::{
-    db::{self},
     models::{JobKind, ResultStatus},
     schema::{job_state, llms_txt},
 };
@@ -47,7 +47,8 @@ async fn fetch_all_completed_jobs(conn: &mut AsyncPgConnection) -> Result<Vec<Ll
             llms_txt::result_data,
             llms_txt::result_status,
             llms_txt::created_at,
-            llms_txt::html,
+            llms_txt::html_compress,
+            llms_txt::html_checksum,
             job_state::kind,
         ))
         .order(llms_txt::created_at.desc())
@@ -80,7 +81,7 @@ async fn handle_record_updates(
             async move {
                 match record.result_status {
                     ResultStatus::Ok => {
-                        if let Err(e) = handle_success(&http_client, &api_base_url, &url, &record.html).await {
+                        if let Err(e) = handle_success(&http_client, &api_base_url, &url, &record.html_checksum).await {
                             tracing::error!("Error handling success for {}: {}", url, e);
                         }
                     }
@@ -100,7 +101,7 @@ async fn handle_success(
     client: &Arc<AuthenticatedClient>,
     api_base_url: &str,
     url: &str,
-    stored_html: &str,
+    stored_checksum: &str,
 ) -> Result<(), Error> {
     tracing::debug!("Handling success for URL: '{}'", url);
 
@@ -108,13 +109,25 @@ async fn handle_success(
     let fresh_html = core_ltx::download(&parsed_url).await?;
     tracing::debug!("Downloaded {} bytes for '{}'", fresh_html.len(), url);
 
-    // TODO: maybe use a checksum here? we could store that checksum in the DB to save on space too
-    if fresh_html == stored_html {
-        tracing::info!("HTML unchanged for '{}', skipping update.", url);
+    // Compute checksum of freshly downloaded HTML
+    let normalized_fresh_html = normalize_html(&fresh_html)?;
+    let fresh_checksum = compute_html_checksum(&normalized_fresh_html)?;
+
+    if fresh_checksum == stored_checksum {
+        tracing::info!(
+            "HTML unchanged (checksum: {}) for '{}', skipping update.",
+            stored_checksum,
+            url
+        );
         return Ok(());
     }
 
-    tracing::info!("HTML changed for '{}', sending update request to API server.", url);
+    tracing::info!(
+        "HTML changed for '{}' (checksum: {} -> {}), sending update request.",
+        url,
+        stored_checksum,
+        fresh_checksum
+    );
     let job_id = send_update_request(client, api_base_url, url).await?;
     tracing::info!("Confirmed: Job ID {} for update on '{}'", job_id, url);
 
@@ -203,13 +216,19 @@ mod tests {
         result_status: ResultStatus,
         kind: JobKind,
     ) -> LlmsTxtWithKind {
+        let html = "<html>test</html>";
+        let normalized_fresh_html = normalize_html(html).unwrap();
+        let html_checksum = compute_html_checksum(&normalized_fresh_html).unwrap();
+        let html_compress = core_ltx::compress_string(html).unwrap();
+
         LlmsTxtWithKind {
             job_id: uuid::Uuid::new_v4(),
             url: url.to_string(),
             result_data: "test data".to_string(),
             result_status,
             created_at,
-            html: "<html>test</html>".to_string(),
+            html_compress,
+            html_checksum,
             kind,
         }
     }

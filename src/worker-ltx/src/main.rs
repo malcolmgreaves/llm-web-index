@@ -1,11 +1,11 @@
 use std::{sync::Arc, time::Duration};
 
+use core_ltx::db::DbPool;
 use core_ltx::{
     TimeUnit, get_db_pool, get_max_concurrency, get_poll_interval, health_router,
     llms::{ChatGpt, LlmProvider},
     setup_logging,
 };
-use data_model_ltx::db::DbPool;
 use tokio::sync::Semaphore;
 use worker_ltx::{Error, JobResult, handle_job, handle_result, next_job_in_queue};
 

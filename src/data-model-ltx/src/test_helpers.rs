@@ -8,9 +8,11 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 use std::process::{Command, ExitStatus};
 
-use crate::db::{DbPool, establish_connection_pool};
 use crate::models::{JobKind, JobKindData, JobState, JobStatus, LlmsTxt, LlmsTxtResult};
 use crate::schema;
+use core_ltx::db::{DbPool, establish_connection_pool};
+use core_ltx::web_html::CleanHtml;
+use core_ltx::{compress_string, compute_html_checksum, normalize_html};
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use uuid::Uuid;
@@ -397,9 +399,12 @@ pub async fn create_completed_test_job(
     pool: &DbPool,
     url: &str,
     llms_txt_content: &str,
-    html: &str,
+    normalized_html: &CleanHtml,
 ) -> (JobState, LlmsTxt) {
     let job = create_test_job(pool, url, JobKind::New, JobStatus::Success).await;
+
+    let html_checksum = compute_html_checksum(normalized_html).expect("Failed to compute checksum");
+    let html_compress = compress_string(normalized_html.as_str()).expect("Failed to compress HTML");
 
     let llms_txt_record = LlmsTxt::from_result(
         job.job_id,
@@ -407,7 +412,8 @@ pub async fn create_completed_test_job(
         LlmsTxtResult::Ok {
             llms_txt: llms_txt_content.to_string(),
         },
-        html.to_string(),
+        html_compress,
+        html_checksum,
     );
 
     let mut conn = pool.get().await.expect("Failed to get database connection");
@@ -429,18 +435,22 @@ pub async fn create_failed_test_job(
     pool: &DbPool,
     url: &str,
     error_message: &str,
-    html: Option<&str>,
+    maybe_normalized_html: Option<CleanHtml>,
 ) -> (JobState, Option<LlmsTxt>) {
     let job = create_test_job(pool, url, JobKind::New, JobStatus::Failure).await;
 
-    let llms_txt_record = html.map(|html_content| {
+    let llms_txt_record = maybe_normalized_html.map(|normalized_html| {
+        let html_checksum = compute_html_checksum(&normalized_html).expect("Failed to compute checksum");
+        let html_compress = compress_string(normalized_html.as_str()).expect("Failed to compress HTML");
+
         LlmsTxt::from_result(
             job.job_id,
             url.to_string(),
             LlmsTxtResult::Error {
                 failure_reason: error_message.to_string(),
             },
-            html_content.to_string(),
+            html_compress,
+            html_checksum,
         )
     });
 
@@ -477,7 +487,7 @@ pub async fn seed_test_data(pool: &DbPool) {
         pool,
         "https://completed.com",
         "# Completed Site\n\n> A completed test site\n\n- [Home](/)",
-        "<html><body><h1>Completed</h1></body></html>",
+        &normalize_html("<html><body><h1>Completed</h1></body></html>").expect("Failed to parse & clean HTML"),
     )
     .await;
 
@@ -485,7 +495,7 @@ pub async fn seed_test_data(pool: &DbPool) {
         pool,
         "https://another-completed.com",
         "# Another Site\n\n> Another test\n\n- [Home](/)\n- [About](/about)",
-        "<html><body><h1>Another</h1></body></html>",
+        &normalize_html("<html><body><h1>Another</h1></body></html>").expect("Failed to parse & clean HTML"),
     )
     .await;
 
@@ -494,7 +504,7 @@ pub async fn seed_test_data(pool: &DbPool) {
         pool,
         "https://failed.com",
         "Test failure reason",
-        Some("<html><body>Failed HTML</body></html>"),
+        Some(normalize_html("<html><body>Failed HTML</body></html>").expect("Failed to parse & clean HTML")),
     )
     .await;
 
@@ -571,6 +581,7 @@ mod tests {
     use super::*;
 
     use crate::models::ResultStatus;
+    use core_ltx::decompress_to_string;
     use tokio::sync::Mutex;
 
     static TEST_MUTEX: Mutex<()> = Mutex::const_new(());
@@ -599,11 +610,13 @@ mod tests {
         let _guard = TEST_MUTEX.lock().await;
         clean_test_db(&pool).await;
 
+        let normalized_html = normalize_html("<html></html>").expect("Failed to parse & clean HTML");
+
         let (job, llms_txt) = create_completed_test_job(
             &pool,
             "https://test.com",
             "# Test\n\n> Test\n\n- [Link](/)",
-            "<html></html>",
+            &normalized_html,
         )
         .await;
 
@@ -613,7 +626,9 @@ mod tests {
         assert!(retrieved_llms_txt.is_some());
         let retrieved_llms_txt = retrieved_llms_txt.unwrap();
         assert_eq!(retrieved_llms_txt.result_status, ResultStatus::Ok);
-        assert_eq!(retrieved_llms_txt.html, "<html></html>");
+        // Verify compressed HTML can be decompressed back to original
+        let decompressed = decompress_to_string(&retrieved_llms_txt.html_compress).expect("Failed to decompress");
+        assert_eq!(decompressed, normalized_html.as_str());
         assert_eq!(retrieved_llms_txt, llms_txt);
     }
 

@@ -1,6 +1,6 @@
 use std::env::VarError;
 
-use data_model_ltx::db::{DbPool, establish_connection_pool};
+use crate::common::db::{DbPool, establish_connection_pool};
 
 /// Uses the env var DATABASE_URL to establish a database connection pool using diesel.
 /// WARNING: Panics if DATABASE_URL is not set or if the connection fails!

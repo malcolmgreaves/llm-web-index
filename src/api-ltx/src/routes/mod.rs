@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 
-use data_model_ltx::db::DbPool;
+use core_ltx::db::DbPool;
 
 use crate::auth;
 

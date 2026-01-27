@@ -38,7 +38,9 @@ diesel::table! {
         result_data -> Text,
         result_status -> ResultStatus,
         created_at -> Timestamptz,
-        html -> Text,
+        html_compress -> Bytea,
+        #[max_length = 32]
+        html_checksum -> Varchar,
     }
 }
 

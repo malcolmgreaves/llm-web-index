@@ -1,4 +1,6 @@
 pub mod auth_config;
+pub mod compression;
+pub mod db;
 pub mod db_env;
 pub mod env_check;
 pub mod health;

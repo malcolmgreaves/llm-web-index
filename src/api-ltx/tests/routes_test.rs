@@ -14,6 +14,7 @@ use axum::{
     body::Body,
     http::{Request, StatusCode, header},
 };
+use core_ltx::normalize_html;
 use data_model_ltx::{
     models::{JobIdPayload, JobIdResponse, JobKind, JobStatus, LlmTxtResponse, LlmsTxtListResponse, UrlPayload},
     test_helpers::{TestDbGuard, clean_test_db, create_completed_test_job, create_test_job, test_db_pool},
@@ -70,7 +71,13 @@ async fn test_get_llm_txt_success() {
     // Create completed job
     let url = "https://example.com";
     let content = "# Test\n\n> Description\n\n- [Link](/)";
-    create_completed_test_job(&pool, url, content, "<html></html>").await;
+    create_completed_test_job(
+        &pool,
+        url,
+        content,
+        &normalize_html("<html></html>").expect("Failed to parse & clean HTML"),
+    )
+    .await;
 
     let app = test_router().await;
 
@@ -147,7 +154,13 @@ async fn test_post_llm_txt_fails_if_already_generated() {
     clean_test_db(&pool).await;
 
     let url = "https://example.com";
-    create_completed_test_job(&pool, url, "# Existing", "<html></html>").await;
+    create_completed_test_job(
+        &pool,
+        url,
+        "# Existing",
+        &normalize_html("<html></html>").expect("Failed to parse & clean HTML"),
+    )
+    .await;
 
     let app = test_router().await;
 
@@ -177,7 +190,13 @@ async fn test_post_update_creates_job() {
     clean_test_db(&pool).await;
 
     let url = "https://example.com";
-    create_completed_test_job(&pool, url, "# Existing", "<html></html>").await;
+    create_completed_test_job(
+        &pool,
+        url,
+        "# Existing",
+        &normalize_html("<html></html>").expect("Failed to parse & clean HTML"),
+    )
+    .await;
 
     let app = test_router().await;
 
@@ -238,7 +257,13 @@ async fn test_put_llm_txt_creates_update_job_when_exists() {
     clean_test_db(&pool).await;
 
     let url = "https://example.com";
-    create_completed_test_job(&pool, url, "# Existing", "<html></html>").await;
+    create_completed_test_job(
+        &pool,
+        url,
+        "# Existing",
+        &normalize_html("<html></html>").expect("Failed to parse & clean HTML"),
+    )
+    .await;
 
     let app = test_router().await;
 
@@ -286,9 +311,27 @@ async fn test_get_list_returns_results() {
     let pool = test_db_pool().await;
     clean_test_db(&pool).await;
 
-    create_completed_test_job(&pool, "https://site1.com", "# Site 1", "<html>1</html>").await;
-    create_completed_test_job(&pool, "https://site2.com", "# Site 2", "<html>2</html>").await;
-    create_completed_test_job(&pool, "https://site3.com", "# Site 3", "<html>3</html>").await;
+    create_completed_test_job(
+        &pool,
+        "https://site1.com",
+        "# Site 1",
+        &normalize_html("<html>1</html>").expect("Failed to parse & clean HTML"),
+    )
+    .await;
+    create_completed_test_job(
+        &pool,
+        "https://site2.com",
+        "# Site 2",
+        &normalize_html("<html>2</html>").expect("Failed to parse & clean HTML"),
+    )
+    .await;
+    create_completed_test_job(
+        &pool,
+        "https://site3.com",
+        "# Site 3",
+        &normalize_html("<html>3</html>").expect("Failed to parse & clean HTML"),
+    )
+    .await;
 
     let app = test_router().await;
 

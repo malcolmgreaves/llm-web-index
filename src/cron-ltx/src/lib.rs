@@ -17,6 +17,8 @@ pub struct LlmsTxtWithKind {
     pub result_data: String,
     pub result_status: ResultStatus,
     pub created_at: chrono::DateTime<chrono::Utc>,
-    pub html: String,
+    /// Brotli-compressed normalized HTML content (stored as raw bytes)
+    pub html_compress: Vec<u8>,
+    pub html_checksum: String,
     pub kind: JobKind,
 }

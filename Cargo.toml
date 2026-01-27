@@ -51,6 +51,7 @@ dotenvy = "0.15"
 anyhow = "1.0"
 thiserror = "2.0"
 uuid = { version = "1.0", features = ["serde", "v4"] }
+md5 = "0.7"
 
 # Logging & tracing
 tracing = "0.1"
@@ -77,7 +78,7 @@ web-sys = { version = "0.3", features = [
 ] }
 serde-wasm-bindgen = "0.6"
 
-# Core-ltx specific dependencies
+# Related to llms.txt file generation
 async-openai = "0.28"
 clap = { version = "4.5", features = ["derive"] }
 url = "2.5"
@@ -90,7 +91,10 @@ html5ever = "0.36.1"
 markup5ever_rcdom = "0.36.0"
 async-trait = "0.1.89"
 subst = "0.3.8"
+minify-html = "0.18"
+brotli = "8.0.2"
 
 # Test dependencies
+# libc = { version = "0.2", optional = true } # file locking
 test-with = { version = "*", features = ["runtime"] }
 libtest-with = "0.8.1-12"

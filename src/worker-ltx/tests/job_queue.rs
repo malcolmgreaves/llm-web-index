@@ -8,8 +8,8 @@
 
 use std::sync::Arc;
 
+use core_ltx::db;
 use data_model_ltx::{
-    db::{self},
     models::{JobKind, JobKindData, JobState, JobStatus},
     test_helpers::{TestDbGuard, clean_test_db, create_test_job, get_job_by_id, test_db_pool},
 };

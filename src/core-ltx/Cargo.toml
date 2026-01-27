@@ -13,6 +13,8 @@ readme = "README.md"
 test-helpers = []
 
 [dependencies]
+thiserror = {workspace=true}
+md5 = {workspace=true}
 async-openai = { workspace = true }
 axum = { workspace = true }
 axum-server = { workspace = true }
@@ -28,7 +30,9 @@ markup5ever_rcdom = { workspace = true }
 async-trait = { workspace = true }
 subst = { workspace = true }
 tracing-subscriber = { workspace = true }
-# internal
-data-model-ltx = { path = "../data-model-ltx" }
+diesel-async = { workspace = true }
+deadpool = { workspace = true }
+minify-html = { workspace = true }
+brotli = { workspace = true }
 
 [dev-dependencies]
