@@ -7,11 +7,12 @@ use diesel::prelude::*;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use uuid::Uuid;
 
+use core_ltx::db::DbPool;
+use data_model_ltx::models::JobStatus;
 use data_model_ltx::models::{
     JobDetailsResponse, JobIdPayload, JobState, JobStatusResponse, ResultStatus, StatusError,
 };
 use data_model_ltx::schema::{job_state, llms_txt};
-use data_model_ltx::{db::DbPool, models::JobStatus};
 
 /// Gets all currently running jobs for a given URL.
 ///

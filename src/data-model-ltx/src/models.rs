@@ -13,7 +13,7 @@ use serde_json::json;
 use std::io::Write;
 use uuid::Uuid;
 
-use crate::db::PoolError;
+use core_ltx::db::PoolError;
 
 // SQL type definitions for custom enums
 // Note: These types use snake_case to match PostgreSQL type names
@@ -540,6 +540,8 @@ impl From<diesel::result::Error> for StatusError {
 
 #[cfg(test)]
 mod tests {
+    use core_ltx::web_html::compute_html_checksum;
+
     use super::*;
 
     #[test]
@@ -584,10 +586,7 @@ mod tests {
     #[test]
     fn test_create_llms_txt() {
         let html = "<html><body>Test</body></html>".to_string();
-        let html_checksum = compute_html_checksum(&html).unwrap_or_else(|_| {
-            let digest = md5::compute(html.as_bytes());
-            format!("{:x}", digest)
-        });
+        let html_checksum = compute_html_checksum(&html).unwrap();
 
         let llms_txt = LlmsTxt {
             job_id: Uuid::new_v4(),

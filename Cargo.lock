@@ -514,18 +514,24 @@ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 name = "core-ltx"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-openai",
  "async-trait",
  "axum",
  "axum-server",
  "clap",
+ "deadpool",
+ "diesel",
+ "diesel-async",
  "html5ever",
  "indoc",
  "markdown-ppp",
  "markup5ever_rcdom",
+ "md5",
  "nom 8.0.0",
  "reqwest 0.13.1",
  "subst",
+ "thiserror 2.0.18",
  "tokio",
  "tracing-subscriber",
  "url",
@@ -1616,6 +1622,12 @@ dependencies = [
  "cfg-if",
  "digest",
 ]
+
+[[package]]
+name = "md5"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
 
 [[package]]
 name = "memchr"

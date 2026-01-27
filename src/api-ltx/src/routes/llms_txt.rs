@@ -8,7 +8,7 @@ use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
 use std::collections::HashMap;
 
-use data_model_ltx::db::DbPool;
+use core_ltx::db::DbPool;
 use data_model_ltx::models::{
     AppError, GetLlmTxtError, JobIdResponse, JobKindData, JobState, JobStatus, LlmTxtResponse, LlmsTxt,
     LlmsTxtListItem, LlmsTxtListResponse, PostLlmTxtError, PutLlmTxtError, ResultStatus, UpdateLlmTxtError, UrlPayload,

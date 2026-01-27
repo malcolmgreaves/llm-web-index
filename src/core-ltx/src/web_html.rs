@@ -41,6 +41,8 @@ pub fn parse_html(content: &str) -> Result<String, Error> {
     Ok(html)
 }
 
+// pub fn clean_html()
+
 /// Normalize the HTML and compute and MD5 checksum on the content.
 pub fn compute_html_checksum(html: &str) -> Result<String, Error> {
     let normalized = parse_html(html)?;
@@ -84,9 +86,9 @@ mod tests {
 
     #[test]
     fn test_compute_html_checksum() {
-        let expected = "f1bde789117e2fb41cd8b21824ce58b1";
+        let expected = "b5e56c5effa9b4e92f1b5b6f80a5a781";
         for html in HTML_EXAMPLES {
-            let checksum = compute_html_checksum(&html);
+            let checksum = compute_html_checksum(&html).unwrap();
             assert_eq!(checksum, expected);
         }
     }

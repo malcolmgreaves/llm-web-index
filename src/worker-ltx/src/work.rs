@@ -5,8 +5,8 @@ use core_ltx::{
     llms::{LlmProvider, generate_llms_txt, update_llms_txt},
 };
 
+use core_ltx::db;
 use data_model_ltx::{
-    db,
     models::{JobKindData, JobState, JobStatus, LlmsTxt, LlmsTxtResult},
     schema,
 };

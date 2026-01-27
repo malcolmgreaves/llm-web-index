@@ -3,11 +3,11 @@ use std::time::Duration;
 use std::{env, path::PathBuf};
 
 use core_ltx::common::env_check::check_non_empty_env_vars;
+use core_ltx::db::DbPool;
 use core_ltx::{
     TimeUnit, get_api_base_url, get_auth_config, get_db_pool, get_poll_interval, is_auth_enabled, setup_logging,
 };
 use cron_ltx::AuthenticatedClient;
-use data_model_ltx::db::DbPool;
 
 #[tokio::main]
 async fn main() {
