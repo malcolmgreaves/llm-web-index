@@ -18,9 +18,7 @@ diesel-async = { workspace = true }
 chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = {workspace = true}
-thiserror = {workspace = true}
 uuid = { workspace = true }
-deadpool = {workspace = true }
 libc = { version = "0.2", optional = true }
 # libc = { workspace = true }
 # internal

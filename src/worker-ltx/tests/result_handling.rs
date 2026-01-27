@@ -14,7 +14,6 @@ use data_model_ltx::{
     models::{JobKind, JobStatus, ResultStatus},
     test_helpers::{TestDbGuard, clean_test_db, create_test_job, get_job_by_id, get_llms_txt_by_job_id, test_db_pool},
 };
-use diesel::IntoSql;
 use tokio::sync::Mutex;
 use worker_ltx::work::{JobResult, handle_result};
 

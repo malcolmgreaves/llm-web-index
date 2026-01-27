@@ -13,7 +13,6 @@ readme = "README.md"
 test-helpers = []
 
 [dependencies]
-anyhow = {workspace = true}
 thiserror = {workspace=true}
 md5 = {workspace=true}
 async-openai = { workspace = true }
@@ -31,7 +30,6 @@ markup5ever_rcdom = { workspace = true }
 async-trait = { workspace = true }
 subst = { workspace = true }
 tracing-subscriber = { workspace = true }
-diesel = { workspace = true }
 diesel-async = { workspace = true }
 deadpool = { workspace = true }
 minify-html = { workspace = true }

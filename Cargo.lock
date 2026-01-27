@@ -703,7 +703,6 @@ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 name = "core-ltx"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-openai",
  "async-trait",
  "axum",
@@ -711,7 +710,6 @@ dependencies = [
  "brotli",
  "clap",
  "deadpool",
- "diesel",
  "diesel-async",
  "html5ever",
  "indoc",
@@ -936,13 +934,11 @@ dependencies = [
  "axum",
  "chrono",
  "core-ltx",
- "deadpool",
  "diesel",
  "diesel-async",
  "libc",
  "serde",
  "serde_json",
- "thiserror 2.0.18",
  "tokio",
  "uuid",
 ]
