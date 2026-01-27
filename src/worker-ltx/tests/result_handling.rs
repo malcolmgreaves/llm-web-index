@@ -14,6 +14,7 @@ use data_model_ltx::{
     models::{JobKind, JobStatus, ResultStatus},
     test_helpers::{TestDbGuard, clean_test_db, create_test_job, get_job_by_id, get_llms_txt_by_job_id, test_db_pool},
 };
+use diesel::IntoSql;
 use tokio::sync::Mutex;
 use worker_ltx::work::{JobResult, handle_result};
 
@@ -47,8 +48,7 @@ async fn test_handle_result_success() {
 
     let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Running).await;
 
-    let html = "<html><body><h1>Test</h1></body></html>";
-    let (html_compress, html_checksum) = compress_html(html);
+    let (html_compress, html_checksum) = compress_html("<html><body><h1>Test</h1></body></html>");
     let llms_txt = create_test_llms_txt("# Test Site\n\n> Test\n\n- [Home](/)");
 
     let result = JobResult::Success {
@@ -80,8 +80,7 @@ async fn test_handle_result_generation_failed() {
 
     let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Running).await;
 
-    let html = "<html><body><h1>Test</h1></body></html>";
-    let (html_compress, html_checksum) = compress_html(html);
+    let (html_compress, html_checksum) = compress_html("<html><body><h1>Test</h1></body></html>");
     let error = create_test_error("LLM generation failed");
 
     let result = JobResult::GenerationFailed {
@@ -164,8 +163,10 @@ async fn test_handle_result_preserves_html_on_generation_failure() {
 
     let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Running).await;
 
-    let html = format!("<html><body>{}</body></html>", "X".repeat(10000));
-    let (html_compress, html_checksum) = compress_html(&html);
+    let normalized_html = normalize_html(&format!("<html><body>{}</body></html>", "X".repeat(10000)))
+        .expect("Could not parse & clean HTML");
+    let (html_compress, html_checksum) = compress_html(normalized_html.as_str());
+
     let error = create_test_error("Generation error");
 
     let result = JobResult::GenerationFailed {
@@ -179,7 +180,7 @@ async fn test_handle_result_preserves_html_on_generation_failure() {
     let llms_txt_record = get_llms_txt_by_job_id(&pool, job.job_id).await.unwrap();
     // Verify we can decompress and get original HTML
     let decompressed = decompress_to_string(&llms_txt_record.html_compress).unwrap();
-    assert_eq!(decompressed.len(), html.len());
+    assert_eq!(decompressed.len(), normalized_html.as_str().len());
 }
 
 #[tokio::test]
