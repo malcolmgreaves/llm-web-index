@@ -8,7 +8,7 @@ pub enum Error {
     DownloadError(reqwest::Error),
 
     /// HTML is invalid, even after attempting to fix using HTML5 rules.
-    InvalidHtml(String),
+    InvalidUtf8(std::string::FromUtf8Error),
 
     /// File is not valid markdown.
     InvalidMarkdown(nom::Err<nom::error::Error<String>>),
@@ -21,6 +21,9 @@ pub enum Error {
 
     /// Error calling ChatGPT
     ChatGptError(async_openai::error::OpenAIError),
+
+    /// Error during IO operations
+    IoError(std::io::Error),
 }
 
 impl std::fmt::Display for Error {
@@ -28,11 +31,12 @@ impl std::fmt::Display for Error {
         match self {
             Error::InvalidUrl(url) => write!(f, "Not a valid URL: {}", url),
             Error::DownloadError(err) => write!(f, "Download error: {}", err),
-            Error::InvalidHtml(txt) => write!(f, "Not a valid HTML: {}", txt),
+            Error::InvalidUtf8(err) => write!(f, "Tried to convert non-UTF8 bytes into a string: {}", err),
             Error::InvalidMarkdown(err) => write!(f, "Not valid Markdown: {}", err),
             Error::InvalidLlmsTxtFormat(msg) => write!(f, "Not valid llms.txt Format: {}", msg),
             Error::PromptCreationFailure(err) => write!(f, "Failed to create prompt: {}", err),
             Error::ChatGptError(err) => write!(f, "Error calling ChatGPT: {}", err),
+            Error::IoError(err) => write!(f, "Error during IO operations: {}", err),
         }
     }
 }
@@ -53,17 +57,10 @@ impl From<url::ParseError> for Error {
     }
 }
 
-/// Converting from bytes to UTF-8 strings occurs in the HTML parsing & validation process.
+/// Converting from bytes to UTF-8 strings occurs in the HTML parsing, cleaning, & validation process.
 impl From<std::string::FromUtf8Error> for Error {
     fn from(err: std::string::FromUtf8Error) -> Self {
-        Error::InvalidHtml(err.to_string())
-    }
-}
-
-/// io Errors occur during the HTML parsing & validation process.
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Error::InvalidHtml(err.to_string())
+        Error::InvalidUtf8(err)
     }
 }
 
@@ -76,5 +73,11 @@ impl From<subst::Error> for Error {
 impl From<async_openai::error::OpenAIError> for Error {
     fn from(err: async_openai::error::OpenAIError) -> Self {
         Error::ChatGptError(err)
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        Error::IoError(err)
     }
 }

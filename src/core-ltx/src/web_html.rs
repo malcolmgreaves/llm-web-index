@@ -10,6 +10,30 @@ use minify_html::{Cfg, minify};
 
 use crate::Error;
 
+/// Newtype for HTML
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Html(String);
+
+impl Html {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    pub const fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+
+    pub fn consume(self) -> String {
+        self.0
+    }
+}
+
+impl std::fmt::Display for Html {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// Validates that the input string is a URL.
 pub fn is_valid_url(url: &str) -> Result<Url, Error> {
     let valid_url = Url::parse(url)?;
@@ -25,7 +49,7 @@ pub async fn download(url: &Url) -> Result<String, Error> {
 
 /// Parses and validates the input as HTML. Returns valid HTML 5 or an error.
 /// Attempts to fix the input string according to HTML5 parsing rules.
-pub fn parse_html(content: &str) -> Result<String, Error> {
+pub fn parse_html(content: &str) -> Result<Html, Error> {
     let dom: RcDom = parse_document(RcDom::default(), Default::default())
         .from_utf8()
         .read_from(&mut content.as_bytes())?;
@@ -39,7 +63,7 @@ pub fn parse_html(content: &str) -> Result<String, Error> {
     };
 
     let html = String::from_utf8(output)?;
-    Ok(html)
+    Ok(Html(html))
 }
 
 /// Configuration used by `clean_html`.
@@ -80,16 +104,22 @@ const CLEAN_HTML_CFG: Cfg = Cfg {
 /// - Keeps all closing tags for structural integrity
 /// - Does NOT transform CSS or JS content
 /// - Produces spec-compliant output
-pub fn clean_html(html: &str) -> Result<String, std::string::FromUtf8Error> {
+pub fn clean_html(html: &Html) -> Result<Html, std::string::FromUtf8Error> {
     let minified = minify(html.as_bytes(), &CLEAN_HTML_CFG);
-    String::from_utf8(minified)
+    String::from_utf8(minified).map(|s| Html(s))
+}
+
+/// Normalizes HTML by parsing and cleaning it.
+pub fn normalize_html(html: &str) -> Result<Html, Error> {
+    let parsed = parse_html(html)?;
+    let cleaned = clean_html(&parsed)?;
+    Ok(cleaned)
 }
 
 /// Normalize the HTML and compute and MD5 checksum on the content.
 pub fn compute_html_checksum(html: &str) -> Result<String, Error> {
-    let normalized = parse_html(html)?;
-    let cleaned = clean_html(&normalized)?;
-    let digest = md5::compute(cleaned.as_bytes());
+    let normalized = normalize_html(html)?;
+    let digest = md5::compute(normalized.as_bytes());
     Ok(format!("{:x}", digest))
 }
 
@@ -120,7 +150,7 @@ mod tests {
 
     #[test]
     fn test_parse_html() {
-        let expected = "<html><head></head><body><h1>Hello, World!</h1></body></html>";
+        let expected = Html("<html><head></head><body><h1>Hello, World!</h1></body></html>".into());
         for html in HTML_EXAMPLES {
             let parsed_html = parse_html(html).unwrap();
             assert_eq!(parsed_html, expected);
@@ -138,33 +168,33 @@ mod tests {
 
     #[test]
     fn test_clean_html_removes_whitespace() {
-        let input = "<html>  <head>  </head>  <body>  <p>  Hello,   world!  </p>  </body>  </html>";
-        let cleaned = clean_html(input).unwrap();
+        let input = Html("<html>  <head>  </head>  <body>  <p>  Hello,   world!  </p>  </body>  </html>".into());
+        let cleaned = clean_html(&input).unwrap();
         // Whitespace between tags and within text is collapsed
-        assert!(!cleaned.contains("  "));
+        assert!(!cleaned.as_str().contains("  "));
     }
 
     #[test]
     fn test_clean_html_preserves_pre_whitespace() {
-        let input = "<pre>  code with   spaces  </pre>";
-        let cleaned = clean_html(input).unwrap();
+        let input = Html("<pre>  code with   spaces  </pre>".into());
+        let cleaned = clean_html(&input).unwrap();
         // Whitespace in <pre> is preserved
-        assert!(cleaned.contains("  code with   spaces  "));
+        assert!(cleaned.as_str().contains("  code with   spaces  "));
     }
 
     #[test]
     fn test_clean_html_removes_comments() {
-        let input = "<p>Hello<!-- comment -->World</p>";
-        let cleaned = clean_html(input).unwrap();
-        assert!(!cleaned.contains("comment"));
-        assert!(cleaned.contains("HelloWorld") || cleaned.contains("Hello World"));
+        let input = Html("<p>Hello<!-- comment -->World</p>".into());
+        let cleaned = clean_html(&input).unwrap();
+        assert!(!cleaned.as_str().contains("comment"));
+        assert!(cleaned.as_str().contains("HelloWorld") || cleaned.as_str().contains("Hello World"));
     }
 
     #[test]
     fn test_clean_html_keeps_closing_tags() {
-        let input = "<div><p>Text</p></div>";
-        let cleaned = clean_html(input).unwrap();
-        assert!(cleaned.contains("</p>"));
-        assert!(cleaned.contains("</div>"));
+        let input = Html("<div><p>Text</p></div>".into());
+        let cleaned = clean_html(&input).unwrap();
+        assert!(cleaned.as_str().contains("</p>"));
+        assert!(cleaned.as_str().contains("</div>"));
     }
 }
