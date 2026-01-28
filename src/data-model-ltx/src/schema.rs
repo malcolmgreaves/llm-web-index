@@ -10,6 +10,7 @@ diesel::table! {
         status -> Job_status,
         kind -> Job_kind,
         llms_txt -> Nullable<Text>,
+        created_at -> Timestamptz,
     }
 }
 

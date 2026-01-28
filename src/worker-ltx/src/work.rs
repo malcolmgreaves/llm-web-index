@@ -63,13 +63,15 @@ pub async fn next_job_in_queue(
 
                 // Query for a job with status Queued using FOR UPDATE SKIP LOCKED.
                 // => This ensures multiple workers can safely claim jobs without conflicts.
+                // Order by created_at first (oldest first) for FIFO processing, then by job_id for consistent tie-breaking.
                 let job: JobState = schema::job_state::table
                     .filter(schema::job_state::status.eq(JobStatus::Queued))
                     .for_update()
                     .skip_locked()
-                    // TODO: add a created_at field to job_state and order on this first, then order by job ID for fully consistent
-                    //       ordering + ensure that jobs are processed FIFO
-                    .order(schema::job_state::job_id.asc()) // provide consistent ordering for de-queueing jobs
+                    // we order first by created_at, getting oldest first
+                    // => this ensures we're doing FIFO processing & that we don't starve-out any jobs
+                    // we break ties by sorting on the job ID (which provides a consistent ordering)
+                    .order((schema::job_state::created_at.asc(), schema::job_state::job_id.asc()))
                     .first::<JobState>(conn)
                     .await?;
 
