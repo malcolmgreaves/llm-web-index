@@ -7,6 +7,21 @@ pub enum Error {
     /// Website download failed.
     DownloadError(reqwest::Error),
 
+    /// Too many redirects while following a URL.
+    TooManyRedirects {
+        original_url: url::Url,
+        redirect_count: usize,
+    },
+
+    /// Redirect response missing Location header.
+    RedirectMissingLocation { url: url::Url, status_code: u16 },
+
+    /// Redirect Location header contains invalid characters.
+    RedirectInvalidLocation { url: url::Url },
+
+    /// HTTP request returned a non-success status code.
+    HttpError { url: url::Url, status_code: u16 },
+
     /// HTML is invalid, even after attempting to fix using HTML5 rules.
     InvalidUtf8(std::string::FromUtf8Error),
 
@@ -31,6 +46,25 @@ impl std::fmt::Display for Error {
         match self {
             Error::InvalidUrl(url) => write!(f, "Not a valid URL: {}", url),
             Error::DownloadError(err) => write!(f, "Download error: {}", err),
+            Error::TooManyRedirects {
+                original_url,
+                redirect_count,
+            } => write!(
+                f,
+                "Too many redirects ({}) while fetching: {}",
+                redirect_count, original_url
+            ),
+            Error::RedirectMissingLocation { url, status_code } => write!(
+                f,
+                "Redirect (HTTP {}) missing Location header for: {}",
+                status_code, url
+            ),
+            Error::RedirectInvalidLocation { url } => {
+                write!(f, "Redirect Location header contains invalid characters for: {}", url)
+            }
+            Error::HttpError { url, status_code } => {
+                write!(f, "HTTP {} error for: {}", status_code, url)
+            }
             Error::InvalidUtf8(err) => write!(f, "Tried to convert non-UTF8 bytes into a string: {}", err),
             Error::InvalidMarkdown(err) => write!(f, "Not valid Markdown: {}", err),
             Error::InvalidLlmsTxtFormat(msg) => write!(f, "Not valid llms.txt Format: {}", msg),
