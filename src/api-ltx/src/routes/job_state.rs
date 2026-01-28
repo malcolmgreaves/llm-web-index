@@ -17,7 +17,7 @@ use data_model_ltx::schema::{job_state, llms_txt};
 /// Gets all currently running jobs for a given URL.
 ///
 /// Returns all JobIds (UUID v4) of all in-progress jobs that match the `url`.
-/// An in-progress job is one whose status is either Queued, Started, or Running.
+/// An in-progress job is one whose status is either Queued or Running.
 ///
 /// An error is returned if there are no matching rows or if there's an internal DB error.
 pub async fn in_progress_jobs(conn: &mut AsyncPgConnection, url: &str) -> Result<Vec<Uuid>, diesel::result::Error> {
@@ -100,7 +100,7 @@ pub async fn get_in_progress_jobs(State(pool): State<DbPool>) -> Result<impl Int
     let mut conn = pool.get().await?;
 
     let jobs = job_state::table
-        .filter(job_state::status.eq_any(&[JobStatus::Queued, JobStatus::Started, JobStatus::Running]))
+        .filter(job_state::status.eq_any(&[JobStatus::Queued, JobStatus::Running]))
         .select(JobState::as_select())
         .load::<JobState>(&mut conn)
         .await?;

@@ -61,14 +61,10 @@ pub async fn next_job_in_queue(
                 // NOTE: If we return an Err, we will drop the permit, allowing another job to be worked on.
                 //       We only pass the acquired semaphore permit if we get a job to work on.
 
-                // Query for a job with status Queued or Started using FOR UPDATE SKIP LOCKED.
+                // Query for a job with status Queued using FOR UPDATE SKIP LOCKED.
                 // => This ensures multiple workers can safely claim jobs without conflicts.
                 let job: JobState = schema::job_state::table
-                    .filter(
-                        schema::job_state::status
-                            .eq(JobStatus::Queued)
-                            .or(schema::job_state::status.eq(JobStatus::Started)),
-                    )
+                    .filter(schema::job_state::status.eq(JobStatus::Queued))
                     .for_update()
                     .skip_locked()
                     // TODO: add a created_at field to job_state and order on this first, then order by job ID for fully consistent
