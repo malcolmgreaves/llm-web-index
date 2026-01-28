@@ -22,7 +22,8 @@ CREATE TABLE job_state (
     url TEXT NOT NULL,
     status job_status NOT NULL,
     kind job_kind NOT NULL,
-    llms_txt TEXT
+    llms_txt TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Create llms_txt table

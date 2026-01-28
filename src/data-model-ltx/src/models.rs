@@ -156,6 +156,7 @@ pub struct JobState {
     pub status: JobStatus,
     pub kind: JobKind,
     pub llms_txt: Option<String>,
+    pub created_at: DateTime<Utc>,
 }
 
 // JobKindData - ergonomic Rust enum for the job kind
@@ -182,6 +183,7 @@ impl JobState {
 
     /// Create database representation from ergonomic JobKindData enum
     pub fn from_kind_data(job_id: Uuid, url: String, status: JobStatus, kind_data: JobKindData) -> Self {
+        let created_at = Utc::now();
         match kind_data {
             JobKindData::New => JobState {
                 job_id,
@@ -189,6 +191,7 @@ impl JobState {
                 status,
                 kind: JobKind::New,
                 llms_txt: None,
+                created_at,
             },
             JobKindData::Update { llms_txt } => JobState {
                 job_id,
@@ -196,6 +199,7 @@ impl JobState {
                 status,
                 kind: JobKind::Update,
                 llms_txt: Some(llms_txt),
+                created_at,
             },
         }
     }
@@ -554,6 +558,7 @@ mod tests {
             status: JobStatus::Queued,
             kind: JobKind::New,
             llms_txt: None,
+            created_at: Utc::now(),
         };
 
         assert!(!job_state.url.is_empty());

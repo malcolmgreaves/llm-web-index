@@ -14,7 +14,6 @@ use data_model_ltx::{
     test_helpers::{TestDbGuard, clean_test_db, create_test_job, get_job_by_id, test_db_pool},
 };
 use tokio::sync::{Mutex, Semaphore};
-use uuid::Uuid;
 use worker_ltx::work::next_job_in_queue;
 
 async fn next_job(pool: &db::DbPool) -> Result<JobState, worker_ltx::Error> {
@@ -89,12 +88,6 @@ async fn test_next_job_in_queue_ignores_completed_jobs() {
     assert!(result.is_err(), "Should not claim jobs that are already completed");
 }
 
-fn job_ids_in_asc<const N: usize>(jobs: [&JobState; N]) -> [&Uuid; N] {
-    let mut job_ids = jobs.map(|j| &j.job_id);
-    job_ids.sort();
-    job_ids
-}
-
 #[tokio::test]
 async fn test_next_job_in_queue_processes_in_order() {
     let _db = TestDbGuard::acquire().await;
@@ -107,19 +100,17 @@ async fn test_next_job_in_queue_processes_in_order() {
     let job2 = create_test_job(&pool, "https://second.com", JobKind::New, JobStatus::Queued).await;
     let job3 = create_test_job(&pool, "https://third.com", JobKind::New, JobStatus::Queued).await;
 
-    let [job_id_1st, job_id_2nd, job_id_3rd] = job_ids_in_asc([&job1, &job2, &job3]);
-
     // Claim first job
     let claimed1 = next_job(&pool).await.unwrap();
-    assert_eq!(claimed1.job_id, *job_id_1st, "Should claim first job"); // job1.job_id
+    assert_eq!(claimed1.job_id, job1.job_id, "Should claim first job");
 
     // Claim second job
     let claimed2 = next_job(&pool).await.unwrap();
-    assert_eq!(claimed2.job_id, *job_id_2nd, "Should claim second job"); // job2.job_id
+    assert_eq!(claimed2.job_id, job2.job_id, "Should claim second job");
 
     // Claim third job
     let claimed3 = next_job(&pool).await.unwrap();
-    assert_eq!(claimed3.job_id, *job_id_3rd, "Should claim third job"); // job3.job_id
+    assert_eq!(claimed3.job_id, job3.job_id, "Should claim third job");
 
     // No more jobs
     let result = next_job(&pool).await;
@@ -200,19 +191,15 @@ async fn test_next_job_in_queue_skips_locked_jobs() {
     let job2 = create_test_job(&pool, "https://job2.com", JobKind::New, JobStatus::Queued).await;
     let job3 = create_test_job(&pool, "https://job3.com", JobKind::New, JobStatus::Queued).await;
 
-    // TODO: switch back to "job1", etc. once we have `created_at` in job_state table
-    //       and the next_job_... function gets us the _oldest_ job first!
-    let [job_id_1st, job_id_2nd, job_id_3rd] = job_ids_in_asc([&job1, &job2, &job3]);
-
     // Worker 1 claims first job
     let claimed1 = next_job(&pool).await.unwrap();
-    assert_eq!(claimed1.job_id, *job_id_1st); // job1.job_id
+    assert_eq!(claimed1.job_id, job1.job_id);
     assert_eq!(claimed1.status, JobStatus::Running);
 
     // Worker 2 should skip job1 (now Running) and claim job2
     let claimed2 = next_job(&pool).await.unwrap();
     assert_ne!(claimed2.job_id, claimed1.job_id, "Should claim different job");
-    assert!(claimed2.job_id == *job_id_2nd || claimed2.job_id == *job_id_3rd); // job2.job_id OR job3.job_id
+    assert!(claimed2.job_id == job2.job_id || claimed2.job_id == job3.job_id);
 }
 
 #[tokio::test]
