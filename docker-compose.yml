@@ -96,7 +96,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
-      WORKER_POLL_INTERVAL_MS: 600
+      WORKER_POLL_INTERVAL_MS: ${WORKER_POLL_INTERVAL_MS:-600}
       RUST_LOG: info
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       WORKER_MAX_CONCURRENCY: ${WORKER_MAX_CONCURRENCY:-1000}
@@ -139,7 +139,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
-      CRON_POLL_INTERVAL_S: 300  # every 5 minutes
+      CRON_POLL_INTERVAL_S: ${CRON_POLL_INTERVAL_S:-86400}  # default: every 24 hours
       RUST_LOG: info
       HOST: api
       PORT: 3000
