@@ -1,3 +1,4 @@
+use reqwest::redirect::Policy;
 use url::Url;
 
 use html5ever::{
@@ -9,6 +10,9 @@ use markup5ever_rcdom::{RcDom, SerializableHandle};
 use minify_html::{Cfg, minify};
 
 use crate::Error;
+
+/// Maximum number of redirects to follow before giving up.
+const MAX_REDIRECTS: usize = 10;
 
 macro_rules! string_wrap {
     ($x:ident) => {
@@ -45,11 +49,80 @@ pub fn is_valid_url(url: &str) -> Result<Url, Error> {
     Ok(valid_url)
 }
 
-/// Downloads the website's content as text.
+/// Downloads the website's content as text, following redirects.
+///
+/// This function explicitly handles HTTP redirects (301, 302, 303, 307, 308)
+/// up to `MAX_REDIRECTS` hops, logging each redirect for visibility.
 pub async fn download(url: &Url) -> Result<String, Error> {
-    let response = reqwest::get(url.as_str()).await?;
-    let text_body = response.text().await?;
-    Ok(text_body)
+    // Build a client that does NOT auto-follow redirects so we can handle them explicitly
+    let client = reqwest::Client::builder().redirect(Policy::none()).build()?;
+
+    let mut current_url = url.clone();
+    let mut redirects = 0;
+
+    loop {
+        let response = client.get(current_url.as_str()).send().await?;
+        let status = response.status();
+
+        // Check if this is a redirect response
+        if status.is_redirection() {
+            if redirects >= MAX_REDIRECTS {
+                return Err(Error::TooManyRedirects {
+                    original_url: url.clone(),
+                    redirect_count: redirects,
+                });
+            }
+
+            // Extract the Location header
+            let location = response
+                .headers()
+                .get(reqwest::header::LOCATION)
+                .ok_or_else(|| Error::RedirectMissingLocation {
+                    url: current_url.clone(),
+                    status_code: status.as_u16(),
+                })?
+                .to_str()
+                .map_err(|_| Error::RedirectInvalidLocation {
+                    url: current_url.clone(),
+                })?;
+
+            // Resolve the redirect URL (handles relative URLs)
+            let redirect_url = current_url.join(location).map_err(Error::InvalidUrl)?;
+
+            tracing::debug!(
+                "Redirect {}/{}: {} -> {} (HTTP {})",
+                redirects + 1,
+                MAX_REDIRECTS,
+                current_url,
+                redirect_url,
+                status.as_u16()
+            );
+
+            current_url = redirect_url;
+            redirects += 1;
+            continue;
+        }
+
+        // Not a redirect - check for success and return content
+        if !status.is_success() {
+            return Err(Error::HttpError {
+                url: current_url,
+                status_code: status.as_u16(),
+            });
+        }
+
+        if redirects > 0 {
+            tracing::info!(
+                "Successfully followed {} redirect(s): {} -> {}",
+                redirects,
+                url,
+                current_url
+            );
+        }
+
+        let text_body = response.text().await?;
+        return Ok(text_body);
+    }
 }
 
 /// Parses and validates the input as HTML. Returns valid HTML 5 or an error.
