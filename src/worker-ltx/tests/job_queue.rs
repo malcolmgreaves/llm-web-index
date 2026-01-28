@@ -44,26 +44,6 @@ async fn test_next_job_in_queue_claims_queued_job() {
 }
 
 #[tokio::test]
-async fn test_next_job_in_queue_claims_started_job() {
-    let _db = TestDbGuard::acquire().await;
-    let pool = test_db_pool().await;
-    let _guard = TEST_MUTEX.lock().await;
-    clean_test_db(&pool).await;
-
-    // Create a job in Started state
-    let job = create_test_job(&pool, "https://example.com", JobKind::New, JobStatus::Started).await;
-
-    // Should be able to claim Started jobs too
-    let claimed_job = next_job(&pool).await.unwrap();
-
-    assert_eq!(claimed_job.job_id, job.job_id);
-
-    // Verify it's now Running
-    let updated_job = get_job_by_id(&pool, job.job_id).await.unwrap();
-    assert_eq!(updated_job.status, JobStatus::Running);
-}
-
-#[tokio::test]
 async fn test_next_job_in_queue_empty_queue() {
     let _db = TestDbGuard::acquire().await;
     let pool = test_db_pool().await;
@@ -317,37 +297,4 @@ async fn test_next_job_in_queue_marks_job_running_atomically() {
         JobStatus::Running,
         "Job should be marked Running in database"
     );
-}
-
-#[tokio::test]
-async fn test_next_job_in_queue_prefers_started_over_queued() {
-    let _db = TestDbGuard::acquire().await;
-    let pool = test_db_pool().await;
-    let _guard = TEST_MUTEX.lock().await;
-    clean_test_db(&pool).await;
-
-    // Create jobs in different states
-    // Note: The SQL query orders by job_id ASC, so creation order matters
-    let queued_job = create_test_job(&pool, "https://queued.com", JobKind::New, JobStatus::Queued).await;
-
-    let started_job = create_test_job(&pool, "https://started.com", JobKind::New, JobStatus::Started).await;
-
-    // Both Queued and Started are eligible
-    // The query should pick based on job_id order (ASC), not status
-    let claimed1 = next_job(&pool).await.unwrap();
-
-    let (lower_ordering_job_id, higher_ordering_job_id) = if queued_job.job_id < started_job.job_id {
-        (&queued_job.job_id, &started_job.job_id)
-    } else {
-        (&started_job.job_id, &queued_job.job_id)
-    };
-
-    // Should claim the first eligible job by ID
-    // assert_eq!(claimed1.job_id, queued_job.job_id);
-    assert_eq!(claimed1.job_id, *lower_ordering_job_id);
-
-    // Second claim should get the other job
-    let claimed2 = next_job(&pool).await.unwrap();
-    // assert_eq!(claimed2.job_id, started_job.job_id);
-    assert_eq!(claimed2.job_id, *higher_ordering_job_id);
 }

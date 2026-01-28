@@ -39,8 +39,6 @@ pub struct Result_status;
 pub enum JobStatus {
     /// A newly created job
     Queued,
-    /// Job manager started job
-    Started,
     /// Worker received job
     Running,
     /// New or updated llms.txt file made and added to database
@@ -50,10 +48,10 @@ pub enum JobStatus {
 }
 
 impl JobStatus {
-    // True if job's status is Success or Failure. False means it's Queued, Started, or Running.
+    // True if job's status is Success or Failure. False means it's Queued or Running.
     pub fn is_completed(&self) -> bool {
         match self {
-            Self::Queued | Self::Started | Self::Running => false,
+            Self::Queued | Self::Running => false,
             Self::Success | Self::Failure => true,
         }
     }
@@ -63,7 +61,6 @@ impl ToSql<Job_status, Pg> for JobStatus {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         let s = match self {
             JobStatus::Queued => "queued",
-            JobStatus::Started => "started",
             JobStatus::Running => "running",
             JobStatus::Success => "success",
             JobStatus::Failure => "failure",
@@ -77,7 +74,6 @@ impl FromSql<Job_status, Pg> for JobStatus {
     fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
         match bytes.as_bytes() {
             b"queued" => Ok(JobStatus::Queued),
-            b"started" => Ok(JobStatus::Started),
             b"running" => Ok(JobStatus::Running),
             b"success" => Ok(JobStatus::Success),
             b"failure" => Ok(JobStatus::Failure),

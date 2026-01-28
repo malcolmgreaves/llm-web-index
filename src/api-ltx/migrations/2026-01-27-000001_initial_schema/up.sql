@@ -1,7 +1,6 @@
 -- Create enum types
 CREATE TYPE job_status AS ENUM (
     'queued',    -- A newly created job
-    'started',   -- Job manager started job
     'running',   -- Worker received job
     'success',   -- New or updated llms.txt file made and added to database
     'failure'    -- Worker failed
