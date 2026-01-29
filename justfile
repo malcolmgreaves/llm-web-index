@@ -17,8 +17,13 @@ front:
     --target web
   echo "Frontend built successfully in src/front-ltx/www/pkg/"
 
-serve: front
-  cargo run -p api-ltx
+# Run services using pre-built GHCR images tagged with the specified commit hash
+serve commit:
+  IMAGE_TAG={{commit}} docker compose -f docker-compose.ghcr.yml up
+
+# Run all services locally (api, worker, cron) with health checks
+serve-local:
+  ./scripts/serve_local.sh
 
 test_cov:
   cargo install cargo-llvm-cov || true

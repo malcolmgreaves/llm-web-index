@@ -1,0 +1,117 @@
+# Docker Compose for running pre-built GHCR images
+# Usage: IMAGE_TAG=<commit-sha> docker compose -f docker-compose.ghcr.yml up
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ltx_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ltx_user
+      POSTGRES_PASSWORD: ltx_password
+      POSTGRES_DB: ltx_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ltx_user -d ltx_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ltx_network
+
+  # API Server
+  api:
+    image: ghcr.io/malcolmgreaves/llm-web-index/api:${IMAGE_TAG}
+    container_name: ltx_api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
+      HOST: 0.0.0.0
+      PORT: 3000
+      RUST_LOG: info
+      ENABLE_AUTH: ${ENABLE_AUTH}
+      AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH}
+      SESSION_SECRET: ${SESSION_SECRET}
+      TLS_CERT_PATH: /app/certs/cert.pem
+      TLS_KEY_PATH: /app/certs/key.pem
+    ports:
+      - "443:3000"
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "--no-check-certificate", "https://localhost:3000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
+    volumes:
+      - ./certs:/app/certs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ltx_network
+
+  # Worker
+  worker:
+    image: ghcr.io/malcolmgreaves/llm-web-index/worker:${IMAGE_TAG}
+    container_name: ltx_worker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
+      WORKER_POLL_INTERVAL_MS: ${WORKER_POLL_INTERVAL_MS:-600}
+      RUST_LOG: info
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      WORKER_MAX_CONCURRENCY: ${WORKER_MAX_CONCURRENCY:-1000}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - ltx_network
+
+  # Cron updater
+  cron:
+    image: ghcr.io/malcolmgreaves/llm-web-index/cron:${IMAGE_TAG}
+    container_name: ltx_cron
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://ltx_user:ltx_password@postgres:5432/ltx_db
+      CRON_POLL_INTERVAL_S: ${CRON_POLL_INTERVAL_S:-86400}  # default: every 24 hours
+      RUST_LOG: info
+      HOST: api
+      PORT: 3000
+      ENABLE_AUTH: ${ENABLE_AUTH}
+      AUTH_PASSWORD: ${AUTH_PASSWORD}
+      AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH}
+      SESSION_SECRET: ${SESSION_SECRET}
+      ACCEPT_INVALID_CERTS: ${ACCEPT_INVALID_CERTS:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+    networks:
+      - ltx_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  ltx_network:
+    driver: bridge
